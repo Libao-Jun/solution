@@ -6,6 +6,36 @@
 
 ---
 
+## 目录
+
+- 0. 适用范围与版本选择
+- 1. 工程化与项目脚手架（含 1.4 文件 / 组件命名规范）
+- 2. 单文件组件（SFC）结构
+- 3. 响应式系统（核心差异）
+- 4. API 风格：选项式 vs 组合式（含对照表）⭐
+- 5. Props 与 Emits（单向数据流）
+- 6. 模板指令
+- 7. 计算属性与侦听器
+- 8. 组件通信模式
+- 9. 插槽（Slots）
+- 10. 组合式函数（Composable）
+- 11. 自定义指令（Directives）
+- 12. 内置组件
+- 13. 路由（Vue Router 3 vs 4）
+- 14. 状态管理（Vuex vs Pinia）
+- 15. 插件（Plugins）
+- 16. 样式规范
+- 17. TypeScript 规范
+- 18. 性能优化
+- 19. 安全
+- 20. 代码风格与命名（Vue 2 风格指南精选）
+- 21. Vue 2 → Vue 3 迁移清单
+- 22. 参考资料
+
+> **速读建议**：日常开发直接查 §4 对照表（选项式 ↔ 组合式）、§5/§6/§7 高频坑、§1.4 命名规范；维护老项目或迁移时查 §21。全文凡 `【Vue 2】` / `【Vue 3】` 标记处均点明版本差异。
+
+---
+
 ## 0. 适用范围与版本选择
 
 | 场景                                     | 推荐                                                                     |
@@ -29,7 +59,7 @@
 ### 1.2 语言与类型
 
 - 优先 TypeScript，组件统一 `<script setup lang="ts">`。
-- 状态优先 `shallowRef()` 而非 `ref()`（见 §5.4）；对象优先 `ref()` 而非 `reactive()`（见 §5.3）。
+- 状态优先 `shallowRef()` 而非 `ref()`（见 §3.4）；对象优先 `ref()` 而非 `reactive()`（见 §3.3）。
 - 样式优先 UnoCSS / Tailwind；通用工具函数优先 VueUse（`@vueuse/core`）。
 
 ### 1.3 代码检查（ESLint）
@@ -129,6 +159,85 @@ const doubled = computed(() => count.value * 2);
 </style>
 ```
 
+### 2.1 `<script setup>` 代码组织顺序
+
+组合式组件的 `<script setup>` 内代码**按统一从上到下的顺序组织**，使任何组件一眼可读、团队风格一致。约定顺序如下（箭头表示书写先后）：
+
+```
+imports（导入）
+  ↓
+defineOptions（组件选项：name、inheritAttrs 等）
+  ↓
+interface / type（局部类型声明）
+  ↓
+defineProps / defineEmits / defineSlots（组件契约）
+  ↓
+composables（useXxx 组合式函数）
+  ↓
+state（ref / reactive 变量定义）
+  ↓
+computed（计算属性）
+  ↓
+functions（事件处理、业务方法）
+  ↓
+watch / watchEffect（侦听器）
+  ↓
+lifecycle（onMounted、onUnmounted 等）
+  ↓
+defineExpose（暴露给父组件的 API，放最后，一眼看出对外接口）
+```
+
+**要点**：
+- **先声明、后使用**：类型与契约（props/emits）在前，状态与逻辑在后，避免前向引用带来的阅读负担。
+- **`defineExpose` 放最后**：它定义的是组件对外暴露的接口，集中放在文件末尾，阅读者无需翻找即可看到「这个组件对外提供什么」。
+- **生命周期靠后**：生命周期回调通常依赖前面定义的状态 / 方法，放末尾保证依赖已就绪。
+
+**推荐骨架（可直接复制）**：
+
+```vue
+<script setup lang="ts">
+// 1. imports
+import { ref, computed, watch, onMounted } from "vue";
+import { useUserStore } from "@/stores/user";
+import UserCard from "./UserCard.vue";
+
+// 2. defineOptions（需要显式组件名 / 选项时）
+defineOptions({ name: "UserPanel" });
+
+// 3. 局部类型
+interface User { id: number; name: string }
+
+// 4. 组件契约
+const props = defineProps<{ id: string }>();
+const emit = defineEmits<{ select: [id: string] }>();
+defineSlots<{ default(props: { user: User }): unknown }>();
+
+// 5. composables
+const userStore = useUserStore();
+
+// 6. state
+const loading = ref(false);
+const localName = ref("");
+
+// 7. computed
+const fullName = computed(() => `${props.id}-${localName.value}`);
+
+// 8. functions
+function onSelect() { emit("select", props.id); }
+
+// 9. watch / watchEffect
+watch(() => props.id, (id) => { loading.value = true; userStore.load(id); });
+
+// 10. lifecycle
+onMounted(() => { userStore.load(props.id); });
+
+// 11. defineExpose（对外接口，放最后）
+defineExpose({ refresh: () => userStore.load(props.id) });
+</script>
+```
+
+> 对照 Options API：其顺序天然固定为 `props/emits → data → computed → watch → methods → 生命周期`，与组合式「先数据、后逻辑、再生命周期」一致，区别仅在于组合式用顶层变量、Options 用选项块。
+
 **Vue 3 与 Vue 2 在 SFC 上的关键差异**
 
 | 能力                        | Vue 2                         | Vue 3                                       |
@@ -138,22 +247,6 @@ const doubled = computed(() => count.value * 2);
 | `<style>` 动态绑定 `v-bind` | 不支持                        | 3.2+ 支持（`v-bind(color)`）                |
 | scoped 深度选择器           | `::v-deep` / `>>>` / `/deep/` | `:deep()` / `:slotted()` / `:global()`      |
 | `inheritAttrs` 默认         | `true`                        | `true`，但多根时需手动 `v-bind="$attrs"`    |
-
-```vue
-<!-- Vue 3 深度选择器 -->
-<style scoped>
-.a :deep(.b) {
-  color: red;
-}
-</style>
-
-<!-- Vue 2 深度选择器（任选其一，推荐 ::v-deep） -->
-<style scoped>
-.a ::v-deep .b {
-  color: red;
-}
-</style>
-```
 
 ---
 
@@ -187,6 +280,8 @@ console.log(count.value);
 // count++           // 把 ref 对象当数字用
 // count = 5         // 重新赋值变量，丢失响应式
 ```
+
+> 注意：ref 嵌套在数组 / 对象 / 集合（如 `reactive([refA, refB])` 或 `ref([])` 内）时仍需 `.value`；模板中对顶层 ref 才自动解包。
 
 ### 3.3 优先 ref 而非 reactive
 
@@ -222,7 +317,20 @@ triggerRef(users);
 const map = markRaw(new ThirdPartyMap()); // 永不响应式
 ```
 
-### 3.5 响应式批处理与 nextTick
+### 3.5 响应式对象身份与只读
+
+- **不要用 `===` 比较响应式对象**：`reactive()` 返回的是 Proxy，与原对象身份不同；嵌套对象每次访问可能返回新的 Proxy 包装。比较应使用唯一标识（如 `id`），必要时用 `toRaw()` 两侧取原值再比。
+  ```ts
+  // ❌ 永远 false
+  reactive(orig) === orig;
+  // ✅ 用 id
+  items.find((i) => i.id === targetId);
+  // ✅ 确需比对象：toRaw 两侧
+  toRaw(a) === toRaw(b);
+  ```
+- 用 `readonly()` 包装后提供只读视图，任何写入会被告警拦截；跨组件提供数据时优先 `readonly(providedRef)`（见 §8.2）。
+
+### 3.6 响应式批处理与 nextTick
 
 同一事件循环 tick 内的多次同步修改会被**批量合并**，侦听器 / 计算属性只看到最终值。
 
@@ -242,15 +350,48 @@ await nextTick();
 
 ---
 
-## 4. API 风格：Options vs Composition
+## 4. API 风格：选项式（Options）vs 组合式（Composition）
 
-### 4.1 选择
+### 4.1 两种风格怎么选
 
-- **【Vue 3】新代码**：一律 Composition API + `<script setup>`。
-- **【Vue 2】**：Options API（`data / methods / computed / watch`）。2.7 可用 `setup()` 但无 `<script setup>`。
-- 二者可在 Vue 3 共存：`<script>`（Options）里仍可调用组合式函数。
+- **组合式 API（Composition API）**：Vue 3 **推荐**写法，配合 `<script setup>`；逻辑按「功能」聚合，类型推导好，复用靠组合式函数。Vue 2.7 也支持 `setup()`（但无 `<script setup>`）。
+- **选项式 API（Options API）**：Vue 2 **默认**写法；**Vue 3 同样完整支持**（适合习惯延续 / 渐进迁移 / 教学）。逻辑按「选项类型」（`data` / `methods` / `computed` / `watch`）聚合。
+- 二者可在 Vue 3 组件内**共存**：同一组件可同时写 `<script>`（选项式）与 `<script setup>`（组合式），生命周期按注册顺序执行。
+- 团队应**选定一种并统一**，避免在同一组件里混用两种心智模型。
 
-### 4.2 Vue 3 Composition 标准模板
+### 4.2 版本 × API 支持矩阵
+
+| 能力                         | Vue 2            | Vue 3        |
+| ---------------------------- | ---------------- | ------------ |
+| Options API                  | ✅ 默认          | ✅ 支持      |
+| Composition API（`setup()`） | ✅ 2.7+ 向后移植 | ✅ 支持      |
+| `<script setup>` 编译宏      | ❌               | ✅ 3.2+ 推荐 |
+
+### 4.3 选项式 ↔ 组合式 对照表（快速翻译）⭐
+
+日常从 Options 切换到 Composition（或反之）时直接查此表：
+
+| Options API                          | Composition API（`<script setup>`）                  |
+| ------------------------------------ | ---------------------------------------------------- |
+| `data() { return { x: 1 } }`         | `const x = ref(1)` 或 `const s = reactive({ x: 1 })` |
+| `computed: { double() {…} }`         | `const double = computed(() => …)`                   |
+| `methods: { fn() {…} }`              | 顶层 `function fn() {…}`                             |
+| `watch: { x() {…} }` / `this.$watch` | `watch(x, …)` / `watchEffect(…)`                     |
+| `props: {…}`                         | `defineProps<{…}>()`                                 |
+| `emits: […]`                         | `defineEmits<{…}>()`                                 |
+| `created()`                          | `setup()` 顶层同步代码                               |
+| `mounted()`                          | `onMounted()`                                        |
+| `updated()`                          | `onUpdated()`                                        |
+| `beforeUnmount()`                    | `onBeforeUnmount()`                                  |
+| `this.$emit(...)`                    | `emit(...)`                                          |
+| `this.$refs` / `this.$el`            | `const el = ref(null)`（模板引用）                   |
+| `this.$attrs`                        | `useAttrs()`                                         |
+| `this.$slots`                        | `useSlots()`                                         |
+| `mixins: […]`                        | 组合式函数（`useXxx()`）                             |
+
+> **核心差异**：选项式通过 `this.xxx` 互相访问；组合式**没有 `this`**，所有状态都是顶层变量，直接引用即可。
+
+### 4.4 Vue 3 组合式标准模板（推荐）
 
 ```vue
 <script setup lang="ts">
@@ -269,7 +410,9 @@ onMounted(() => console.log("mounted"));
 </script>
 ```
 
-### 4.3 Vue 2 Options 模板（维护参考）
+### 4.5 选项式模板（Vue 2 与 Vue 3 通用）
+
+选项式写法在两个大版本间**基本一致**，差异只在少数全局 API / 响应式细节（见 §21）。
 
 ```vue
 <script>
@@ -301,9 +444,48 @@ export default {
 </script>
 ```
 
-### 4.4 用组合式函数替代 Mixin
+- **【Vue 2.7+】** 可在选项对象内加 `setup()` 选项，混用组合式 API（无 `<script setup>` 宏）。
+- **【Vue 3】** 若需显式声明组件名 / 选项，可额外加一个 `<script>` 块，或改用 §4.6 的宏。
 
-Vue 3 不推荐使用 mixin（命名冲突、来源不清）。封装为 `use*` 组合式函数。
+### 4.6 `<script setup>` 编译宏（Vue 3.3+）
+
+除 `defineProps` / `defineEmits` / `defineModel`（见 §5）外，常用宏：
+
+| 宏                                      | 作用                                                    |
+| --------------------------------------- | ------------------------------------------------------- |
+| `defineExpose({ ... })`                 | 显式暴露属性给父组件 `ref`（组件默认「封闭」）          |
+| `defineOptions({ name, inheritAttrs })` | 在 `<script setup>` 内声明组件选项，无需额外 `<script>` |
+| `defineSlots<{ ... }>()`                | 为作用域插槽 props 提供类型（见 §9.2）                  |
+| `generic="T"`                           | 泛型组件（SFC 上 `lang="ts" generic="T"`）              |
+
+```vue
+<script setup lang="ts" generic="T">
+defineOptions({ name: "DataList" });
+const props = defineProps<{ items: T[]; selected: T }>();
+defineExpose({ reset });
+defineSlots<{ default(props: { item: T; index: number }): any }>();
+</script>
+```
+
+### 4.7 生命周期
+
+- 组合式生命周期（`onMounted` / `onUpdated` / `onUnmounted` / `onActivated` / `onDeactivated` / `onServerPrefetch` 等）**必须在 setup 期间同步注册**：在 `setTimeout`、`.then()`、或 `await` 之后注册会**永不执行**（Vue 无法关联组件实例）。
+  ```ts
+  // ❌ 异步后注册，永远不会触发
+  async setup() { await fetch(); onMounted(() => {}) }
+  // ✅ 同步注册，异步逻辑放进回调内部
+  onMounted(async () => { await fetch() })
+  ```
+- **`onUpdated` / `updated` 里禁止做重活**：它每次重渲染后都执行，放 API 调用 / 状态修改会造成性能瓶颈甚至无限循环；派生数据用 `computed`，特定变化用 `watch`，只在其中做 DOM 同步类轻量操作。
+  ```ts
+  // ❌ 在 onUpdated 里改状态 → 无限循环
+  onUpdated(() => {
+    renderCount.value++;
+  });
+  // ✅ 用 computed / watch
+  const sum = computed(() => nums.value.reduce((a, b) => a + b, 0));
+  ```
+- 同步注册规则同样适用于组合式函数：调用 `useXxx()` 必须同步发生在 setup 内。
 
 ---
 
@@ -339,16 +521,17 @@ const local = ref({ ...props.user }) watch(() => props.user, u => { local.value
 `emit()` 的事件**只到直接父组件**，不会像原生 DOM 事件那样向上冒泡。深层通信请使用：
 
 1. 逐层 re-emit（1~2 层简单场景）；
-2. `provide / inject`（深层祖先通信，见 §7）；
-3. Pinia（跨组件 / 兄弟通信）；
+2. `provide / inject`（深层祖先通信，见 §8）；
+3. Pinia（跨组件 / 兄弟通信，见 §15）；
 4. 事件总线（如 `mitt`，谨慎使用，难追溯）。
 
 > 注意：绑定在 DOM 元素上的原生事件（如 `@click`）**仍然会冒泡**；只有 `emit` 的组件事件不冒泡。
 
-### 5.3 事件命名
+### 5.3 事件命名（kebab-case 监听）
 
-- 模板中监听用 **kebab-case**（`@update:user`），`defineEmits` 中声明可用 camelCase 或 kebab-case，二者等价。
-- 复杂 payload 在开发期做校验。
+- 在 JS 中用 camelCase `emit('updateValue')`，在模板中用 kebab-case `@update-value` 监听——**Vue 3 模板内会自动转换**（`@update-value` 匹配 `emit('updateValue')`）。
+- 该自动转换**仅在模板内生效**；渲染函数须用 `onUpdateValue`，编程式监听须用精确事件名。
+- v-model 的更新事件用冒号而非 kebab：`update:modelValue`（不是 `update-model-value`）。
 
 ### 5.4 v-model 重大变更（Vue 2 → Vue 3）⭐
 
@@ -385,6 +568,27 @@ const emit = defineEmits<{ "update:modelValue": [v: string] }>();
 <UserForm v-model:first="a" v-model:last="b" />
 ```
 
+### 5.5 布尔 prop 的类型顺序
+
+当 prop 同时接受 `Boolean` 与 `String` 时，**`Boolean` 必须排在 `String` 前面**，否则 `<Comp disabled />` 会被解析为空字符串 `""` 而非 `true`。
+
+```ts
+// ❌ String 在前，禁用了布尔转换：<Comp disabled /> → ""
+defineProps({ disabled: [String, Boolean] });
+// ✅ Boolean 在前：<Comp disabled /> → true
+defineProps({ disabled: [Boolean, String] });
+// ✅ 若确为纯布尔，直接用 Boolean 最清晰
+defineProps({ disabled: Boolean });
+```
+
+> 注：`String` 是唯一放在 `Boolean` 前会关闭布尔转换的类型。
+
+### 5.6 运行时校验与默认值
+
+- 需要运行时类型校验 / 自定义 `validator` 时，使用运行时声明（`type` / `required` / `default` / `validator`）；复杂类型用 `PropType<T>`。
+- **数组 / 对象默认值必须用工厂函数**：`default: () => []`，否则所有实例共享同一引用。
+- Vue 3.5+ 可用响应式 props 解构默认值；更早版本用 `withDefaults()`（类型声明）或运行时 `default`。
+
 ---
 
 ## 6. 模板指令
@@ -420,6 +624,29 @@ const emit = defineEmits<{ "update:modelValue": [v: string] }>();
 
 `v-html` 会原样插入 HTML，**绝不用于不可信 / 用户输入**，否则导致 XSS。改用文本插值 `{{ }}` 或经净化（如 `DOMPurify`）后再插入。
 
+### 6.4 事件修饰符
+
+- `.once`：事件只触发一次（自动移除监听），适合一次性初始化 / 首次交互埋点 / 懒加载触发。
+  ```html
+  <button @click.once="trackFirst">点击一次</button>
+  ```
+- `.exact`：仅当精确匹配按键组合时才触发，避免误触。
+  ```html
+  <button @click.ctrl.exact="onClick">仅 Ctrl+点击</button>
+  ```
+- 鼠标按键修饰符 `.left` / `.middle` / `.right`：针对非标准输入设备 / 左撇子场景。
+- **禁止 `.passive` 与 `.prevent` 同时使用**：`.passive` 向浏览器承诺不调用 `preventDefault()`，二者冲突会导致 `.prevent` 被忽略并触发浏览器告警。
+  ```html
+  <!-- ❌ 冲突：.prevent 被忽略 -->
+  <div @scroll.passive.prevent="onScroll">
+    <!-- ✅ 仅性能（被动监听） -->
+    <div @scroll.passive="onScroll">
+      <!-- ✅ 需要阻止默认行为 -->
+      <form @submit.prevent="onSubmit"></form>
+    </div>
+  </div>
+  ```
+
 ---
 
 ## 7. 计算属性与侦听器
@@ -434,7 +661,6 @@ const doubled = computed(() => {
   count.value++;
   return count.value * 2;
 });
-
 // ✅ 纯计算
 const doubled = computed(() => count.value * 2);
 ```
@@ -442,8 +668,26 @@ const doubled = computed(() => count.value * 2);
 - 计算属性返回**只读**，不要对其赋值（除非用 `get/set`）。
 - 需要传参请改用 `computed` 返回函数（或方法），但会失去缓存。
 - 排序 / 反转数组应**返回新数组**，不要原地修改原数据。
+- **非响应式值（如 `Date.now()`）不要放 computed**：它只追踪响应式依赖，结果只算一次永不更新；用 `ref` + `setInterval` 代替。
 
-### 7.2 watch vs watchEffect
+### 7.2 computed 与 methods 的取舍
+
+| 场景                     | computed          | method          |
+| ------------------------ | ----------------- | --------------- |
+| 派生自响应式状态         | ✅ 缓存           | ❌ 每次渲染重算 |
+| 昂贵计算                 | ✅ 仅依赖变才重算 | ❌ 浪费         |
+| 需传参                   | ❌                | ✅              |
+| 非响应式值（如当前时间） | ❌                | ✅              |
+| 用户动作触发             | ❌                | ✅              |
+
+```vue
+<!-- ❌ 方法每次渲染都重算 -->
+<p>{{ getFilteredItems() }}</p>
+<!-- ✅ computed 仅依赖变才重算 -->
+<p>{{ filteredItems }}</p>
+```
+
+### 7.3 watch vs watchEffect
 
 | 特性                 | `watch`              | `watchEffect`   |
 | -------------------- | -------------------- | --------------- |
@@ -456,24 +700,54 @@ const doubled = computed(() => count.value * 2);
 - 回调逻辑用的状态与触发源一致 → `watchEffect`。
 - 需要旧值 / 懒执行 / 异步后仍有依赖 → `watch`。
 
-### 7.3 watch 常见陷阱
+### 7.4 侦听器的刷新时机（flush）
 
-- 需要旧值比较、需要 `immediate` 但逻辑复杂 → `watch`。
-- 深层对象用 `{ deep: true }` 有性能开销，尽量用 getter 精确指定。
-- 访问更新后的 DOM 用 `{ flush: 'post' }`（等价于 `watchPostEffect`）。
+- 默认 `flush: 'pre'`：回调在**组件 DOM 更新前**执行。若在回调里读 DOM，会读到旧值。
+- 需要读取更新后的 DOM → `{ flush: 'post' }` 或 `watchPostEffect()`（如自动滚动到底部）。
+- **慎用 `flush: 'sync'`**：关闭批量合并，每次 mutation 都同步触发，易引发性能问题。
+
+```ts
+watch(
+  count,
+  () => {
+    console.log(document.querySelector(".c")?.textContent); // 旧值！
+  },
+  { flush: "post" },
+); // ✅ 读到新值
+```
+
+### 7.5 避免深层侦听（deep watch）
+
+`{ deep: true }` 会在每次变更时遍历对象全部嵌套属性，大数据结构下开销巨大。
+
+- 改为侦听**具体属性 / 数组长度 / 计算值**；或用 `watchEffect`（只追踪实际使用到的依赖）。
+- Vue 3.5+ 可用 `deep: 2` 限制遍历深度。
+- 直接侦听 `reactive` 对象等于隐式深层侦听，同理需谨慎。
+
+```ts
+// ❌ 遍历整棵树
+watch(state, cb, { deep: true });
+// ✅ 只盯需要的
+watch(() => state.selectedUserId, cb);
+watch(() => state.users.length, cb);
+```
+
+### 7.6 watchEffect 的异步依赖
+
+`watchEffect` 仅在**首个 `await` 之前**自动收集依赖；`await` 之后的响应式访问不再被追踪。需要完整追踪时改用 `watch` 显式声明源。Vue 3.5+ 可用 `onWatcherCleanup(() => controller.abort())` 在重跑 / 卸载时清理异步请求。
 
 ---
 
 ## 8. 组件通信模式速查
 
-| 方式               | 适用        | Vue 2 / 3 差异                       |
-| ------------------ | ----------- | ------------------------------------ |
-| `props` + `emit`   | 父子        | v-model 命名变更（见 §5.4）          |
-| `provide / inject` | 跨层祖先    | 推荐 `InjectionKey<>` 类型化（见下） |
-| Pinia / Vuex       | 全局 / 兄弟 | Pinia 取代 Vuex（见 §12）            |
-| 事件总线           | 解耦组件    | 谨慎，推荐 `mitt`                    |
+| 方式               | 适用        | Vue 2 / 3 差异                          |
+| ------------------ | ----------- | --------------------------------------- |
+| `props` + `emit`   | 父子        | v-model 命名变更（见 §5.4）             |
+| `provide / inject` | 跨层祖先    | 推荐 `InjectionKey<>` 类型化（见 §8.2） |
+| Pinia / Vuex       | 全局 / 兄弟 | Pinia 取代 Vuex（见 §15）               |
+| 事件总线           | 解耦组件    | 谨慎，推荐 `mitt`                       |
 
-**provide / inject 用 Symbol 键避免冲突（大型应用 / 组件库必用）：**
+### 8.1 provide / inject 用 Symbol 键避免冲突
 
 ```ts
 // injection-keys.ts
@@ -486,15 +760,80 @@ provide(UserKey, userRef);
 const user = inject(UserKey, ref({ name: "" })); // 带默认值则类型非 undefined
 ```
 
+### 8.2 避免 prop drilling
+
+当 prop 要穿过多层（≥2 层）中间组件才到达深层子组件时，改用 `provide / inject`，避免中间组件被无关 prop 污染、重构困难。
+
+- 1~2 层浅穿透用 props 即可；深层同组件树用 provide/inject；跨无关组件树用 Pinia。
+- 提供方可用 `readonly(providedRef)` 防止后代误改；需要更新则额外提供一个方法。
+- 提供计算值：`provide('count', computed(() => items.value.length))` 保持响应。
+
+### 8.3 attrs 不是响应式的
+
+`useAttrs()` 返回的对象**始终反映最新 fallthrough 属性，但不是响应式的**，不能用 `watch` 追踪其变化。
+
+- 需要响应式的属性 → 声明为 `prop` 再 `watch`。
+- 需要在变化后做副作用 → 用 `onUpdated()` 读取最新值。
+- 模板 / 事件处理器中访问 `attrs` 总是最新值（无需响应式）。
+
+```ts
+const attrs = useAttrs();
+// ❌ 永不触发
+watch(
+  () => attrs.class,
+  () => {},
+);
+// ✅ 用 onUpdated 读取最新
+onUpdated(() => {
+  console.log(attrs.class);
+});
+```
+
 ---
 
-## 9. 组合式函数（Composable）规范（Vue 3）
+## 9. 插槽（Slots）
+
+### 9.1 v-slot 用法
+
+- 具名插槽用 `#name`，默认插槽用 `#default`；`v-slot` 只能用于 `<template>` 或组件（Vue 3 已移除 Vue 2 在原生元素上用 `slot` 的写法）。
+- 作用域插槽：子组件 `<slot :item="item" />`，父组件 `<template #default="{ item }">`。
+
+### 9.2 作用域插槽的类型化（Vue 3.3+）
+
+用 `defineSlots` 为插槽 props 提供类型，否则消费方的 slot props 是 `any`，拼写错误无法被 TS 捕获。
+
+```vue
+<script setup lang="ts">
+interface Item {
+  id: number;
+  name: string;
+}
+defineProps<{ items: Item[] }>();
+defineSlots<{
+  default(props: { item: Item; index: number }): any;
+  header(props: { count: number }): any;
+  empty(): any;
+}>();
+</script>
+```
+
+### 9.3 插槽兜底内容
+
+给可选插槽提供合理默认值，组件更健壮：`<slot>Submit</slot>`、`<slot name="header"><h3>标题</h3></slot>`。
+
+### 9.4 注意命名冲突
+
+插槽 prop 名若与父组件自身作用域变量同名会产生混淆，必要时把 slot prop 命名得更具体（如 `listItem` 而非 `item`）。
+
+---
+
+## 10. 组合式函数（Composable）规范（Vue 3）
+
+### 10.1 命名与返回
 
 - 文件名 / 函数名以 `use` 前缀：`useFetch`、`useMouse`。
 - 返回**普通对象（含 ref）**，不要返回 `reactive` 对象（解构会丢响应式）。
 - 返回同时包含状态与动作（`{ count, increment }`）。
-- 有副作用（监听、定时器）须在 `onUnmounted` 清理。
-- 隐藏副作用：不要在组合式函数里悄悄改外部状态。
 
 ```ts
 export function useCounter(initial = 0) {
@@ -507,36 +846,118 @@ export function useCounter(initial = 0) {
 }
 ```
 
+### 10.2 避免隐藏副作用
+
+组合式函数应封装有状态逻辑，**不要藏匿影响外部状态的副作用**（内部 `inject` 隐式依赖、偷偷改 Pinia 状态、直接操作 DOM）。
+
+- 依赖显式传入（如 `useTheme(injectedTheme)`），让调用方知晓。
+- 真正需要副作用时（如 `useMouse` 注册 `mousemove`），必须在 `onUnmounted` 清理，并在注释里说明。
+
+### 10.3 与纯工具函数区分
+
+**不要用 `use` 前缀包裹无状态的纯函数**（格式化、校验、数学运算）——它们应作为普通工具函数放在 `utils/` 目录直接导出。
+
+- 用 Composable：管理响应式状态、用生命周期、设侦听器、需卸载清理。
+- 用 Utility：纯数据转换、无状态计算、字符串 / 数组操作、`Date.now()` 类。
+
+```
+src/
+  composables/   # useAuth.ts, useFetch.ts
+  utils/        # formatters.ts, validators.ts, math.ts
+```
+
+### 10.4 接受响应式输入
+
+组合式函数若接收「可能是 ref / getter / 普通值」的输入，用 `toValue()`（Vue 3.3+）归一化，提升灵活性：
+
+```ts
+import { watchEffect, toValue, type MaybeRefOrGetter } from "vue";
+export function useFetch(url: MaybeRefOrGetter<string>) {
+  watchEffect(async () => {
+    const res = await fetch(toValue(url)); // 支持 字符串 / ref / () => ...
+  });
+}
+```
+
 ---
 
-## 10. 内置组件
+## 11. 自定义指令（Directives）
 
-### 10.1 Transition / TransitionGroup
+### 11.1 命名约定（`<script setup>`）
+
+局部指令变量以 `v` 前缀 + camelCase 命名，模板中自动识别为指令（去 `v` 前缀、转 kebab-case）。
+
+```ts
+// ✅ v 前缀 + camelCase
+const vFocus = { mounted: (el: HTMLElement) => el.focus() };
+const vClickOutside = {
+  mounted(el, binding) {
+    el._h = (e: Event) => {
+      if (!el.contains(e.target as Node)) binding.value(e);
+    };
+    document.addEventListener("click", el._h);
+  },
+  unmounted(el) {
+    document.removeEventListener("click", el._h);
+  },
+};
+```
+
+```html
+<input v-focus />
+<div v-click-outside="close">菜单</div>
+```
+
+> Options API / 全局注册时，键名不含 `v-`（`app.directive('focus', {...})`）。
+
+### 11.2 必须清理副作用
+
+指令在 `mounted` 中创建的定时器、事件监听、订阅，**务必在 `unmounted` 中清理**，否则元素移除后监听 / 定时器仍存活，造成内存泄漏。多资源建议用 `WeakMap` 关联 `el` 与清理句柄，避免污染元素属性。
+
+### 11.3 仅用于真正需要 DOM 操作的场景
+
+能用组件 / 模板解决的问题优先用组件；指令适合聚焦、点击外部关闭、权限指令等「封装底层 DOM 行为」的场景。避免把业务逻辑塞进指令。
+
+---
+
+## 12. 内置组件
+
+### 12.1 Transition / TransitionGroup
 
 - `<Transition>` 只能包**单个**元素 / 组件，多元素需 `<Transition mode="out-in">` + key。
 - `<TransitionGroup>` 子元素**必须有 key**；Vue 3 移除了默认渲染外层 `span`（需自行指定 `tag` 或容器）。
-- 列表动画优先动 `transform` / `opacity`（避免触发 layout）。
+- 列表动画优先动 `transform` / `opacity`（避免触发 layout）。`.list-move` 用于重排动画。
 
-### 10.2 Teleport
+### 12.2 Teleport
 
-把内容传送到 `body` 等指定节点，适合模态框 / 提示。注意：传送内容的**逻辑层级不变**（props / 事件仍沿组件树），但受父级 `transform` 影响定位。
+把内容传送到 `body` 等指定节点，适合模态框 / 提示。注意：传送内容的**逻辑层级不变**（props / 事件仍沿组件树），但受父级 `transform` 影响定位。Vue 3.5+ 支持 `defer` 等待目标节点出现。
 
-### 10.3 KeepAlive
+### 12.3 KeepAlive
 
 - 配合 `<component :is>` 或 `<router-view>` 缓存组件实例。
-- 缓存的组件需 `name` 才能被 `include / exclude` 命中。
+- 缓存的组件需 `name` 才能被 `include / exclude` 命中；用 `max` 限制缓存数量防止无限增长。
 - 用 `onActivated` / `onDeactivated` 替代部分生命周期逻辑。
-- 注意缓存无限增长：必要时用 `max` 限制数量。
 
-### 10.4 Suspense
+### 12.4 Suspense
 
-用于异步组件 / `async setup`，**仍为实验性 API**，生产使用需评估稳定性。
+用于异步组件 / `async setup`，**仍为实验性 API**，生产使用需评估稳定性。等待 `async setup()`、`<script setup>` 顶层 `await`、`defineAsyncComponent` 三类异步依赖。
+
+### 12.5 v-once 与 v-memo（性能）
+
+- `v-once`：内容真正静态时渲染一次后永不更新。
+- `v-memo="[dep]"`，仅当依赖数组变化才重渲染该子树；`v-memo="[]"` 等价于 `v-once`。常用于大型列表中跳过无关项的重渲染。
+  ```html
+  <li v-for="item in list" :key="item.id" v-memo="[item.id === selectedId]">
+    …
+  </li>
+  ```
+- 注意：被 memo 的内容若自身还需响应其它状态，不要用 `v-memo`。
 
 ---
 
-## 11. 路由（Vue Router 3 vs 4）
+## 13. 路由（Vue Router 3 vs 4）
 
-### 11.1 创建与注册
+### 13.1 创建与注册
 
 ```ts
 // Vue Router 4（Vue 3）
@@ -548,7 +969,7 @@ import VueRouter from "vue-router";
 const router = new VueRouter({ mode: "history", routes });
 ```
 
-### 11.2 导航守卫弃用 next() ⭐
+### 13.2 导航守卫弃用 next() ⭐
 
 Vue Router 4 中守卫第三个参数 `next()` **已弃用**，改用返回值：
 
@@ -566,7 +987,7 @@ router.beforeEach((to, from) => {
 });
 ```
 
-### 11.3 路由参数变化不触发生命周期 ⭐
+### 13.3 路由参数变化不触发生命周期 ⭐
 
 `/users/1` → `/users/2` 复用同一组件实例，`onMounted` / `created` **不再执行**，数据会陈旧。
 
@@ -584,7 +1005,7 @@ watch(
 // 或 ✅ <router-view :key="route.fullPath" /> 强制重建（性能差，谨慎）
 ```
 
-### 11.4 重定向死循环
+### 13.4 重定向死循环
 
 守卫中务必**排除目标路由本身**，否则无限重定向（Vue Router 会告警但不会无限循环崩溃）：
 
@@ -594,13 +1015,13 @@ router.beforeEach((to) => {
 });
 ```
 
-### 11.5 beforeRouteEnter 无组件实例
+### 13.5 beforeRouteEnter 无组件实例
 
 该守卫在组件创建前执行，`this` 为 `undefined`。Options API 用 `next(vm => ...)`；组合式 API 用 `onMounted` + `onBeforeRouteUpdate` 替代。
 
 ---
 
-## 12. 状态管理（Vuex vs Pinia）
+## 14. 状态管理（Vuex vs Pinia）
 
 - **新项目用 Pinia**（Vue 3 官方推荐，无 mutations、类型友好、支持组合式写法）。
 - **存量 Vue 2 项目**可继续用 Vuex 3，但新模块建议 Pinia（Pinia 兼容 Vue 2）。
@@ -622,19 +1043,35 @@ export const useUserStore = defineStore("user", () => {
 
 ---
 
-## 13. 样式规范
+## 15. 插件（Plugins）
+
+- 插件优先用 `app.provide()` 暴露能力，而非 `app.config.globalProperties`：后者在 `<script setup>` 中**无法访问**，且需额外的类型增强（`declare module 'vue' { interface ComponentCustomProperties }`）才可被 TS 识别。
+  ```ts
+  // ✅ 组合式 API 友好、可类型化、可 mock
+  const key: InjectionKey<I18n> = Symbol('i18n')
+  export default { install(app: App, opts: I18nOptions) {
+    app.provide(key, { translate: /* ... */ })
+  }}
+  // 组件内：const i18n = inject(key)
+  ```
+- 若需同时兼容 Options API，可两者都提供（`app.provide(key, x)` + `app.config.globalProperties.$x = x`）。
+
+---
+
+## 16. 样式规范
 
 - 组件样式默认 `scoped`，避免全局污染。
 - 深度选择器见 §2（Vue 2 `::v-deep` / Vue 3 `:deep()`）。
 - 覆盖子组件根元素样式：Vue 3 下 scoped 可直接命中子根（因默认 `:deep` 放宽），如需精确控制用 `:deep()`。
 - 动态主题：Vue 3 支持 `<style>` 内 `v-bind()` 绑定响应式值。
 - 内联样式绑定属性名用 **camelCase**（` :style="{ backgroundColor: x }"`）。
+- Teleport 传送出的内容不受源组件 `scoped` 样式影响（逻辑层级不变但 DOM 不在其内）。
 
 ---
 
-## 14. TypeScript 规范
+## 17. TypeScript 规范
 
-### 14.1 defineProps 用类型声明（推荐）
+### 17.1 defineProps 用类型声明（推荐）
 
 ```ts
 interface Props {
@@ -651,7 +1088,7 @@ const props = withDefaults(defineProps<Props>(), {
 - **切勿**同时混用运行时声明与类型声明。
 - 3.5+ 支持响应式 props 解构：`const { msg = 'hi' } = defineProps<Props>()`。
 
-### 14.2 defineEmits 类型声明
+### 17.2 defineEmits 类型声明
 
 ```ts
 const emit = defineEmits<{
@@ -660,46 +1097,51 @@ const emit = defineEmits<{
 }>();
 ```
 
-### 14.3 模板引用与组件实例类型
+### 17.3 模板引用与组件实例类型
 
 ```ts
 const el = ref<HTMLInputElement | null>(null);
 const child = ref<InstanceType<typeof ChildComp> | null>(null);
 ```
 
+- 通过 `defineExpose` 暴露的成员，父组件 `ref` 类型需与之对应声明。
+- 作用域插槽类型见 §9.2（`defineSlots`）。
+
 ---
 
-## 15. 性能优化
+## 18. 性能优化
 
 - **大型列表（>50~100 项）必须虚拟化**：`vue-virtual-scroller` 或 `@tanstack/vue-virtual`，容器需固定高度。
 - 大数据 / 第三方实例用 `shallowRef` / `markRaw`（见 §3.4）。
-- 静态内容用 `v-once`；昂贵子树用 `v-memo`。
+- 昂贵的静态 / 低频更新子树用 `v-once` / `v-memo`（见 §12.5）。
 - 向子组件传递**稳定引用**（避免父重渲染时生成新对象 / 新函数导致子无谓更新）。
 - computed 返回对象 / 数组时注意引用稳定性（缓存），避免触发下游 effect。
 - 能用 SSR / SSG 提升首屏的用 Nuxt。
+- 避免深层 `watch` 与在 `onUpdated` 里做重活（见 §5.6 / §7.5）。
 
 ---
 
-## 16. 安全
+## 19. 安全
 
 - `v-html` 仅用于可信内容，用户内容必须经 `DOMPurify` 等净化（见 §6.3）。
 - 不要在前端硬编码密钥；接口鉴权走后端。
 - `provide / inject` 注入的回调需校验，避免被任意消费方误用。
+- 组件事件不冒泡，敏感操作不要依赖 DOM 事件冒泡做全局监听（见 §5.2）。
 
 ---
 
-## 17. 代码风格与命名（Vue 2 风格指南精选）
+## 20. 代码风格与命名（Vue 2 风格指南精选）
 
 按优先级（来自 [Vue 2 风格指南](https://v2.cn.vuejs.org/v2/style-guide/)）：
 
 - **A 级（必要）**：多单词组件名；`data` 必须是个函数；`prop` 定义尽量详细（类型 / 默认值）；`v-for` 必须带 `:key`；禁止同元素 `v-if` + `v-for`；组件名大小写一致（PascalCase 或 kebab-case，自闭合用 PascalCase）。
-- **B 级（强烈推荐）**：单文件组件；组件名完整单词而非缩写；`this` 上暴露的内容命名清晰；组件目录按特性组织；避免 `this.$parent`；单组件原则（功能单一）。
+- **B 级（强烈推荐）**：单文件组件；组件名完整单词而非缩写；`this` 上暴露的内容命名清晰；组件目录按特性组织；避免 `this.$parent`；单组件原则（功能单一）；见 §1.4 全套命名规范。
 - **C 级（推荐）**：组件文件 / 基础组件（ui- 前缀）命名规范；紧密耦合组件用父级目录就近放置；自闭合组件；模板中简单表达式，复杂逻辑放 computed / methods；属性 / 事件名风格一致（attribute 用 kebab-case）。
 - **D 级（谨慎使用）**：`v-if` 与 `v-for` 同元素（已禁用）、`scoped` 中的元素选择器（性能差）、`this.$refs` 在模板中、`watch` 中深度监听大量数据。
 
 ---
 
-## 18. Vue 2 → Vue 3 迁移清单（破坏性变更速查）
+## 21. Vue 2 → Vue 3 迁移清单（破坏性变更速查）
 
 | 变更点                         | Vue 2                     | Vue 3                                  |
 | ------------------------------ | ------------------------- | -------------------------------------- |
@@ -722,7 +1164,7 @@ const child = ref<InstanceType<typeof ChildComp> | null>(null);
 
 ---
 
-## 19. 参考资料
+## 22. 参考资料
 
 - Vue 3 官方指南：https://cn.vuejs.org/guide/introduction.html
 - Vue 2 风格指南：https://v2.cn.vuejs.org/v2/style-guide/

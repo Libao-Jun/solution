@@ -10,6 +10,17 @@
 
 ---
 
+## 0. 文档定位与如何使用
+
+本文档面向两类读者，按需求取用：
+
+- **新手开发者**：以「能跑起来、写对语法」为目标。建议按 **§1.5 快速参考 → §2 工具链与目录 → §3 组件结构 → §4 Runes → §5 模板 → §6 Snippets → §7 通信** 顺序通读，配合 §17 参考链接动手练习；遇到不理解的概念回到对应章节查示例即可。
+- **高级开发者**：以「补齐盲区、规避坑点、对齐规范、提效」为目标。直接看 **§1.5 快速参考（Rune 速查表）**、**§12 常见错误清单（带反例）**、**§18 高级开发者知识盲区与效率清单**；日常编码以 **§15 提交前检查清单** 作为验收红线。
+
+> 全文约定：**✅ 正确** / **❌ 反模式**（多为错误清单与示例中的对照）；**⚠️ 坑** 标注 Svelte 5 易踩的语义陷阱；**💡 提示** 为可提升效率的实践。
+
+---
+
 ## 1. 概述与版本基线
 
 - 默认采用 **Svelte 5** 的 **Runes（符文）** 响应式模型，不再使用 Svelte 3/4 的 `export let`、`$:`、`<slot>`、`createEventDispatcher`、`on:click` 指令。
@@ -81,6 +92,61 @@ npm run dev
 
 - VS Code 安装官方 **Svelte** 扩展（`svelte.svelte-vscode`）。
 - 团队统一配置 `.vscode/` 与 `.editorconfig`，保证保存即按 Prettier 格式化。
+
+### 2.4 标准项目目录结构
+
+#### 2.4.1 SvelteKit 全栈应用（推荐标准结构）
+
+```text
+my-app/
+├─ src/
+│  ├─ lib/                      # 库代码：工具函数与组件，经 $lib 别名导入
+│  │  ├─ components/            #   可复用组件
+│  │  ├─ utils/                 #   工具函数
+│  │  └─ server/                #   仅服务端模块（含 server 子目录即禁止客户端导入）
+│  ├─ routes/                   # 文件系统路由（核心）
+│  │  ├─ +page.svelte           #   页面 UI
+│  │  ├─ +page.ts / +page.js    #   通用 load（可浏览器运行）
+│  │  ├─ +page.server.ts        #   仅服务端 load
+│  │  ├─ +layout.svelte         #   布局（包裹子路由）
+│  │  ├─ +layout.ts             #   布局 load
+│  │  ├─ +error.svelte           #   错误页
+│  │  ├─ +server.js             #   端点 / API 路由
+│  │  ├─ [param]/               #   动态路由段
+│  │  └─ [...slug]/              #   剩余（rest）路由
+│  ├─ app.html                   # HTML 模板（单页外壳）
+│  ├─ app.d.ts                   # 全局类型声明（App namespace）
+│  ├─ hooks.server.ts            # 服务端钩子（handle / locals）
+│  └─ hooks.client.ts            # 客户端钩子
+├─ static/                       # 原始静态资源（robots.txt、favicon 等，不改名直出）
+├─ tests/                        # Playwright 浏览器测试（可选）
+├─ .svelte-kit/                  # 自动生成目录，可随时删除重建
+├─ package.json                  # "type": "module"；devDeps: @sveltejs/kit, svelte, vite
+├─ svelte.config.js              # adapter 配置 + vitePreprocess
+├─ vite.config.js                # 使用 @sveltejs/kit/vite 插件
+├─ tsconfig.json                 # 路径别名（$lib 等，由 .svelte-kit 生成）
+└─ .prettierrc / eslint.config.js
+```
+
+> 约定：`src` 是项目主体；除 `src/routes` 与 `src/app.html` 外其余均可选。`src/lib/server/` 下代码被标记为服务端专用，客户端导入会在构建期报错。`static/` 资源尽量少放，优先用 `import` 让 Vite 生成内容哈希文件名以获得更好缓存。
+
+#### 2.4.2 纯 Svelte 组件库 / SPA（Vite 工程）
+
+无 SvelteKit 路由时（如发布独立组件库或嵌入现有系统）：
+
+```text
+my-lib/
+├─ src/
+│  ├─ lib/                       # 组件与工具，对外导出
+│  │  ├─ Button.svelte
+│  │  └─ index.ts
+│  └─ app.svelte / main.ts       # 演示/SPA 入口
+├─ package.json                  # exports 指向编译产物；svelte 字段声明入口
+├─ vite.config.js                # @sveltejs/vite-plugin-svelte
+└─ svelte.config.js
+```
+
+> 发布库推荐用 `@sveltejs/package`（`svelte-package`）打包，并在 `package.json` 配置 `svelte` / `exports` 字段以便消费方获得未编译源码与类型。
 
 ---
 
@@ -945,7 +1011,73 @@ npx sv migrate svelte-5
 
 ---
 
-## 16. 参考文档
+## 16. 常用依赖与库（官方）
+
+### 16.1 核心与框架
+
+| 包 | 作用 | 说明 |
+| --- | --- | --- |
+| `svelte` | Svelte 核心 | 编译器 + 运行时；内置模块见 16.3 |
+| `@sveltejs/kit` | 官方应用框架 | 路由、SSR/CSR/预渲染、load、form actions |
+| `@sveltejs/vite-plugin-svelte` | Vite 插件 | 编译 `.svelte`，纯前端工程也用 |
+| `@sveltejs/package` | 库打包 | `svelte-package` 产出可发布的组件库 |
+| `vite` | 构建工具 | SvelteKit 底层依赖 |
+
+### 16.2 适配器（部署目标，二选一/按需）
+
+| 包 | 目标 |
+| --- | --- |
+| `@sveltejs/adapter-auto` | 默认，自动识别平台（部署前需换成具体适配器） |
+| `@sveltejs/adapter-node` | 独立 Node 服务 |
+| `@sveltejs/adapter-static` | 纯静态站点（SSG） |
+| `@sveltejs/adapter-cloudflare` | Cloudflare Pages/Workers |
+| `@sveltejs/adapter-vercel` | Vercel |
+| `@sveltejs/adapter-netlify` | Netlify |
+
+### 16.3 `svelte` 内置模块（无需额外安装）
+
+| 导入 | 提供 |
+| --- | --- |
+| `svelte` | `onMount` / `onDestroy` / `setContext` / `getContext` / `tick` / `flushSync` 等 |
+| `svelte/store` | `writable` / `readable` / `derived` / `get`（与 runes 并存，兼容用） |
+| `svelte/motion` | `tweened` / `spring`（见 5.5） |
+| `svelte/transition` | `fade` / `fly` / `slide` / `scale` / `blur` / `crossfade` |
+| `svelte/animate` | `flip`（列表重排动画） |
+| `svelte/easing` | `cubicOut` 等缓动函数 |
+| `svelte/attachments` | `attach()` 等附件辅助 |
+| `svelte/compiler` | 可编程编译 API（构建工具内部使用） |
+
+### 16.4 开发工具链（官方）
+
+| 包 | 作用 |
+| --- | --- |
+| `sv`（CLI，原 `create-svelte` / `@sveltejs/cli`） | 创建/升级项目、`sv add` 添加插件 |
+| `svelte-check` | 类型与 Svelte 专属静态检查（`sv check`） |
+| `prettier-plugin-svelte` | 官方格式化器（配合 Prettier） |
+| `eslint-plugin-svelte` | Svelte ESLint 规则 |
+| `@sveltejs/enhanced-img` | 图像优化（`<enhanced:img>`） |
+| `svelte-language-server` / `svelte2tsx` | 编辑器语言服务与类型支持 |
+
+### 16.5 官方 CLI 插件（`npx sv add`）
+
+通过 `npx sv add <name>` 添加的**官方维护**插件：
+
+`ai-tools` · `better-auth`（认证）· `drizzle`（ORM）· `enhanced-img` · `eslint` · `mdsvex`（Markdown+Svelte）· `paraglide`（国际化）· `playwright`（浏览器测试）· `prettier` · `storybook`（组件开发）· `sveltekit-adapter` · `tailwindcss` · `vitest`（单元测试）。
+
+> ⚠️ 社区插件（`sv add` 关键字 `sv-add` 的 npm 包）未经 Svelte 维护者审查，使用需自行评估安全风险。
+
+### 16.6 常用社区生态（按需选用，非官方）
+
+- UI 组件库：`shadcn-svelte`、`Flowbite Svelte`、`Skeleton`（已演进为 `@skeletonlabs/）`、`Bits UI`、`Melt UI`（无样式原语）。
+- 路由（非 SvelteKit 场景）：`svelte5-router`、`@roxi/routify`。
+- 状态/工具：`sveltekit-superforms`（表单）、`zod`（校验）、`tweened`/`spring` 社区动画如 `@neoconfetti/svelte`。
+- 样式：`tailwindcss`（官方插件集成）、`unocss`。
+
+> 团队选型原则：优先官方包与 SvelteKit 内置能力；引入社区库前确认其对 Svelte 5 runes 的兼容性（避免仍依赖 Svelte 4 旧 API 的包）。
+
+---
+
+## 17. 参考文档
 
 - **Svelte 官方文档（中文）**：<https://svelte.js.cn/docs>
 - **Svelte 官方文档（英文）**：<https://svelte.dev/docs>
@@ -962,3 +1094,60 @@ npx sv migrate svelte-5
   - `svelte/skills/svelte5-best-practices/SKILL.md` 及其 `references/`（runes / snippets / events / typescript / migration / sveltekit / performance）
 - **`{@attach}` 参考**：<https://svelte.js.cn/docs/svelte/svelte-attachments>
 - **`{@html}` 安全（OWASP XSS）**：<https://owasp.org/www-community/attacks/xss/>
+- **Svelte 概览**：<https://svelte.dev/docs/svelte/overview>
+- **SvelteKit 介绍**：<https://svelte.dev/docs/kit/introduction>
+- **SvelteKit 项目结构**：<https://svelte.dev/docs/kit/project-structure>
+- **Svelte 官方包列表**：<https://svelte.dev/packages>
+- **Svelte CLI（sv add 插件）**：<https://svelte.dev/docs/cli/sv-add>
+
+---
+
+## 18. 高级开发者：知识盲区与效率清单
+
+面向有经验的开发者，聚焦 Svelte 5 相对其他框架（及 Svelte 4）的语义差异、易错盲区与提效实践。**带 ✅/❌ 的对照同时见 §12。**
+
+### 18.1 响应式语义盲区（最易踩）
+
+1. **解构 `$state` 对象会丢失响应性** ⚠️
+   ```svelte
+   ❌ let { done } = todo;            // 原始值，todo.done 变更 won't 触发更新
+   ✅ todo.done = !todo.done;         // 始终经原代理引用修改
+   ```
+2. **类实例默认不被深度代理** ⚠️：需把字段声明为 `$state`，否则 `instance.count++` 不响应。
+3. **`Set` / `Map` / `Date` / `URL` 需从 `svelte/reactivity` 导入** 才能响应式：
+   ```ts
+   import { SvelteSet, SvelteMap, SvelteDate } from 'svelte/reactivity';
+   ```
+4. **`$effect` 仅在浏览器运行（不 SSR）**，且只追踪**同步读取**的依赖；`await`/`setTimeout` 内的读取不被追踪。
+5. **`$derived` 内禁止副作用**；Svelte 5.25+ 才允许对派生值临时重新赋值（乐观 UI），旧版本只读。
+6. **`untrack` 排除依赖**：在 effect/derived 中读取某项但不希望它成为依赖时用 `untrack(() => ...)`。
+7. **`$state.snapshot` 取静态副本**：跨库（如 `structuredClone`、`JSON.stringify`、传给非响应式库）前先快照，否则拿到 Proxy。
+
+### 18.2 组件通信与规范盲区
+
+8. **回调 props 替代 `createEventDispatcher`**：更类型安全、更直观（§7.1）。
+9. **`bind:` 的 prop 必须 `$bindable()`**，否则父级 `bind:` 静默失效（§4.6）。
+10. **Snippets 替代 `<slot>`**；可选片段渲染必须 `?.()` 空安全（§6）。
+11. **不修改普通 props**（除 `$bindable`）；直接 `obj.x++` 会抛 `ownership_invalid_mutation` 警告（§4.5）。
+
+### 18.3 SvelteKit / SSR 盲区（安全红线）
+
+12. **模块级状态会跨请求泄漏** ⚠️：SSR 单例下用户 A 的数据被 B 覆盖。改用 `event.locals`（hooks.server.ts 写入、load 返回）或 Context（§9.4）。
+13. **`+page.server.ts` 返回值必须可序列化**（JSON），不能返回函数/类实例/DOM 对象（§9.1）。
+14. **load 顺序 `await` = 请求瀑布** ⚠️：无关请求用 `Promise.all` 并行；非关键数据可流式返回（§10.3）。
+15. **客户端专用状态用 `browser` 守卫**（`from '$app/environment'`），避免 SSR 实例化仅浏览器对象。
+
+### 18.4 语法迁移盲区（Svelte 4 → 5）
+
+16. **`on:` 指令与事件修饰符已移除** ⚠️：`on:click|preventDefault` → `onclick={(e)=>{e.preventDefault();...}}`（§5.1）。
+17. **`use:` action 建议迁移为 `{@attach}`** ⚠️：后者天然细粒度响应、teardown 单一函数（§5.4.2）。
+18. **store 在模板仍需 `$store` 自动订阅**；新代码优先 runes，遗留互操作可用 `fromStore`/`toStore`。
+
+### 18.5 提效实践（写得更快更规范）
+
+- **用官方 `sv` CLI 脚手架 + `npx sv add` 一键接入** tailwind/prettier/eslint/playwright/storybook 等，避免手动配错（§2.1、§16.5）。
+- **共享状态沉淀到 `.svelte.ts`** 模块（细粒度、跨组件、可在任意处 import），而非层层 prop 透传（§10.2）。
+- **复杂列表/表单用 `sveltekit-superforms` + `zod`** 统一前后端校验，减少样板。
+- **AI 辅助编码加载官方 MCP / agent skill**（§13），生成代码默认符合 Svelte 5 语法，减少迁移返工。
+- **提交前跑 `sv check` + ESLint + Prettier**，把 §12、§15 作为团队验收红线，杜绝 `on:`、`<slot>`、`createEventDispatcher` 等遗留写法进入仓库。
+- **用 `{#key}` 在值变化时重播过渡**，比手动 `if` 切换更简洁（§5.4.4）。

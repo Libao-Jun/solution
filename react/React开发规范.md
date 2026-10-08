@@ -2,10 +2,18 @@
 
 > 本规范综合 [React 官方文档（中文）](https://zh-hans.react.dev) 的设计理念，以及 Vercel Engineering 的 React / Next.js 性能最佳实践（8 大类、40+ 条规则，按影响程度分级）。目标是让团队在编写、评审、重构 React 代码时有一致的准则，避免常见性能陷阱与反模式。
 
+**适用人群**：① **新手开发者**——把它当作能快速跑通 React 项目的开发指南，按「新手路线」循序学习；② **高级开发者**——用它快速定位知识盲区、规避开发中的典型坑、写出更符合 React 设计理念的代码，重点精读性能与反模式章节。
+
+### 阅读路线
+
+- **新手路线（快速上手）**：`0 → 1 → 3 → 4 → 5`。先跑通最小应用，再理解核心原则，随后掌握组件设计、状态管理与 Hooks 规范，即可独立开发。
+- **高阶路线（查漏/避坑）**：直接精读 `第 6–13 章`（消除瀑布流、包体积、SSR/客户端数据获取、避免重渲染、渲染性能、JS 性能、高级模式），并对照文末「评审必须拦截的反模式」清单自查。日常开发遇到具体场景时按目录检索即可。
+
 ---
 
 ## 目录
 
+0. [快速上手（新手必读）](#0-快速上手新手必读)
 1. [核心原则](#1-核心原则)
 2. [React 18+ 核心特性](#2-react-18-核心特性)
 3. [组件设计基础](#3-组件设计基础)
@@ -19,7 +27,103 @@
 11. [渲染性能（MEDIUM）](#11-渲染性能medium)
 12. [JavaScript 性能（LOW-MEDIUM）](#12-javascript-性能low-medium)
 13. [高级模式（LOW）](#13-高级模式low)
-14. [参考链接](#14-参考链接)
+14. [项目目录结构与生态选型](#14-项目目录结构与生态选型)
+15. [参考链接](#15-参考链接)
+
+---
+
+## 0. 快速上手（新手必读）
+
+本章让零基础开发者在 10 分钟内跑通一个最小 React 应用，并理解最核心的四个概念。已熟悉 React 的开发者可直接跳到第 1 章。完整基础教程见 [React 官方：快速入门](https://zh-hans.react.dev/learn)。
+
+### 0.1 用 Vite 创建并启动项目
+
+```bash
+# 创建 TypeScript 模板项目
+npm create vite@latest my-app -- --template react-ts
+cd my-app
+npm install
+npm run dev      # 启动开发服务器，打开终端提示的本地地址
+```
+
+> 用 `createRoot` 启动应用（见第 2 章 2.1）。入口文件 `src/main.tsx` 已是此写法，无需改动即可开始写组件。
+
+### 0.2 第一个组件（函数组件 + JSX）
+
+React 组件就是一个返回 JSX 的 JavaScript 函数，**首字母必须大写**：
+
+```tsx
+// src/components/Greeting.tsx
+export default function Greeting({ name }: { name: string }) {
+  return <h1>你好，{name}！</h1>
+}
+```
+
+`{name}` 用大括号「回到 JavaScript」嵌入变量（见官方约定）。
+
+### 0.3 用 props 传数据（单向数据流）
+
+父组件通过 `props` 把数据传给子组件；子组件**只读不改**，需要改变时用第 0.4 节的回调通知父级：
+
+```tsx
+// 在 App.tsx 中
+import Greeting from './components/Greeting'
+
+function App() {
+  return <Greeting name="React" />
+}
+```
+
+### 0.4 用 state 管理会变化的数据（useState）
+
+`state` 是组件的「记忆」，会随交互变化并触发重新渲染。更新数组/对象时务必创建新引用（不可变，见第 1 章）：
+
+```tsx
+import { useState } from 'react'
+
+function Counter() {
+  const [count, setCount] = useState(0)
+  // 新值依赖旧值时用函数式更新，永远拿到最新值
+  return <button onClick={() => setCount(c => c + 1)}>点击了 {count} 次</button>
+}
+```
+
+### 0.5 渲染列表必须用 key
+
+用 `array.map` 渲染列表时，每个元素必须带稳定且唯一的 `key`（用数据自身 ID，不要用下标）：
+
+```tsx
+const todos = [{ id: 1, text: '学习 JSX' }, { id: 2, text: '学习 state' }]
+
+function TodoList() {
+  return (
+    <ul>
+      {todos.map(item => <li key={item.id}>{item.text}</li>)}
+    </ul>
+  )
+}
+```
+
+### 0.6 条件渲染
+
+用三元表达式显式返回 `null`，**不要用 `&&` 渲染可能为 `0`/`NaN` 的值**（反模式见第 3 章 3.2）：
+
+```tsx
+function Panel({ isLoggedIn }: { isLoggedIn: boolean }) {
+  return isLoggedIn ? <Dashboard /> : null
+}
+```
+
+### 0.7 下一步学什么
+
+完成上面六步，你已经能写出可运行的 React 应用。接着按「新手路线」深入：
+
+1. **第 1 章 核心原则**：吃透「组件是纯函数 / 不可变数据 / 单向数据流」，这是避免 90% bug 的根基。
+2. **第 3 章 组件设计基础**：不在组件内定义组件、正确条件渲染等初级易错点。
+3. **第 4 章 状态管理**：派生状态在渲染期计算、函数式更新、惰性初始化。
+4. **第 5 章 Hooks 规范**：effect 依赖最小化、交互逻辑放事件处理器。
+
+> 新手最常见的三类错误：① 在组件内部又定义一个组件（丢焦点/动画重启）；② 用 `&&` 渲染出 `0`；③ 直接 `.push()` / `.sort()` 修改 state。这三条在后续章节都有专门讲解与正确写法。
 
 ---
 
@@ -1317,9 +1421,110 @@ function SearchInput({ onSearch }: { onSearch: (q: string) => void }) {
 
 ---
 
-## 14. 参考链接
+## 14. 项目目录结构与生态选型
+
+本章基于 [React 官方「Thinking in React」](https://zh-hans.react.dev/learn/thinking-in-react) 的核心组织原则，给出可落地的项目目录结构，并补充 React 生态中常用的状态管理库、UI 组件库与 Hooks 库，帮助团队在工程化选型时有一致参考。
+
+### 14.1 目录结构设计原则（来自官方）
+
+官方并未强制规定文件夹划分，但明确了以下组织原则，目录结构应据此演进：
+
+- **组件树与数据形状对齐**：后端 JSON API 的结构常自然映射到 UI 组件树（同构形状），目录划分也应贴近业务领域（feature/domain），而非单纯按文件类型。
+- **关注点分离（Separation of Concerns）**：一个组件只专注一件事；随复杂度增长继续拆分子组件。目录上体现为 `components` / `hooks` / `store` / `api` / `utils` 各司其职。
+- **单一数据源 / 状态提升**：共享状态置于最近共同父组件或独立 store，避免多份副本。对应到目录，模块级状态应就近放在该功能域内（`features/xxx/store.ts`），而非散落各处。
+- **先静态后交互**：先构建无 state 的静态可复用组件，再逐步加入 state 与事件流。目录上 `components/ui` 提供与业务无关的原子组件，`features` 负责组合与状态。
+
+### 14.2 推荐的项目目录结构
+
+以 **Vite + React + TypeScript** 的「按功能（feature-based）」组织为例（也是大型项目的推荐结构）：
+
+```text
+src/
+├── main.tsx                 # 应用入口（createRoot 挂载）
+├── App.tsx                  # 根组件 / 路由出口
+├── app/                     # 应用级配置（主题、Provider 装配）
+│   ├── providers.tsx        # 全局 Provider（状态、QueryClient、Router）
+│   └── router.tsx           # 路由表定义
+├── assets/                  # 静态资源（图片、字体、svg）
+├── components/              # 通用复用组件（与具体业务无关）
+│   ├── ui/                  # 基础原子组件（Button、Input、Modal、Table）
+│   └── common/              # 通用组合组件（PageHeader、EmptyState）
+├── features/                # 按业务功能域组织（推荐，贴近数据形状）
+│   └── auth/                # 单一功能模块，内部自包含
+│       ├── components/      # 仅本模块使用的组件
+│       ├── hooks/           # 仅本模块使用的 hooks
+│       ├── api.ts           # 本模块接口请求
+│       ├── types.ts         # 本模块类型定义
+│       └── store.ts         # 本模块状态（如有）
+├── hooks/                   # 跨模块共享的自定义 hooks
+├── lib/ （或 utils/）        # 工具函数、第三方库封装
+├── services/ （或 api/）     # 接口请求层（axios/fetch 封装、拦截器）
+├── store/                   # 全局状态管理（zustand/redux store 定义）
+├── types/                   # 全局 TS 类型 / 接口契约
+├── constants/               # 全局常量（枚举、配置、路由路径）
+├── styles/                  # 全局样式 / 主题变量 / tailwind 配置
+└── pages/ （或 routes/）     # 页面级组件（路由对应的屏幕）
+```
+
+**Next.js（App Router）的差异**：用 `app/` 目录承载路由与页面（每个文件夹即一个路由段，`page.tsx` / `layout.tsx` / `loading.tsx` / `error.tsx` 约定式文件），Server Component 与 Client Component 通过 `"use client"` 边界划分；`features/`、`components/`、`lib/` 等通用目录保持与上述一致。
+
+**分层要点**：
+
+1. **请求层下沉**：所有 `fetch`/axios 调用收敛到 `services/` 或 `features/xxx/api.ts`，组件只调用封装好的方法，便于统一错误处理、缓存与测试（呼应第 9 章客户端数据获取）。
+2. **类型单一来源**：接口返回类型放 `types/` 或各 `features/xxx/types.ts`，组件 props、store、api 共享同一份定义，避免类型漂移。
+3. **状态就近**：局部状态用 `useState`；模块内共享状态放 `features/xxx/store.ts`；真正跨模块全局状态才进 `store/`。
+4. **UI 与业务隔离**：`components/ui` 不依赖任何业务状态，保证可复用与可测试；业务逻辑只在 `features/` 与 `pages/` 中组合。
+
+### 14.3 常用状态管理库
+
+按「状态类型」选择，避免一刀切：
+
+| 类别 | 库 | 适用场景 |
+| --- | --- | --- |
+| 内置 | `useState` / `useReducer` / `Context` | 局部或轻量共享状态；官方首选，无需引入依赖 |
+| 客户端状态（轻量） | **Zustand** | 中小型应用全局状态；API 极简、无 boilerplate、支持 `useSyncExternalStore` |
+| 客户端状态（规范） | **Redux Toolkit (RTK)** | 大型复杂应用；需 devtools、中间件、时间旅行调试、严格规范 |
+| 原子化状态 | **Jotai** / **Recoil** | 细粒度派生状态、表单/配置类场景；自下而上组合 |
+| 响应式对象 | **MobX** | 习惯面向对象、自动追踪依赖的场景 |
+| 服务端/异步状态 | **TanStack Query (React Query)** | 服务端数据缓存、自动重校验、分页/无限加载；与客户端状态库互补 |
+| 表单状态 | **React Hook Form** | 受控/非受控表单、校验、性能优先 |
+
+> 经验法则：**客户端 UI 状态用 Zustand / Redux，服务端异步状态用 TanStack Query**。两者职责不同，不应把服务端数据塞进 Redux。参考第 8/9 章的并发与去重原则，优先用库自带缓存（SWR / TanStack Query）替代手写 `useEffect + fetch`。
+
+### 14.4 常用 UI 组件库
+
+| 库 | 特点 | 适用场景 |
+| --- | --- | --- |
+| **Ant Design** | 企业级、组件齐全、中文友好、设计规范完善 | 中后台 / 管理系统 |
+| **MUI (Material UI)** | Material Design、主题强大、生态成熟 | 通用 Web 应用 |
+| **shadcn/ui** | 基于 Radix + Tailwind，代码直接拷贝进项目、可定制 | 需要高度定制的现代应用 |
+| **Chakra UI** | 样式 props 化、无障碍友好、开发体验好 | 快速搭建、注重 a11y |
+| **Mantine** | 组件丰富、Hooks 齐全、文档优秀 | 通用应用 |
+| **Radix UI** | 无样式（headless）原语、无障碍优先 | 自建设计系统的基础层 |
+| **Semi Design / Arco Design** | 字节出品，企业级、设计一致 | 中后台 |
+
+> 选型注意：优先选支持 **tree-shaking / 子路径导入** 的库，避免第 7 章提到的 barrel 导入拖慢冷启动；Ant Design v5、MUI 等均提供按需能力。
+
+### 14.5 常用 Hooks 库
+
+| 库 | 提供的关键能力 |
+| --- | --- |
+| **TanStack Query** | `useQuery` / `useMutation` / `useInfiniteQuery`——服务端状态获取与缓存 |
+| **SWR** | `useSWR`——轻量请求去重与重校验（见 9.1） |
+| **React Hook Form** | `useForm` / `useController`——高性能表单与校验 |
+| **React Router** | `useNavigate` / `useParams` / `useLocation` / `useSearchParams`——路由与 URL 状态 |
+| **ahooks** | 蚂蚁出品，150+ 业务向 hooks（`useRequest`、`useDebounce` 等） |
+| **usehooks-ts** / **react-use** | TypeScript 友好的通用 hooks 集合（媒体查询、本地存储、防抖等） |
+| **Framer Motion** | `useAnimation`、`useScroll` 等动画相关 hooks |
+
+> 团队应优先沉淀自己的 `hooks/`（如 `useDebounce`、`useLocalStorage`、`useMediaQuery`），仅在确实需要时才引入三方 hooks 库，避免依赖膨胀。自定义 Hook 遵循第 5 章规范：依赖最小化、纯函数式、可重入。
+
+---
+
+## 15. 参考链接
 
 - [React 官方文档（中文）](https://zh-hans.react.dev)
+- [React：用 React 思考（Thinking in React）](https://zh-hans.react.dev/learn/thinking-in-react)
 - [React：你可能不需要 effect](https://zh-hans.react.dev/learn/you-might-not-need-an-effect)
 - [React：移除 effect 依赖](https://zh-hans.react.dev/learn/removing-effect-dependencies)
 - [React Compiler](https://zh-hans.react.dev/learn/react-compiler)

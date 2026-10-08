@@ -1,15 +1,17 @@
 # Vue 开发规范
 
-> 本规范综合官方文档（[Vue 3 中文文档](https://cn.vuejs.org/guide/introduction.html)、[Vue 2 风格指南](https://v2.cn.vuejs.org/v2/style-guide/)）、Vue 官方 AI Skills（vue / vue-best-practices / vue-router-best-practices）以及 antfu 应用开发约定编写。
+> 本规范综合官方文档（[Vue 3 中文文档](https://cn.vuejs.org/guide/introduction.html)、[Vue 2 风格指南](https://v2.cn.vuejs.org/v2/style-guide/)）、Vue 官方 AI Skills（vue / vue-best-practices / vue-router-best-practices）以及 antfu 应用开发约定编写，是一份**兼顾「开发指南」与「开发规范」**的团队手册。
 >
-> 文中所有示例**默认以 Vue 3 + `<script setup lang="ts">` 为准**，凡涉及与 Vue 2 的差异均显式标注 `【Vue 2】` 或 `【Vue 3】`，并在「迁移清单」章节集中对比。
+> **文档定位**：既帮助**新手快速上手 Vue 开发**（照着骨架复制即可起步），也帮助**高级开发者查漏补缺、规避常见坑、写出更规范的代码**。全文同时覆盖 **Vue 2 / Vue 3** 与 **选项式 / 组合式** 两种 API 风格。
+>
+> 文中示例**默认以 Vue 3 + `<script setup lang="ts">` 为准**，凡涉及与 Vue 2 的差异均显式标注 `【Vue 2】` 或 `【Vue 3】`，并在「迁移清单」章节集中对比；标注 ⭐ 的章节为**高频易踩坑点**，建议优先掌握。
 
 ---
 
 ## 目录
 
 - 0. 适用范围与版本选择
-- 1. 工程化与项目脚手架（含 1.4 文件 / 组件命名规范）
+- 1. 工程化与项目脚手架（含 1.4 命名规范、1.5 目录结构、1.6 生态库）
 - 2. 单文件组件（SFC）结构
 - 3. 响应式系统（核心差异）
 - 4. API 风格：选项式 vs 组合式（含对照表）⭐
@@ -32,7 +34,9 @@
 - 21. Vue 2 → Vue 3 迁移清单
 - 22. 参考资料
 
-> **速读建议**：日常开发直接查 §4 对照表（选项式 ↔ 组合式）、§5/§6/§7 高频坑、§1.4 命名规范；维护老项目或迁移时查 §21。全文凡 `【Vue 2】` / `【Vue 3】` 标记处均点明版本差异。
+> **如何使用本文档（按角色取用）**
+> - **新手 · 快速上手路径**：按 `§0 选型 → §1.1/§1.5 脚手架与目录 → §2.1 代码组织骨架 → §4 选项式/组合式对照表 → §5/§6/§7 高频概念 → §13 路由 → §14 状态管理` 顺序通读；直接复制 §2.1 的骨架即可写出第一个规范组件。遇到差异以【Vue 3】示例为准。
+> - **高级 · 查漏 / 提效 / 避坑**：直接查标注 ⭐ 的章节（`§4.3` 对照表、`§5.4` v-model 变更、`§6.1` v-if/v-for 优先级、`§13.2/§13.3` 路由坑）、`§18` 性能、`§19` 安全、`§20` 风格清单、`§21` 迁移清单；用 `【Vue 2】/【Vue 3】` 标记核对自己的版本盲点，`§1.6` 生态库用于技术选型。
 
 ---
 
@@ -128,6 +132,95 @@
 
 - 组合式函数文件：`use` 前缀（`useFetch.ts`、`useMouse.ts`），见 §9。
 - 路由 / store：`kebab-case` 或 `camelCase`，与项目一致即可，但同一项目内统一。
+
+### 1.5 推荐目录结构
+
+以 **Vue 3 + Vite + TypeScript + Pinia + Vue Router** 的 SPA 为例（参考 [Vue 官方文档](https://cn.vuejs.org/) 的组织建议：优先按「模块 / 功能」而非仅按「文件类型」划分）：
+
+```
+my-vue-app/
+├── public/                     # 静态资源（直接拷贝，不进构建），如 favicon.ico
+├── src/
+│   ├── api/                    # 接口请求层（按模块分文件：user.ts、order.ts）
+│   ├── assets/                 # 需构建处理的资源（图片、字体、全局样式）
+│   ├── components/             # 公共 / 业务组件（SFC）
+│   │   └── base/               # 基础组件（BaseButton 等，见 §1.4.6）
+│   ├── composables/            # 组合式函数（useXxx.ts，见 §10）
+│   ├── router/                 # 路由配置（index.ts + 路由守卫，见 §13）
+│   ├── stores/                 # Pinia 状态仓库（useUserStore.ts，见 §14）
+│   ├── styles/                 # 全局样式 / 变量 / mixin
+│   ├── types/                  # 全局 TS 类型声明（*.d.ts、接口定义）
+│   ├── utils/                  # 无状态纯工具函数（格式化、校验，见 §10.3）
+│   ├── views/ 或 pages/        # 路由级页面组件（与路由表一一对应）
+│   ├── layouts/                # 布局组件（含 <router-view>，如 DefaultLayout）
+│   ├── plugins/                # 第三方插件注册（i18n、axios 实例等）
+│   ├── App.vue                 # 根组件
+│   └── main.ts                 # 应用入口（创建 app、挂载 router/store/插件）
+├── tests/                      # 单元测试 / e2e（也可放 src 内）
+├── index.html                  # Vite 入口 HTML
+├── vite.config.ts              # Vite 配置
+├── tsconfig.json               # TS 配置
+├── package.json
+└── eslint.config.js            # 见 §1.3
+```
+
+**组织原则**（官方建议）：
+- **优先按功能（feature）聚合**：把同一业务相关的组件、composable、api、store 放在同一目录下（如 `features/checkout/`），避免所有文件平铺在 `components/` 下难以维护。
+- **公共与业务分离**：`components/` 放可复用公共组件；页面专属组件就近放在对应 `views/xxx/` 内。
+- **`composables/` 与 `utils/` 严格区分**：有状态的用 composable（`use` 前缀），纯函数放 `utils/`（见 §10.3）。
+- **`api/` 与 `stores/` 解耦**：store 调用 api 层，组件只依赖 store，不在组件中散落请求。
+
+### 1.6 常用生态库
+
+按开发链路分类，并标注 Vue 2 / Vue 3 兼容性：
+
+**状态管理**
+| 库 | 适用版本 | 说明 |
+|----|---------|------|
+| Pinia | Vue 3（兼容 Vue 2.7） | 官方推荐，无 mutations、TS 友好、组合式写法，见 §14 |
+| Vuex | Vue 2（3.x）/ Vue 3（4.x） | 老项目存量；新项目用 Pinia |
+| pinia-plugin-persistedstate | Vue 3 | 状态持久化到 localStorage |
+
+**UI 组件库**
+| 库 | 适用版本 | 特点 |
+|----|---------|------|
+| Element Plus | Vue 3 | 国内最常用，组件全 |
+| Element UI | Vue 2 | Element Plus 的 Vue 2 版 |
+| Ant Design Vue | Vue 3（4.x）/ Vue 2（1.x，已停更） | 企业中后台 |
+| Naive UI | Vue 3 | TS 一等公民、主题灵活、按需加载 |
+| Vuetify | Vue 3（3.x）/ Vue 2（2.x） | Material Design 风格 |
+| Arco Design Vue | Vue 3 | 字节出品 |
+| Vant | Vue 2 / Vue 3 | 移动端首选 |
+| Quasar | Vue 3 / Vue 2 | 含构建、移动/桌面一体的全栈 UI 框架 |
+| PrimeVue | Vue 3 | 丰富主题 |
+| Radix Vue / Reka UI | Vue 3 | 无样式（headless）原语，配合 Tailwind 自建 |
+
+**Hooks / 组合式函数库**
+| 库 | 说明 |
+|----|------|
+| VueUse（`@vueuse/core`） | 最常用，数百个即用 composable（鼠标、网络、传感器、组件生命周期等） |
+| VueUse Motion | 动画 composable |
+| VueRequest / `useFetch` | 数据请求类（也可自写，见 §10） |
+
+**构建 / 工程工具**
+| 库 / 工具 | 说明 |
+|-----------|------|
+| Vite | 官方推荐构建工具，冷启快、HMR 好，见 §1.1 |
+| Vue CLI | Vue 2 时代脚手架（已停止主版本更新），仅维护老项目 |
+| Nuxt | 基于 Vue 3 的 SSR/SSG 全栈框架，见 §0 |
+| `@vitejs/plugin-vue` | Vite 的 Vue SFC 插件（Vite 项目默认集成） |
+| unplugin-auto-import / unplugin-vue-components | 自动按需导入 API 与组件，减少样板代码 |
+| vite-plugin-vue-devtools | 集成 Vue DevTools |
+| Vitest | 基于 Vite 的单元测试（官方推荐） |
+| Webpack / Rspack | 非 Vite 的备选打包器（老项目 / 特殊需求） |
+
+**其它常用**
+- 路由：Vue Router（见 §13）
+- 样式：Tailwind CSS / UnoCSS（原子化）、Sass（预处理）
+- 国际化：Vue I18n
+- 代码质量：ESLint + `eslint-plugin-vue`、Prettier、TypeScript
+
+> **选型原则**：新项目默认 **Vite + Vue 3 + Pinia + Vue Router + VueUse +（按需）Element Plus / Naive UI**；移动端用 Vant；需 SSR/SEO 用 Nuxt。
 
 ---
 

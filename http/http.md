@@ -1,7 +1,7 @@
 # HTTP / HTTPS 核心知识手册
 
-> 参考资料：[MDN Web Docs - HTTP](https://developer.mozilla.org/zh-CN/docs/Web/HTTP)、[ITBook HTTP 中文手册](https://itbook.team/book/http/)
-> 面向角色：中高级前端工程师。不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**。
+> 参考资料：[MDN Web Docs - HTTP](https://developer.mozilla.org/zh-CN/docs/Web/HTTP)、[ITBook HTTP 中文手册](https://itbook.team/book/http/)、[前端面试知识库 - Network](https://libao-jun.github.io/interview/docs/fundamentals/network/)
+> 面向角色：中高级前端工程师。不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**，并补充传输层/网络层基础与协议设计 trade-off。
 
 ---
 
@@ -15,6 +15,7 @@
 6. [跨域与安全](#六跨域与安全)
 7. [HTTPS 与传输安全](#七https-与传输安全)
 8. [性能优化与调试实践](#八性能优化与调试实践)
+9. [计算机网络基础与传输层补充](#九计算机网络基础与传输层补充)
 
 ---
 
@@ -298,6 +299,7 @@ HTTP/2 解决了**应用层** HOL，但**仍存在 TCP 层 HOL**：所有流共�
 
 - 把传输层从 **TCP 换成 QUIC（跑在 UDP 上）**。QUIC 内置可靠传输、加密、多路复用。
 - **彻底解决 TCP 层 HOL**：QUIC 的流在传输层独立，一个流丢包**不阻塞其他流**。
+- **头部压缩 QPACK**：HTTP/3 用 QPACK（HPACK 在 UDP 上的适配版）压缩头部——因为 UDP 无序，需额外机制保证头部表同步，故不能用 HTTP/2 的 HPACK 直接套。
 - **0-RTT 连接建立**：基于之前会话的 PSK（预共享密钥）恢复，首个请求即可带数据，握手延迟降到最低（重连极快）。
 - **连接迁移（Connection Migration）**：用 **Connection ID** 标识连接，切换网络（如 WiFi→4G，IP 变了）时连接不中断，传统 TCP 基于"IP+端口"四元组做不到这点。
 - 代价：UDP 可能被某些老旧网络设备/防火墙丢弃，需服务端/运营商支持。
@@ -484,12 +486,14 @@ Access-Control-Max-Age: 86400        ← 缓存预检 24h，减少 OPTIONS 次�
 
 - **XSS（跨站脚本）**：攻击者注入恶意脚本到页面执行（窃取 Cookie、Token、钓鱼）。
 - **CSP（Content-Security-Policy）**：白名单控制可加载/执行的资源源，从根上限制脚本注入：
+
   ```
   Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-abc'; img-src 'self' data:;
   ```
 
   - `script-src 'self'` 禁止行内脚本与第三方脚本；`'nonce-xxx'` / `'sha256-xxx'` 精确放行可信脚本。
   - 配合 `X-XSS-Protection`（已废弃，交给 CSP）使用。
+
 - 防 XSS 还要：输出转义、避免 `innerHTML` 拼用户输入、Token 放 `HttpOnly` Cookie。
 
 ### 6.6 点击劫持与 X-Frame-Options / frame-ancestors
@@ -609,6 +613,124 @@ Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 2. **缓存不生效 / 改了不生效**：① 静态资源是否带**内容 hash**（没 hash 又被长缓存就 stalе）；② HTML 是否 `no-cache`；③ Service Worker 是否未 `skipWaiting` 仍用旧缓存；④ 浏览器磁盘缓存（DevTools 勾 Disable cache 验证）；⑤ CDN 节点未 purge。
 3. **证书错误**：浏览器红字（NET::ERR*CERT*...）。原因：证书过期/域名不匹配/自签名未信任/系统时间错误。调试用代理需安装并信任代理 CA；生产必须用合法 CA 证书。
 4. **混合内容（Mixed Content）**：HTTPS 页面加载 **HTTP 子资源**（脚本/iframe/图片）会被浏览器**拦截**（active 必拦，passive 现代也多拦截并自动升级）。解决：全站 HTTPS，或用代理/相对协议把子资源也升级为 https；可用 CSP `upgrade-insecure-requests` 让浏览器自动把 http 子资源升级为 https。
+
+---
+
+## 九、计算机网络基础与传输层补充
+
+> 前端面试与排障常要求"讲清协议设计的 trade-off"。本节补齐上一层（传输层 / 网络层）与前文未展开的基础：OSI/TCP-IP 模型、TCP vs UDP、三次握手/四次挥手、DNS、WebSocket、运营商劫持。它们与第 3、7、8 章直接关联。
+
+### 9.1 OSI 与 TCP/IP 模型
+
+| OSI 七层   | TCP/IP 四层 | 典型协议                            | 各层职责                                     |
+| ---------- | ----------- | ----------------------------------- | -------------------------------------------- |
+| 应用层     | 应用层      | **HTTP/HTTPS、DNS、WebSocket、FTP** | 为应用提供网络服务（我们的请求报文就在这层） |
+| 表示层     | 应用层      | TLS（加密/编码）                    | 数据格式、加密解密、压缩                     |
+| 会话层     | 应用层      | —                                   | 建立/管理/终止会话                           |
+| 传输层     | 传输层      | **TCP、UDP**                        | 端到端连接、**端口寻址**、可靠/不可靠传输    |
+| 网络层     | 网络层      | **IP、路由协议**                    | IP 寻址与路由转发                            |
+| 数据链路层 | 网络接口层  | Ethernet、Wi-Fi                     | 相邻节点帧传输、MAC 地址                     |
+| 物理层     | 网络接口层  | 光纤/双绞线                         | 比特流在物理介质上传输                       |
+
+**前端为什么要懂**：
+
+- HTTP 在**应用层**，TLS 在表示层（夹在 HTTP 与 TCP 之间），TCP/UDP 在**传输层**——这就是"HTTPS = HTTP over TLS over TCP"的层叠关系。
+- 排障时按层定位：连不上（物理/网络层）、握手慢（传输层 TCP/TLS）、状态码/跨域（应用层 HTTP）。
+- 一个 TCP 连接由 **源 IP:端口 + 目的 IP:端口** 四元组唯一标识（HTTP/3 改用 Connection ID，见 3.3）。
+
+### 9.2 TCP vs UDP
+
+| 维度          | TCP                                       | UDP                                        |
+| ------------- | ----------------------------------------- | ------------------------------------------ |
+| 连接性        | **面向连接**（先握手）                    | **无连接**                                 |
+| 可靠性        | 可靠、有序、重传丢包、去重                | 不可靠、可能丢/乱序、无重传                |
+| 速度/开销     | 慢、握手+确认开销大                       | 快、头部小（8 字节）                       |
+| 数据边界      | 字节流（无边界，需应用自己分包）          | 数据报（保留边界）                         |
+| 拥塞/流量控制 | 有（滑动窗口）                            | 无                                         |
+| 典型场景      | **HTTP、文件传输、WebSocket、数据库连接** | **DNS 查询、直播、实时音视频、游戏、QUIC** |
+
+**选择策略**：数据重要/不能丢 → TCP；实时性优先、丢一点也无妨 → UDP；强交互（聊天/协同）→ TCP（或基于 UDP 的 QUIC）。
+
+### 9.3 三次握手与四次挥手
+
+**建立连接（三次握手）**
+
+```
+Client  ── SYN ───────────────────▶  Server   ① 客户端：我想连，初始序号 x
+Client  ◀── SYN + ACK ────────────  Server   ② 服务端：收到，我也想连，序号 y，确认 x+1
+Client  ── ACK ───────────────────▶  Server   ③ 客户端：确认收到，开始传数据
+```
+
+- **为什么不是两次？** 若为两次，服务端在发完 `SYN+ACK` 后就会认为连接已建立；但若这个包**丢失或迟到**，服务端会一直为"已建立"的无效连接分配资源（半开连接堆积），易被 **SYN Flood 攻击**耗尽。第三次 ACK 让服务端确认"客户端确实收到了我的响应"，连接才真正建立。
+
+**断开连接（四次挥手）** —— TCP 是**全双工**，两个方向需各自关闭：
+
+```
+Client  ── FIN ───────────────────▶  Server   ① 客户端：我没数据要发了（仍可收）
+Client  ◀── ACK ──────────────────  Server   ② 服务端：知道你发完了（此时服务端可能还有数据要发）
+Client  ◀── FIN ──────────────────  Server   ③ 服务端：我也发完了
+Client  ── ACK ───────────────────▶  Server   ④ 客户端：确认，进入 TIME_WAIT
+```
+
+- **为什么不是三次？** 服务端收到 `FIN` 后，可能**还有未发完的数据**，所以 `ACK`（确认收到关闭请求）和 `FIN`（我也关了）不能合并，必须分两次发——故为四次。
+- **TIME_WAIT**：客户端发完最后 ACK 后进入 `TIME_WAIT`（默认 2×MSL，约 1–4 分钟），确保最后的 ACK 能到达、并让旧连接的残留报文在网络中消亡，避免新连接收到旧数据。高并发短连接服务器上 `TIME_WAIT` 过多会占满端口，需 `SO_REUSEADDR` 或调整内核参数。
+
+### 9.4 DNS 解析流程与优化
+
+**解析步骤（从近到远）**：
+
+1. 浏览器 DNS 缓存 → 2. 系统缓存（`hosts` 文件）→ 3. 路由器缓存 → 4. **ISP 本地 DNS（递归查询）** → 5. 根 DNS（返回顶级域服务器）→ 6. 顶级域 DNS（如 `.com`）→ 7. **权威 DNS**（域名注册商处，返回真实 IP）。
+
+**前端优化**：
+
+- `<link rel="dns-prefetch" href="https://cdn.example.com">`：提前做 DNS 解析，缩短首链请求延迟。
+- `<link rel="preconnect" href="https://cdn.example.com">`：更进一步，提前完成 DNS + TCP + TLS（含 SNI/ALPN），对关键第三方源收益最大（见 8.1）。
+- 注意：滥用 `preconnect` 会占用 socket 与 TLS 握手资源，仅用于真正关键且确定要用的源。
+
+### 9.5 WebSocket
+
+- **是什么**：基于 TCP 的**全双工**、长连接通信协议，初始通过 HTTP **`101 Switching Protocols`** 握手升级（`Upgrade: websocket`），之后脱离 HTTP 语义，双方可随时主动发消息。
+- **握手请求**：
+  ```http
+  GET /chat HTTP/1.1
+  Host: example.com
+  Upgrade: websocket
+  Connection: Upgrade
+  Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+  Sec-WebSocket-Version: 13
+  ```
+  服务端回 `101` + `Sec-WebSocket-Accept`（对 key 做固定签名）即升级成功。
+- **ws vs wss**：`ws://`（明文，类似 http）、`wss://`（加密，类似 https，**生产必用**）。
+
+**与 HTTP / SSE 对比**：
+
+| 维度     | HTTP（含 fetch/XHR） | SSE（EventSource）               | WebSocket                       |
+| -------- | -------------------- | -------------------------------- | ------------------------------- |
+| 通信模式 | 请求—响应（半双工）  | 服务器**单向**推送               | **全双工**双向                  |
+| 协议     | HTTP                 | HTTP（流式 `text/event-stream`） | 独立 ws 协议（经 101 升级）     |
+| 连接     | 短（或 keep-alive）  | 持久、自动重连                   | 持久、需自管重连                |
+| 数据类型 | 任意                 | 文本（UTF-8 流）                 | 文本/二进制（Blob/ArrayBuffer） |
+| 适用     | 普通 CRUD            | 通知、日志流、行情               | 聊天、协同编辑、游戏            |
+
+**实战要点**：
+
+- 必须自己实现**心跳（ping/pong）**维持长连接（避免被代理/NAT 超时断开）与**断线重连**（指数退避 + 重连上限）。
+- 用 `wss://` 并配合 CSRF/鉴权（连接的 Query/String 里带 token，因为 WebSocket 不走常规 CORS，但同源策略与 Cookie 仍适用）。
+- 弱网/兼容性要求高时，可用 **SSE（单向）** 或**长轮询**作为降级方案。
+
+### 9.6 运营商劫持与防护
+
+**两类典型劫持**：
+
+- **DNS 劫持**：运营商/恶意中间人伪造 DNS 响应，把你的域名解析到广告/钓鱼 IP（表现为"访问正常网站却跳到一个陌生页"）。根因是 DNS 查询默认**明文且无验证**。
+- **HTTP 内容劫持（注入）**：在明文 HTTP 响应里**插入广告 JS / iframe**（页面底部莫名多出推广条幅）。根因是 HTTP 内容可被中间人任意篡改。
+
+**防御手段**：
+
+- **全站 HTTPS + HSTS**：加密使中间人无法读取/篡改内容；HSTS（见 7.6）强制 HTTPS，杜绝明文入口。这是最有效的手段。
+- **DNSSEC**：给 DNS 响应加数字签名，让递归解析器能验证"这个 IP 确实是权威 DNS 返回的、没被伪造"，防 DNS 劫持（但部署依赖全链路支持）。
+- **证书固定 / 证书透明度（CT）**：关键应用可 pin 证书公钥，异常证书立即告警（见 7.7）。
+- 前端侧能做的是：**所有外链资源走 HTTPS、开启 CSP（见 6.5）、警惕第三方脚本注入的广告**。
 
 ---
 

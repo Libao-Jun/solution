@@ -47,9 +47,11 @@ header img[alt='Solution'],
    ========================================================================== */
 
 :root {
-  --site-layout-width: 90rem; /* 1440px */
+  /* --site-layout-width: 90rem; 1440px = 90rem x 16 */
+  /* --site-doc-width: 688px; */
+  --site-layout-width: 100rem; /* 1600px = 100rem x 16 */
   --site-sidebar-width: 272px;
-  --site-doc-width: 688px;
+  --site-doc-width: 900px;
   --site-aside-width: 224px;
 }
 
@@ -59,12 +61,29 @@ header img[alt='Solution'],
   --vp-sidebar-width: var(--site-sidebar-width);
 }
 
-/* 内容区总宽（文档页 .content-wrapper 与首页营销区 .wrapper 共用同一数值） */
+/*
+ * ★ 全站横向边界统一（一个数值管住所有横线）★
+ *
+ * 必须覆盖的两类容器：
+ *   .content-wrapper  文档页内容区（左侧导航 + 正文 + 右侧「本页目录」）
+ *   .wrapper          页头 / 页脚 / 首页营销区所有 section
+ *
+ * ⚠️ 这里**不能**写成 `.marketing-layout .wrapper`：
+ *    页头（header.wrapper）由 Layout.vue 渲染在 .marketing-layout **之外**，
+ *    文档页更不存在 .marketing-layout；主题又给 .wrapper 写死了
+ *    `min-[90rem]:max-w-[90rem]`（1440px），只覆盖 marketing 后代会让页头
+ *    比内容区窄 160px，横向竖线全部对不齐。
+ */
 @media (min-width: 768px) {
   .content-wrapper,
-  .marketing-layout .wrapper {
+  .wrapper {
     max-width: min(calc(100vw - 2rem), var(--site-layout-width)) !important;
   }
+}
+
+/* 移动端「Menu / 本页目录」本地导航条（VPLocalNav）的容器，同样跟随总宽（主题写死 90rem） */
+.VPLocalNav .container {
+  max-width: min(calc(100vw - 2rem), var(--site-layout-width)) !important;
 }
 
 /* 左侧导航列宽 */
@@ -74,12 +93,18 @@ header img[alt='Solution'],
   }
 }
 
-/* 正文列宽 + 右侧「本页目录」宽度 */
-@media (min-width: 1280px) {
-  .VPDoc.has-aside .content-container {
-    max-width: var(--site-doc-width) !important;
-  }
+/*
+ * 正文列宽：**不要放进任何断点**。
+ * 主题自带的 `.VPDoc.has-aside .content-container { max-width: 688px }` 是没有断点的，
+ * 若把覆盖写在 @media (min-width:1280px) 里，1024–1279px（以及右侧目录隐藏的区间）
+ * 就会落回写死的 688px，`--site-doc-width` 形同失效。
+ */
+.VPDoc .content-container {
+  max-width: var(--site-doc-width) !important;
+}
 
+/* 右侧「本页目录」宽度（该栏仅在 ≥1280px 显示） */
+@media (min-width: 1280px) {
   .VPDoc .aside {
     max-width: calc(var(--site-aside-width) + 32px) !important;
   }
@@ -89,9 +114,17 @@ header img[alt='Solution'],
   }
 }
 
-/* 窄屏下的正文容器 */
+/* 移动端抽屉式侧边栏宽度，同样跟随 --site-sidebar-width（主题写死 max-width: 320px） */
+@media (max-width: 1023px) {
+  .VPSidebar {
+    width: var(--site-sidebar-width) !important;
+  }
+}
+
+/* 无侧边栏布局下的正文容器（主题还写死了 .container 的 992px / 1104px） */
 @media (min-width: 1024px) {
-  .VPDoc:not(.has-sidebar) .content {
+  .VPDoc:not(.has-sidebar) .content,
+  .VPDoc:not(.has-sidebar) .container {
     max-width: calc(var(--site-doc-width) + 64px) !important;
   }
 }

@@ -1,7 +1,7 @@
 # AGENTS.md
 
 > 本文件是本仓库的**代理工作规范（规范 / 边界 / 流程）**，面向在本仓库中执行任务的 AI 助手与协作者。
-> 站点介绍、首页结构与样式约定见 `README.md`；本文件不重复介绍，只回答三件事：**能改什么（边界）、怎么写（规范）、按什么顺序做（流程）**。
+> 站点介绍与首页区块清单见 `README.md`；首页改动细则（等距图 / 网格边框）见本文件 §2.6。本文件不重复介绍，只回答三件事：**能改什么（边界）、怎么写（规范）、按什么顺序做（流程）**。
 >
 > **第一条铁律（先读这条）：修样式、补内容、加需求，都不得影响既有正常功能；任何已修复过的 bug 都不得在后续改动中被覆盖或回退。** 详见 §2.4 与 §2.5。
 >
@@ -64,7 +64,7 @@
 - 新增**内容分类**（新开一个顶层目录，如 `ai/`）——涉及 nav、sidebar、footer、首页、README 五处联动。
 - 删除或重命名**已存在的路由**（`/分类/主题/`）——会破坏站内/外部链接与锚点。
 - 大规模重排导航顺序、或改动 `styles.css` 里的布局宽度变量。
-- 改动首页组件结构与 Tailwind 网格边框写法（易触发「缺边框」回归，见 README 的网格约定）。
+- 改动首页组件结构与 Tailwind 网格边框写法（易触发「缺边框」回归，细则与自查口径见 §2.6、防回归条目见 §2.5）。
 
 ### 2.4 ★ 不可回退原则（回归红线）
 
@@ -86,6 +86,7 @@
 | `.vitepress/theme/index.ts`               | `themeContextKey` 覆盖 `logoDark/logoLight/footerBg/monoIcon`                                                       | 删掉覆盖导致品牌资源失效                          |
 | `.vitepress/theme/Layout.vue`             | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏                                                       | 移除该同步逻辑                                    |
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
+| 首页动效（`animations/motion.ts` + 各组件的 `useMotion()`） | 入场起点一律由 `gsap.from()` 在 JS 侧生成（CSS **不得**先把元素隐藏）；命中 `prefers-reduced-motion` 时一个动画都不建；GSAP/ScrollTrigger 只能动态 `import()`；每个用 `useMotion()` 的根节点必须带 `data-motion-scope`（否则父组件会把子组件的 `data-reveal` 收进来重复建 tween） | 用 CSS 先隐藏再由 JS 显形（JS/GSAP 失败 = 整块内容不可见）；去掉 scope 判定导致同一元素被建两份动画互相抢 opacity |
 | `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
 | `.vitepress/config.mts` `base`            | 按 `process.env.CI` 切换：CI 用 `/solution/`（GitHub Pages 子路径），本地 dev/preview 用 `/`                        | 写死 `/` 导致 Pages 上静态资源全 404              |
 | 主题组件 / `config.mts` 的根路径链接与资源 | 一律经 `withBase()` 补 `base`（VitePress **只**给 Markdown 正文链接自动补 base；组件、`head`、页脚导航都不会）      | 写成裸 `/xxx`，CI 子路径部署下 404                |
@@ -96,6 +97,54 @@
 | 子路径部署下的站内链接                    | 组件内 `<a :href>` 一律走 `withBase()`；`head` 的 favicon 与页脚 `footer.nav` 在 `config.mts` 里用本地 `withBase()` 拼 base；主题包写死的 Logo 链接在 `Layout.vue` 里按 base 纠正 | 直接写 `/xxx/`，子路径部署下链接与 favicon 全 404 |
 
 > 遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
+
+### 2.6 首页改动细则（等距图 / 网格边框 / 动效，改动前必读）
+
+> 首页最容易踩坑、且反复修复过的两块是等距图 `StackIsometric.vue` 与首页网格边框。改动这两处前先读完本节；对应的防回归条目见 §2.5，仓库只在这里维护这部分实现细节（`README.md` 仅保留首页区块清单）。
+
+> ⚠️ **等距图 `StackIsometric.vue`（改动前必读）**
+>
+> - **内容**：每个方块都必须是仓库里已有的一篇文档，数据取 `data/topics.ts` 的 `categories`，不要另写标题 / 链接。
+> - **几何**：2:1 等距投影；厚度用「同一圆角矩形向下偏移 `DEPTH` 叠两层」实现，不要手算六顶点（圆角处必出接缝）；台面要外扩 `FACE_PAD`。
+> - **文字**：方块标签用 `textMatrix()`（切变保持很小 ≈13°，切变越大会让中文越糊）；只有台面前沿的长文字才用
+>   `isoMatrix()`（字号约 26 并补 `letter-spacing` 约 7，否则相邻字糊成一团）。
+>   ⚠️ **中文发虚的三个成因（都已修，改动前先看）**：① SVG **渲染宽度不是 `viewBox` 宽度的整数倍**——
+>   曾用 `max-w-[76rem]`(1216) 渲染、缩放 0.95，字形落在半像素上；现在 `max-w-[80rem]`(1280) 与 `viewBox`
+>   **1:1**。② 未开 `text-rendering: geometricPrecision`（默认 `auto` 会把带切变的字形吸附到像素网格）。
+>   ③ 字号过小：标签字号整体上调 1px（卡片 12 / 13.5，方块 13 / 14.5 / 16）。
+>   自查口径：`svg 渲染宽度 ÷ viewBox 宽度 = 1`、`text-rendering = geometricprecision`、最长标签 68px 且无溢出。
+> - **线网**：方块必须落在导轨上，一条线只画一次，不要「先拉长辅助线、再给每块加分支线」。
+>   导轨外端**不写死偏移量**，由 `Math.min(...cubes.map(c => c.at))` 推导，取该导轨上最外侧方块的**中心**：
+>   手写偏移极易多伸出一截，在方块之外留下一条断头线（就是「末端多出了线条」），
+>   或画到 `viewBox` 外被 `overflow: hidden` 齐平切掉（「超出容器宽度」，曾把 `from` 写成 -900，外框宽出 402px / 291px）。
+>   实测口径：每条导轨端点 → 最近方块中心距离应为 **0px**（当前 4 条均为 0）。
+> - **动画**：入场 `iso-in` → 导轨 `iso-draw` → 常驻 `iso-float`；CSS `transform` 会覆盖 SVG 的 `transform` 属性，动画必须挂在外层 `<g>` 上；`prefers-reduced-motion` 时直接呈现终态。
+> - **自适应与紧凑度**：固定 `viewBox`（`min-w-[44rem]` + 外层 `overflow-x-auto`），**所有几何都要落在
+>   `viewBox` 内**：方块中心屏幕 y = 250 + 0.5·(x + y)，太靠外会被上沿裁掉（Vue / 小程序 曾被顶出画布）；
+>   导轨只比最外侧方块多伸约 65 单位。想更紧凑就**整体缩小方块 + 拉近与平台的距离**（同一导轨上相邻方块
+>   中心间距别小于约 105，方块长对角线 = 0.866·(SAT_W+SAT_H) ≈ 123，再近会互相压住），不要去压边距。
+>   改完实测「图形外框 vs 画布盒」：当前左右余量 214px / 150px、上下 28px / 12px、图形占宽 73%，
+>   且 `scrollWidth === clientWidth`（无横向溢出）。
+
+> ⚠️ **网格约定：边框与外框连续性（改动首页前必读）**
+>
+> - Tailwind 的 `divide-x` / `divide-y` 只给「除第一个子元素外」的子元素加边框：单列 / 单行用它永远正确，
+>   **会换行的网格只有「单元格数量整除列数」时才正确**（3 格 3 列、4 格 2×2、2 格 2 列）。
+> - 条目多的列表放进格子里做单列 `divide-y`，不要再堆一层卡片网格；横向网格补 `divide-x-0 <bp>:divide-x`，避免窄屏堆叠时多出左边框。
+> - 每个区块都是 `<section class="wrapper border-t">`（`.wrapper` 给左右竖线、`border-t` 给顶部分隔线），外框必须一路不断线：
+>   不要照搬参考站的空白 `Spacer.vue`（会在页尾留下不封口的空框），除刻意全宽通栏外不要给中间区块加 `md:border-none`。
+> - **自查**：构建后用无头浏览器统计「空的带边框块」（无文字/图片、四条边任一有边框、宽 ≥200 且高 ≥24）应为 **0**。
+
+> ⚠️ **首页动效（GSAP，改动前必读）**
+>
+> - **唯一入口**是 `.vitepress/theme/animations/motion.ts`（组件不要各自 `import gsap`）：GSAP 与 ScrollTrigger **只在浏览器端动态 `import()`**（不进入首屏 entry chunk，构建期不求值），组件一律用 `useMotion()` 挂载，卸载（含 SPA 切路由）时自动 revert 内联样式与 ScrollTrigger。
+> - ★ **不得用 CSS 先隐藏元素再等 JS 显形**：入场起点只能由 `gsap.from()` / `fromTo()` 在 JS 侧生成——JS / GSAP 失败时页面必须是完整静态内容（这是首页「白屏」类事故的根因）。
+> - 命中 `prefers-reduced-motion: reduce` 时**一个动画都不建**，直接呈现静态终态；实测口径：无任何内联样式、全部元素 `opacity = 1`。
+> - 标记约定：`data-reveal`（可选 `up`（默认）/ `scale` / `left` / `right`）做滚动入场，分组容器取最近的 `[data-reveal-group]` 或 `<section>`；`data-count` 做数字滚动（从 SSR 文本里解析数字，回填时保留前后缀）；Hero 用 `data-hero-step`（按 DOM 顺序错落）与 `data-hero-cta`（按钮组磁吸）。
+> - ★ **每个用 `useMotion()` 的组件根节点必须带 `data-motion-scope`**：`revealOnScroll()` 只处理「最近 scope 祖先 === 本 root」的 `[data-reveal]`。漏掉会让 `Home.vue` 把子组件（等距图 / 快速开始 / 工具栏）的标记一起收进来，同一元素被建两份 tween 互相抢 opacity（症状：滚到底后部分文案仍 `opacity: 0`）。
+> - **SVG 元素**：CSS transform 会覆盖 SVG 的 `transform` 属性——带等距矩阵 / `translate(...)` 的元素（等距图方块、内容地图卡片组）只能动画其**没有 transform 属性**的外层 `<g>`，或改用透明度；等距图方块的悬停缩放挂在 `<a class="iso-tile">` 上（内部 `.float` 跑 CSS 漂浮，是不同元素，互不覆盖）。
+> - Hero CTA 的磁吸位移需要 CSS 让路：`styles.css` 第 7 段的 `.marketing-layout [data-hero-cta] .button { transition-property: … }` 把 `transform` 从过渡属性里摘掉（**必须保留 `scale`**，否则主题的 `hover:scale-105` 会失效）。
+> - **复现口径**：`pnpm run build` 后静态托管 `.vitepress/dist`，无头 Edge + CDP 慢速滚到底，断言「`[data-reveal]` / `[data-hero-step]` 全部 `opacity ≥ 0.95`」「`data-count` 回到原值」「`[data-panel-window]` / `[data-map-card]` 为 1」；再用 `Emulation.setEmulatedMedia` 模拟减少动态效果，断言无内联样式且全部可见。
 
 ---
 
@@ -162,7 +211,7 @@
 - 自定义主题入口 `.vitepress/theme/index.ts`；页面布局覆写在 `Layout.vue`；样式集中在 `styles.css`。
 - 全局宽度只改 `styles.css` 的「布局宽度统一配置」段（`--site-layout-width` 等 4 个变量），改一处全站生效。
 - 首页数据只改 `.vitepress/theme/data/topics.ts`（索引与统计）与 `terminal.ts`（终端演示）。
-- 首页带边框网格：**单元格数必须整除列数**（3 格 3 列、4 格 2×2、2 格 2 列）；多条目列表放进格子内做单列 `divide-y`；横向网格补 `divide-x-0 <bp>:divide-x`。
+- 首页带边框网格：**单元格数必须整除列数**（3 格 3 列、4 格 2×2、2 格 2 列）；多条目列表放进格子内做单列 `divide-y`；横向网格补 `divide-x-0 <bp>:divide-x`（改动细则与自查口径见 §2.6）。
 - `topics.ts` 的 `docCount` / `roadmapCount` / `categoryCount` 必须与实际情况同步，不能留旧值。
 - **SEO 只在 `config.mts` 维护**：站点标题 / 描述 / 语言取自 `siteTitle`、`siteDescription`、`siteLang`；
   `canonical` / `sitemap` / `og:url` 的唯一基准是 `siteUrl`（与 `base` 解耦，换域名只改这一处，或用 `SITE_URL` 覆盖且末尾带 `/`）；
@@ -371,7 +420,7 @@ rg -n "data-screen-adaptation|/engineering/data-screen-adaptation/" .
 
 1. 先确认在 `config.mts` 还是 `data/topics.ts`，不要两处各写一份。
 2. 侧边栏与内容目录保持一致顺序；`nav.activeMatch` 保持 `^/<分类>/`。
-3. 首页若增删格子，必须回到 §3.3 的网格边框规则：格子数整除列数，列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x`。
+3. 首页若增删格子，必须回到 §2.6 / §3.3 的网格边框规则：格子数整除列数，列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x`。
 4. 同步 `docCount` / `roadmapCount` / `categoryCount`。
 5. **不得改变既有导航项的顺序与链接文本**（除非用户要求）；新增项追加在分组末尾。
 6. `pnpm run dev` 逐屏核对**且确认其余分类的导航/侧栏/首页区块无变化**，`pnpm run build` 通过后提交。

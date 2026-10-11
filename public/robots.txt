@@ -1,0 +1,23 @@
+# 公开文档站：允许所有搜索引擎抓取
+User-agent: *
+Allow: /
+
+# 常见中文搜索引擎（单独声明，逐条允许全站抓取）
+User-agent: Baiduspider
+Allow: /
+
+User-agent: Sogou web spider
+Allow: /
+
+User-agent: 360Spider
+Allow: /
+
+# 主要国际搜索引擎
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# 站点地图：向爬虫声明全部页面（末尾斜杠与 base 一致）
+Sitemap: https://libao-jun.github.io/solution/sitemap.xml

@@ -4,6 +4,8 @@
  * 左列：mono 小标题 + h4 + 描述 + checkmark-list + 收录说明；
  * 右列：渐变视觉 + 深色代码窗（rounded-tl rounded-bl + outline 双层边框）。
  */
+import { withBase } from 'vitepress'
+
 import type { FeaturePanel } from '../data/features'
 import { terminalToneClass } from '../data/terminal'
 
@@ -19,7 +21,7 @@ defineProps<{ panel: FeaturePanel }>()
         <p class="text-white/70 text-base max-w-[25rem] text-pretty">{{ panel.description }}</p>
         <ul class="checkmark-list">
           <li v-for="bullet in panel.bullets" :key="bullet.text">
-            <a :href="bullet.link" class="block hover:opacity-80 transition-opacity">
+            <a :href="withBase(bullet.link)" class="block hover:opacity-80 transition-opacity">
               <span class="text-white">{{ bullet.text }}</span>
               <span v-if="bullet.detail" class="block text-sm leading-snug text-grey">
                 {{ bullet.detail }}

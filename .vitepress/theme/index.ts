@@ -1,5 +1,6 @@
 import { VoidZeroTheme, themeContextKey } from '@voidzero-dev/vitepress-theme'
-import type { Theme } from 'vitepress'
+// withBase：品牌资源是写死的根路径，子路径部署下会被解析到域名根目录，需按 base 补全
+import { withBase, type Theme } from 'vitepress'
 
 import Layout from './Layout.vue'
 import './styles.css'
@@ -12,11 +13,11 @@ export default {
 
     // 覆盖品牌资源（页头 Logo / 页脚背景 / 顶栏图标）
     ctx.app.provide(themeContextKey, {
-      logoDark: '/logo.svg',
-      logoLight: '/logo-light.svg',
+      logoDark: withBase('/logo.svg'),
+      logoLight: withBase('/logo-light.svg'),
       logoAlt: 'Solution',
-      footerBg: '/footer-background.svg',
-      monoIcon: '/icon.svg',
+      footerBg: withBase('/footer-background.svg'),
+      monoIcon: withBase('/icon.svg'),
     })
   },
 } satisfies Theme

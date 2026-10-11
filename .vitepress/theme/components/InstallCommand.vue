@@ -3,6 +3,7 @@
  * 首页「快速开始」，对应参考站 home/InstallCommand.vue：
  * 左侧说明 + 右侧深色命令卡（mono 大写标签 / 命令 / 复制按钮）。
  */
+import { withBase } from 'vitepress'
 import { onBeforeUnmount, ref } from 'vue'
 
 import { installCommandCards } from '../data/features'
@@ -51,7 +52,7 @@ onBeforeUnmount(() => {
         想先看规范？
         <a
           class="text-primary underline decoration-stroke underline-offset-4"
-          href="/frameworks/react/"
+          :href="withBase('/frameworks/react/')"
         >
           前往 React 开发规范
         </a>

@@ -1,0 +1,705 @@
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
+// 方块链接必须经 withBase 处理，否则子路径部署（GitHub Pages /solution/）下会 404
+import { withBase } from 'vitepress'
+
+import { categories } from '../data/topics'
+
+/**
+ * 首页「技术栈覆盖」等距 3D 示意图（对应参考站 home/HeroRive.vue 的视觉位置）。
+ *
+ * ★ 内容约定：图上出现的每一个方块都必须对应仓库里**已有的一篇文档**，数据直接取自
+ *   ../data/topics.ts 的 categories（标题与链接都不另写一份）。20 篇主题文档全部在图上：
+ *   中心平台 6 篇（Web 基础）+ 左右导轨上 7 篇（框架 / 跨端）+ 下方一排 5 篇（工程化）
+ *   + 学习路线 + 开源许可证 + 求职职场。
+ * ★ 实现约定：纯 SVG 等距投影（不引入 Rive / 3D 库）。块体厚度用「同一圆角矩形向屏幕
+ *   下方偏移 DEPTH 叠两层」实现——底层有色、顶层白色，露出的边自然成为侧面；比手算六个
+ *   顶点稳妥，圆角处也不会出现接缝。
+ * ★ 线网约定：**方块一律落在导轨（沿 ±x / ±y 的等距直线）上，一条线只画一次**。
+ *   不要「先画一根长辅助线、再给每个方块画一根分支线」——那样同一方向会出现两条近乎
+ *   平行的线，看起来就是多余的分支线。
+ */
+
+/* ---------------- 等距投影工具 ---------------- */
+const round = (n: number) => Math.round(n * 100) / 100
+const IX = round(Math.cos(Math.PI / 6)) // 0.866：30° 等距横轴系数
+const IY = 0.5 // 纵轴系数（2:1 等距）
+const ORIGIN = { x: 595, y: 250 } // 平台局部原点在画布中的位置（595 让整幅图形在画布里左右居中）
+
+const project = (x: number, y: number) => ({ x: (x - y) * IX, y: (x + y) * IY })
+const onScreen = (x: number, y: number, dz = 0) => {
+  const p = project(x, y)
+  return { x: round(ORIGIN.x + p.x), y: round(ORIGIN.y + p.y + dz) }
+}
+/** 平面矩形（局部 u/v 坐标）→ 等距矩阵；dz 为屏幕垂直偏移，用于叠出厚度 */
+const isoMatrix = (x: number, y: number, dz = 0) => {
+  const p = onScreen(x, y, dz)
+  return `matrix(${IX} ${IY} ${-IX} ${IY} ${p.x} ${p.y})`
+}
+/**
+ * 平面上的文字：只做轻微斜切（不做整块 30° 变形）保证中文可读。
+ * 切变越小字形越清晰（笔画多的中文对切变尤其敏感），0.24/-0.26 ≈ 13° 足以读出"在平面上"。
+ */
+const textMatrix = (x: number, y: number, dz = 0) => {
+  const p = onScreen(x, y, dz)
+  return `matrix(1 0.24 -0.26 1 ${p.x} ${p.y})`
+}
+/** 字号整体上调 1px：中文笔画密，小字号最容易糊 */
+const labelFont = (text: string) => (text.length > 8 ? 13 : text.length > 5 ? 14.5 : 16)
+const cardFont = (text: string) => (text.length > 4 ? 12 : 13.5)
+
+/* ---------------- 数据（全部来自已有文档） ---------------- */
+/** 图上放不下的长标签用短名显示，完整名称通过 title 与链接给出 */
+const SHORT: Record<string, string> = {
+  微信小程序: '小程序',
+  '响应式/自适应': '响应式',
+  'H5 唤起 APP': 'H5 唤起',
+  '求职 · 简历 · 职场': '求职职场',
+}
+type Doc = { text: string; link: string }
+const short = (t: string) => SHORT[t] ?? t
+
+const platformDocs = categories[0].chips // Web 基础 6 篇
+const leftDocs = categories[1].chips.slice(0, 4) // React / Vue / Svelte / 语法对比
+const rightDocs = categories[1].chips.slice(4) // Taro / 微信小程序 / App 开发
+const bottomDocs: Doc[] = [
+  ...categories[2].chips, // 工程化 5 篇
+  { text: '学习路线', link: '/roadmaps/' },
+  { text: '开源许可证', link: '/career/open-source-license/' },
+  { text: '求职 · 简历 · 职场', link: '/career/resume-and-career/' },
+]
+
+/* ---------------- 中心平台尺寸 ---------------- */
+const TILE = 84
+const GAP = 10
+const COLS = 3
+const ROWS = 2
+const DEPTH = 32
+const FACE_PAD = 20 // 台面比 6 格区域外扩一圈，否则白色台面 + 白色方块会糊成一片
+const W = COLS * TILE + (COLS - 1) * GAP // 272（6 格区域）
+const H = ROWS * TILE + (ROWS - 1) * GAP // 178
+const FACE_W = W + FACE_PAD * 2
+const FACE_H = H + FACE_PAD * 2
+/** 6 格之间的虚线分隔（落在格与格的缝隙里） */
+const separators = [
+  [TILE + GAP / 2, 0, TILE + GAP / 2, H],
+  [2 * (TILE + GAP) - GAP / 2, 0, 2 * (TILE + GAP) - GAP / 2, H],
+  [0, TILE + GAP / 2, W, TILE + GAP / 2],
+].map(([x1, y1, x2, y2]) => {
+  const a = onScreen(x1, y1)
+  const b = onScreen(x2, y2)
+  return { x1: a.x, y1: a.y, x2: b.x, y2: b.y }
+})
+
+/* ---------------- 台面 6 格（Web 基础） ---------------- */
+const tiles = platformDocs.map((doc, i) => {
+  const x = (i % COLS) * (TILE + GAP)
+  const y = Math.floor(i / COLS) * (TILE + GAP)
+  return {
+    ...doc,
+    label: short(doc.text),
+    size: TILE,
+    shadow: isoMatrix(x, y, 6),
+    face: isoMatrix(x, y),
+    labelAt: textMatrix(x + TILE / 2, y + TILE / 2),
+    delay: `${260 + i * 60}ms`,
+    floatDelay: `-${round((i * 0.9) % 7)}s`,
+  }
+})
+
+/* ---------------- 导轨 + 落在导轨上的方块 ---------------- */
+const SAT_W = 92
+const SAT_H = 50
+type RailDef = { axis: 'x' | 'y'; offset: number; to: number; cubes: { doc: Doc; at: number }[] }
+
+/**
+ * ★ 导轨端点**不写死**：由最外侧方块的位置推导（见下面 `rails`）。
+ *   手写偏移量极易多伸出一截，在方块外侧留下一条断头线（「末端多出的线条」），
+ *   或画到 viewBox 外被 overflow:hidden 齐平切掉（「超出容器宽度」）。
+ * 其余约束：
+ * 1. 方块中心屏幕 y = 250 + 0.5·(x + y)，太靠外会被 viewBox 上沿裁掉；
+ * 2. 同一导轨上相邻方块中心间距不要小于约 105：方块长对角线 = 0.866·(SAT_W + SAT_H) ≈ 123，
+ *    再近就会明显互相压住。想更紧凑要整体缩小方块 + 拉近与平台的距离，别把方块叠在一起。
+ */
+const railDefs: RailDef[] = [
+  {
+    axis: 'x',
+    offset: 20,
+    to: 100,
+    cubes: [
+      { doc: leftDocs[0], at: -90 },
+      { doc: leftDocs[1], at: -200 },
+    ],
+  },
+  {
+    axis: 'x',
+    offset: 170,
+    to: 100,
+    cubes: [
+      { doc: leftDocs[2], at: -80 },
+      { doc: leftDocs[3], at: -190 },
+    ],
+  },
+  {
+    axis: 'y',
+    offset: 40,
+    to: 120,
+    cubes: [
+      { doc: rightDocs[0], at: -90 },
+      { doc: rightDocs[1], at: -200 },
+    ],
+  },
+  {
+    axis: 'y',
+    offset: 190,
+    to: 120,
+    cubes: [{ doc: rightDocs[2], at: -175 }],
+  },
+]
+
+/**
+ * 导轨线（一条只画一次）。等距投影对轴向长度是保长的，所以屏幕长度 = |to - from|。
+ * ★ `from` 取该导轨上**最外侧方块的中心**：线正好收进方块底下，
+ *   末端绝不会在方块之外多出一截断头线（这正是「末端多出了线条」的成因）。
+ */
+const rails = railDefs.map((r, i) => {
+  const from = Math.min(...r.cubes.map((c) => c.at))
+  const a = r.axis === 'x' ? onScreen(from, r.offset) : onScreen(r.offset, from)
+  const b = r.axis === 'x' ? onScreen(r.to, r.offset) : onScreen(r.offset, r.to)
+  return {
+    x1: a.x,
+    y1: a.y,
+    x2: b.x,
+    y2: b.y,
+    len: Math.abs(r.to - from),
+    delay: `${60 + i * 80}ms`,
+  }
+})
+
+/** 方块：中心对齐导轨，于是「线从方块下面穿过」而不是「另拉一根支线」 */
+let satIndex = 0
+const satellites = railDefs.flatMap((r) =>
+  r.cubes.map((c) => {
+    const cx = r.axis === 'x' ? c.at : r.offset
+    const cy = r.axis === 'x' ? r.offset : c.at
+    const x = cx - SAT_W / 2
+    const y = cy - SAT_H / 2
+    const delay = `${420 + satIndex * 70}ms`
+    const floatDelay = `-${round((satIndex * 1.3) % 7)}s`
+    satIndex += 1
+    return {
+      ...c.doc,
+      label: short(c.doc.text),
+      w: SAT_W,
+      h: SAT_H,
+      base: isoMatrix(x, y, 12),
+      face: isoMatrix(x, y),
+      labelAt: textMatrix(cx, cy),
+      delay,
+      floatDelay,
+    }
+  }),
+)
+
+/* ---------------- 底部一排卡片：沿屏幕水平方向（局部 (+Δ, -Δ)） ---------------- */
+const CARD_W = 70
+const CARD_H = 38
+const CARD_STEP = 60
+const cards = bottomDocs.map((doc, i) => {
+  const x = 170 + i * CARD_STEP
+  const y = H + 245 - i * CARD_STEP
+  const cx = x + CARD_W / 2
+  const cy = y + CARD_H / 2
+  const a = onScreen(W / 2, H / 2)
+  const b = onScreen(cx, cy)
+  return {
+    ...doc,
+    label: short(doc.text),
+    w: CARD_W,
+    h: CARD_H,
+    base: isoMatrix(x, y, 8),
+    face: isoMatrix(x, y),
+    labelAt: textMatrix(cx, cy),
+    line: { x1: a.x, y1: a.y, x2: b.x, y2: b.y },
+    len: Math.round(Math.hypot(b.x - a.x, b.y - a.y)),
+    delay: `${700 + i * 50}ms`,
+    floatDelay: `-${round((i * 0.6) % 7)}s`,
+  }
+})
+
+/* ---------------- 平台装饰 ---------------- */
+/** 基底三个可见顶点垂下的装饰虚线（对应参考图里台面往下的虚线） */
+const drops = [
+  onScreen(-FACE_PAD, H + FACE_PAD, DEPTH),
+  onScreen(W + FACE_PAD, H + FACE_PAD, DEPTH),
+  onScreen(W + FACE_PAD, -FACE_PAD, DEPTH),
+]
+const shadow = onScreen(W + FACE_PAD, H + FACE_PAD, DEPTH - 12)
+/**
+ * 正面文字：必须用**完整等距矩阵**而不是 textMatrix。
+ * 台面前沿是 30° 斜边，长文字若只做轻微斜切会越过只有 DEPTH 厚度的侧面
+ * （150px 宽的文字在斜边方向会上下错开 ~138px ≫ 32px 厚度）。
+ * 用等距矩阵后文字沿斜边排布、贴在侧面上；字号要在平面里放大到 ~22 才有 ~11px 的视觉字高，
+ * 且必须补 letter-spacing —— 等距下中文横向前进只有 0.866×字号，不补字距相邻字会互相压住。
+ */
+const platformLabel = isoMatrix(W / 2, H + FACE_PAD, DEPTH * 0.62)
+
+/* ---------------- 入场 / 漂浮动画的触发 ---------------- */
+const root = ref<HTMLElement | null>(null)
+const revealed = ref(false) // 进入视口后播放入场动画（一次）
+const visible = ref(false) // 在视口内时才跑持续漂浮（离开即暂停，省电）
+let io: IntersectionObserver | null = null
+
+onMounted(() => {
+  const svg = root.value?.querySelector('svg')
+  if (!svg || typeof IntersectionObserver === 'undefined') {
+    revealed.value = true
+    visible.value = true
+    return
+  }
+  io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          revealed.value = true
+        }
+        visible.value = entry.isIntersecting
+      }
+    },
+    { threshold: [0, 0.25] },
+  )
+  io.observe(svg)
+})
+
+onUnmounted(() => {
+  io?.disconnect()
+  io = null
+})
+</script>
+
+<template>
+  <section ref="root" class="wrapper border-t px-5 sm:px-10 py-10 md:py-16">
+    <div class="flex flex-col gap-2 mb-8">
+      <p class="text-sm font-mono text-[var(--color-brand)]">技术栈覆盖</p>
+      <h3 class="text-balance">图上每一块，都是仓库里的一篇文档</h3>
+      <p class="max-w-2xl text-pretty">
+        中心平台是 Web 基础，四周是框架与跨端，下方一排是工程化、学习路线与职业成长。点任意方块直接进入对应文档。
+      </p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <svg
+        class="iso-stack w-auto h-auto mx-auto min-w-[44rem] max-w-[80rem]"
+        :class="{ 'is-revealed': revealed, 'is-visible': visible }"
+        viewBox="0 85 1280 530"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="技术栈等距示意图：中心为 Solution 手册，四周连接仓库中已有的主题文档"
+      >
+        <defs>
+          <!-- 竖向渐变（userSpaceOnUse）：两侧侧面同高同色，不会因为随矩形旋转而变成「箭头」 -->
+          <linearGradient id="stack-edge" gradientUnits="userSpaceOnUse" x1="600" y1="330" x2="600" y2="535">
+            <stop stop-color="#7C5CFF" />
+            <stop offset="0.45" stop-color="#4F30E8" />
+            <stop offset="1" stop-color="#2C1290" />
+          </linearGradient>
+          <filter id="stack-blur" x="-30%" y="-80%" width="160%" height="260%">
+            <feGaussianBlur stdDeviation="16" />
+          </filter>
+        </defs>
+
+        <!-- 1. 导轨（每条只画一次，方块落在导轨上） -->
+        <g class="rail-group" stroke="#E4E2EC" stroke-width="1" stroke-linecap="round">
+          <line
+            v-for="(rail, i) in rails"
+            :key="`rail-${i}`"
+            class="rail"
+            :style="{ '--len': rail.len, '--d': rail.delay }"
+            :x1="rail.x1"
+            :y1="rail.y1"
+            :x2="rail.x2"
+            :y2="rail.y2"
+          />
+        </g>
+
+        <!-- 2. 底部卡片到平台的连线 -->
+        <g stroke="#E4E2EC" stroke-width="1" stroke-linecap="round">
+          <line
+            v-for="(card, i) in cards"
+            :key="`card-line-${i}`"
+            class="rail"
+            :style="{ '--len': card.len, '--d': card.delay }"
+            v-bind="card.line"
+          />
+        </g>
+
+        <!-- 3. 地面投影 -->
+        <ellipse
+          class="shadow"
+          :cx="shadow.x"
+          :cy="shadow.y"
+          rx="228"
+          ry="46"
+          fill="#2B2440"
+          opacity="0.14"
+          filter="url(#stack-blur)"
+        />
+
+        <!-- 4. 中心平台 -->
+        <g class="reveal" :style="{ '--d': '0ms' }">
+          <g class="float" :style="{ '--f': '-2.4s' }">
+            <!-- 底层（彩色）= 侧面 -->
+            <rect
+              x="0"
+              y="0"
+              :width="FACE_W"
+              :height="FACE_H"
+              rx="22"
+              :transform="isoMatrix(-FACE_PAD, -FACE_PAD, DEPTH)"
+              fill="url(#stack-edge)"
+            />
+            <!-- 顶层（浅色）= 台面 -->
+            <rect
+              x="0"
+              y="0"
+              :width="FACE_W"
+              :height="FACE_H"
+              rx="22"
+              :transform="isoMatrix(-FACE_PAD, -FACE_PAD)"
+              fill="#F1EEFF"
+              stroke="#D6D0F2"
+            />
+            <!-- 台面内圈虚线（缓慢流动）+ 6 格之间的虚线分隔 -->
+            <rect
+              class="drift"
+              x="0"
+              y="0"
+              :width="FACE_W - 18"
+              :height="FACE_H - 18"
+              rx="16"
+              :transform="isoMatrix(-FACE_PAD + 9, -FACE_PAD + 9)"
+              stroke="#DCD6F2"
+              stroke-dasharray="5 5"
+            />
+            <g stroke="#DDD8F4" stroke-width="1" stroke-dasharray="4 5" opacity="0.9">
+              <line v-for="(s, i) in separators" :key="`sep-${i}`" v-bind="s" />
+            </g>
+            <!-- 正面标签（用等距矩阵贴在侧面厚度上） -->
+            <text
+              x="0"
+              y="0"
+              :transform="platformLabel"
+              text-anchor="middle"
+              dominant-baseline="central"
+              fill="#FFFFFF"
+              font-size="26"
+              font-weight="600"
+              letter-spacing="7"
+              class="select-none"
+            >
+              20 篇主题文档
+            </text>
+          </g>
+
+          <!-- 台面 6 格 = Web 基础 6 篇 -->
+          <a
+            v-for="tile in tiles"
+            :key="tile.link"
+            :href="withBase(tile.link)"
+            class="iso-tile reveal"
+            :style="{ '--d': tile.delay }"
+          >
+            <title>{{ tile.text }}</title>
+            <g class="float" :style="{ '--f': tile.floatDelay }">
+              <!-- 方块投影：让白色方块在浅色台面上「立」起来 -->
+              <rect
+                x="0"
+                y="0"
+                :width="tile.size"
+                :height="tile.size"
+                rx="12"
+                :transform="tile.shadow"
+                fill="#5A4B96"
+                opacity="0.13"
+              />
+              <rect
+                class="iso-face"
+                x="0"
+                y="0"
+                :width="tile.size"
+                :height="tile.size"
+                rx="12"
+                :transform="tile.face"
+                fill="#FFFFFF"
+                stroke="#E7E4F4"
+              />
+              <rect
+                x="4"
+                y="4"
+                :width="tile.size - 8"
+                :height="tile.size - 8"
+                rx="9"
+                :transform="tile.face"
+                stroke="#F1EFFA"
+              />
+              <text
+                x="0"
+                y="0"
+                :transform="tile.labelAt"
+                text-anchor="middle"
+                dominant-baseline="central"
+                fill="#3F3B52"
+                :font-size="labelFont(tile.label)"
+                font-weight="500"
+                class="select-none"
+              >
+                {{ tile.label }}
+              </text>
+            </g>
+          </a>
+        </g>
+
+        <!-- 5. 平台底边往下的装饰虚线 -->
+        <g stroke="#CCC8DA" stroke-width="1" stroke-dasharray="4 5" class="reveal" :style="{ '--d': '200ms' }">
+          <line
+            v-for="(d, i) in drops"
+            :key="`drop-${i}`"
+            :x1="d.x"
+            :y1="d.y"
+            :x2="d.x"
+            :y2="d.y + 34"
+          />
+        </g>
+
+        <!-- 6. 导轨上的方块 -->
+        <a
+          v-for="sat in satellites"
+          :key="sat.link"
+          :href="withBase(sat.link)"
+          class="iso-tile reveal"
+          :style="{ '--d': sat.delay }"
+        >
+          <title>{{ sat.text }}</title>
+          <g class="float" :style="{ '--f': sat.floatDelay }">
+            <rect
+              x="0"
+              y="0"
+              :width="sat.w"
+              :height="sat.h"
+              rx="12"
+              :transform="sat.base"
+              fill="#D8D5E5"
+            />
+            <rect
+              class="iso-face"
+              x="0"
+              y="0"
+              :width="sat.w"
+              :height="sat.h"
+              rx="12"
+              :transform="sat.face"
+              fill="#FFFFFF"
+              stroke="#E7E4F4"
+            />
+            <text
+              x="0"
+              y="0"
+              :transform="sat.labelAt"
+              text-anchor="middle"
+              dominant-baseline="central"
+              fill="#3F3B52"
+              :font-size="labelFont(sat.label)"
+              font-weight="500"
+              class="select-none"
+            >
+              {{ sat.label }}
+            </text>
+          </g>
+        </a>
+
+        <!-- 7. 底部一排卡片 -->
+        <a
+          v-for="card in cards"
+          :key="card.link"
+          :href="withBase(card.link)"
+          class="iso-tile reveal"
+          :style="{ '--d': card.delay }"
+        >
+          <title>{{ card.text }}</title>
+          <g class="float" :style="{ '--f': card.floatDelay }">
+            <rect
+              x="0"
+              y="0"
+              :width="card.w"
+              :height="card.h"
+              rx="9"
+              :transform="card.base"
+              fill="#CBC7DD"
+            />
+            <rect
+              class="iso-face"
+              x="0"
+              y="0"
+              :width="card.w"
+              :height="card.h"
+              rx="9"
+              :transform="card.face"
+              fill="#FFFFFF"
+              stroke="#E7E4F4"
+            />
+            <text
+              x="0"
+              y="0"
+              :transform="card.labelAt"
+              text-anchor="middle"
+              dominant-baseline="central"
+              fill="#3F3B52"
+              :font-size="cardFont(card.label)"
+              font-weight="500"
+              class="select-none"
+            >
+              {{ card.label }}
+            </text>
+          </g>
+        </a>
+      </svg>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+/* ------------------------------------------------------------------
+   动画：全部走 CSS，SVG 的静态等距矩阵挂在元素自身的 transform 属性上，
+   动画挂在**外层 <g class="float">** 上——两者是不同元素，互不覆盖。
+   （同一个元素上 CSS transform 会覆盖 SVG transform 属性，所以必须分层。）
+   ------------------------------------------------------------------ */
+
+/* 显式声明：图形必须被画布裁住，不允许溢到内容区外面 */
+.iso-stack {
+  overflow: hidden;
+}
+
+/*
+ * 文本清晰度：带切变的 SVG 文字若按默认（auto）渲染，浏览器会把字形吸附到像素网格，
+ * 与非整数缩放叠加后中文就会发虚。geometricPrecision 改用几何精度栅格化，边缘明显干净。
+ */
+.iso-stack text {
+  text-rendering: geometricPrecision;
+}
+
+.iso-tile {
+  cursor: pointer;
+}
+
+.iso-face {
+  transition:
+    stroke 0.15s ease,
+    fill 0.15s ease;
+}
+
+/* 悬浮：描边变为品牌色 + 轻微光晕（不做位移，避免与 float 动画抢 transform） */
+.iso-tile:hover .iso-face {
+  stroke: var(--color-brand);
+  fill: #fdfcff;
+  filter: drop-shadow(0 6px 10px rgb(79 48 232 / 0.18));
+}
+
+/* 入场：从下往上淡入（只在进入视口后播放，没有 JS / 无 IO 时保持可见） */
+.iso-stack.is-revealed .reveal {
+  animation: iso-in 0.72s cubic-bezier(0.22, 0.68, 0, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* 持续漂浮：只在区块位于视口内时运行 */
+.iso-stack .float {
+  animation: iso-float 7s ease-in-out infinite;
+  animation-delay: var(--f, 0s);
+  animation-play-state: paused;
+}
+
+.iso-stack.is-visible .float {
+  animation-play-state: running;
+}
+
+/* 导轨与连线的「绘制」动画 */
+.iso-stack.is-revealed .rail {
+  stroke-dasharray: var(--len);
+  animation: iso-draw 1.1s cubic-bezier(0.4, 0.2, 0.2, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* 台面虚线缓慢流动 */
+.iso-stack .drift {
+  animation: iso-drift 9s linear infinite;
+}
+
+/* 投影随平台一起「呼吸」 */
+.iso-stack .shadow {
+  animation: iso-shadow 7s ease-in-out infinite;
+}
+
+@keyframes iso-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes iso-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes iso-draw {
+  from {
+    stroke-dashoffset: var(--len);
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes iso-drift {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+@keyframes iso-shadow {
+  0%,
+  100% {
+    opacity: 0.14;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+/* 尊重系统「减少动态效果」：全部关掉，直接呈现终态 */
+@media (prefers-reduced-motion: reduce) {
+  .iso-stack .reveal,
+  .iso-stack .float,
+  .iso-stack .rail,
+  .iso-stack .drift,
+  .iso-stack .shadow {
+    animation: none !important;
+  }
+
+  /* 需要 !important：上面 `.iso-stack.is-revealed .rail` 的选择器权重更高 */
+  .iso-stack .rail {
+    stroke-dasharray: none !important;
+  }
+}
+</style>

@@ -23,8 +23,8 @@
 | `engineering/`                                        | 工程化与适配（打包构建、Emmet、响应式、数据大屏、H5 唤起）                 | ✅ 正文可改               |
 | `roadmaps/`                                           | 学习路线索引页（PDF 原件在 `public/roadmaps/`）                            | ✅ 索引可改，PDF 不改     |
 | `career/`                                             | 职业成长（开源许可证、求职与职场）                                         | ✅ 正文可改               |
-| `public/`                                             | 静态资源，构建时**原样**复制到站点根                                       | ✅ 新增图片/PDF           |
-| `.vitepress/config.mts`                               | **导航 / 侧边栏 / 页脚 / head / markdown 扩展的唯一真相源**                | ✅ 维护级                 |
+| `public/`                                             | 静态资源，构建时**原样**复制到站点根（含 SEO 用的 `robots.txt`）            | ✅ 新增图片/PDF           |
+| `.vitepress/config.mts`                               | **导航 / 侧边栏 / 页脚 / head / SEO / markdown 扩展的唯一真相源**          | ✅ 维护级                 |
 | `.vitepress/theme/`                                   | 自定义主题：`index.ts`、`Layout.vue`、`styles.css`、`components/`、`data/` | ✅ 维护级                 |
 | `.vitepress/theme/data/topics.ts`                     | **首页索引数据的唯一真相源**（`topicGroups` / `categories` / 统计常量）    | ✅ 维护级                 |
 | `.agents/skills/`                                     | **Skill 真相源**（`SKILL.md` + `references/` + `agents/`）                 | ✅                        |
@@ -88,6 +88,12 @@
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
 | `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
 | `.vitepress/config.mts` `base`            | 按 `process.env.CI` 切换：CI 用 `/solution/`（GitHub Pages 子路径），本地 dev/preview 用 `/`                        | 写死 `/` 导致 Pages 上静态资源全 404              |
+| 主题组件 / `config.mts` 的根路径链接与资源 | 一律经 `withBase()` 补 `base`（VitePress **只**给 Markdown 正文链接自动补 base；组件、`head`、页脚导航都不会）      | 写成裸 `/xxx`，CI 子路径部署下 404                |
+| 页头 Logo 根链接（`config.mts` `transformHtml` + `Layout.vue`） | 主题包页头写死 `href="/"`：构建期 `transformHtml` 只匹配精确的 `href="/"` 补 `base`，运行时 `fixThemeLogoLink()` 兜底（含移动端菜单动态插入的链接） | 删除后子路径部署点 Logo 会跳到域名根目录 |
+| `.vitepress/config.mts` SEO 段            | 站点级 `head`（keywords / robots / OG / Twitter / Cache-Control）+ 每页 `transformHead`（`canonical` / 每页 OG / JSON-LD `WebSite`·`TechArticle`）+ `lastUpdated` | 删掉/简化会导致 TDK、canonical、分享卡片、结构化数据丢失 |
+| `.vitepress/config.mts` `sitemap`         | `hostname` 取 `siteUrl`（生产地址），构建产出 `sitemap.xml`；**末尾斜杠不可去**                                    | 去掉斜杠导致子路径下 sitemap 里的地址错误         |
+| `public/robots.txt`                       | 允许抓取并声明 `Sitemap` 地址                                                                                      | 删除导致爬虫规则与 sitemap 发现路径丢失           |
+| 子路径部署下的站内链接                    | 组件内 `<a :href>` 一律走 `withBase()`；`head` 的 favicon 与页脚 `footer.nav` 在 `config.mts` 里用本地 `withBase()` 拼 base；主题包写死的 Logo 链接在 `Layout.vue` 里按 base 纠正 | 直接写 `/xxx/`，子路径部署下链接与 favicon 全 404 |
 
 > 遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
 
@@ -158,6 +164,11 @@
 - 首页数据只改 `.vitepress/theme/data/topics.ts`（索引与统计）与 `terminal.ts`（终端演示）。
 - 首页带边框网格：**单元格数必须整除列数**（3 格 3 列、4 格 2×2、2 格 2 列）；多条目列表放进格子内做单列 `divide-y`；横向网格补 `divide-x-0 <bp>:divide-x`。
 - `topics.ts` 的 `docCount` / `roadmapCount` / `categoryCount` 必须与实际情况同步，不能留旧值。
+- **SEO 只在 `config.mts` 维护**：站点标题 / 描述 / 语言取自 `siteTitle`、`siteDescription`、`siteLang`；
+  `canonical` / `sitemap` / `og:url` 的唯一基准是 `siteUrl`（与 `base` 解耦，换域名只改这一处，或用 `SITE_URL` 覆盖且末尾带 `/`）；
+  每页 TDK 与 JSON-LD 由 `buildSeoHead`（`transformHead`）生成；抓取规则见 `public/robots.txt`。
+- 组件与 `config.mts` 里引用站内链接 / 根路径资源**必须经 `withBase()`**（组件从 `vitepress` 导入，
+  `config.mts` 用本地同名辅助函数）——`base` 在 CI 下是 `/solution/`，裸写 `/xxx` 会 404。
 
 ### 3.4 Skill 规范（`.agents/skills/` 与 `.codebuddy/skills/`）
 

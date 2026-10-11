@@ -1,4 +1,7 @@
 <script setup lang="ts">
+// 组件内的站内链接必须经 withBase 处理，否则子路径部署（GitHub Pages /solution/）下会 404
+import { withBase } from 'vitepress'
+
 import { featurePanels } from '../data/features'
 import {
   categories,
@@ -14,11 +17,12 @@ import ClosingIllustration from './ClosingIllustration.vue'
 import FeaturePanel from './FeaturePanel.vue'
 import FeatureToolbar from './FeatureToolbar.vue'
 import InstallCommand from './InstallCommand.vue'
+import StackIsometric from './StackIsometric.vue'
 import TerminalPanel from './TerminalPanel.vue'
 
 /**
  * 首页区块与参考站 docs/.vitepress/theme/layouts/Home.vue 一一对应：
- *   Hero → Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
+ *   Hero → StackIsometric（技术栈等距图）→ Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
  *   → (深色) HeadingSection4 + FeatureToolbar + Feature* 面板
  *   → HeadingSection3 → HeroRive（本站为自绘 SVG 内容地图）
  *
@@ -40,7 +44,7 @@ import TerminalPanel from './TerminalPanel.vue'
     <section class="wrapper flex flex-col justify-start items-center gap-6 pt-14 pb-6">
       <div class="w-full sm:w-2xl flex flex-col justify-start items-center gap-10 px-5 sm:px-0">
         <div class="flex flex-col justify-start items-center gap-4">
-          <img src="/icon.svg" alt="Solution" class="w-9" />
+          <img :src="withBase('/icon.svg')" alt="Solution" class="w-9" />
           <p class="text-sm font-mono text-[var(--color-brand)]">前端常用或常见解决方案</p>
           <h1 class="text-center text-primary text-balance shine-text">
             <span class="inline-block">前端知识</span>
@@ -54,19 +58,22 @@ import TerminalPanel from './TerminalPanel.vue'
           </p>
         </div>
         <div class="flex flex-wrap items-center justify-center gap-5">
-          <a href="/fundamentals/html5/" class="button button--primary"> 开始阅读 </a>
-          <a href="/roadmaps/" class="button"> 查看学习路线 </a>
+          <a :href="withBase('/fundamentals/html5/')" class="button button--primary"> 开始阅读 </a>
+          <a :href="withBase('/roadmaps/')" class="button"> 查看学习路线 </a>
         </div>
       </div>
     </section>
 
-    <!-- 2. 命令速查终端（home/Terminal.vue） -->
+    <!-- 2. 技术栈等距图（参考站首页的 Rive 视觉位；本站为纯 SVG 等距投影） -->
+    <StackIsometric />
+
+    <!-- 3. 命令速查终端（home/Terminal.vue） -->
     <TerminalPanel />
 
-    <!-- 3. 快速开始（home/InstallCommand.vue） -->
+    <!-- 4. 快速开始（home/InstallCommand.vue） -->
     <InstallCommand />
 
-    <!-- 4. 三大分类：3 格 / 3 列（home/CoreFeature3Col.vue） -->
+    <!-- 5. 三大分类：3 格 / 3 列（home/CoreFeature3Col.vue） -->
     <section
       class="wrapper border-t grid grid-rows-3 lg:grid-rows-1 lg:grid-cols-3 lg:h-80 divide-x-0 lg:divide-x divide-y lg:divide-y-0 divide-stroke"
     >
@@ -80,14 +87,14 @@ import TerminalPanel from './TerminalPanel.vue'
           <p class="text-pretty">{{ category.details }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a v-for="chip in category.chips" :key="chip.link" :href="chip.link">
+          <a v-for="chip in category.chips" :key="chip.link" :href="withBase(chip.link)">
             <code>{{ chip.text }}</code>
           </a>
         </div>
       </div>
     </section>
 
-    <!-- 5. 站点信息：4 格 / 2×2（home/ProductivityGrid.vue） -->
+    <!-- 6. 站点信息：4 格 / 2×2（home/ProductivityGrid.vue） -->
     <section
       class="wrapper wrapper--ticks border-t grid lg:grid-cols-2 divide-x-0 lg:divide-x divide-y divide-stroke"
     >
@@ -139,7 +146,7 @@ import TerminalPanel from './TerminalPanel.vue'
         <ul class="flex flex-col divide-y divide-stroke mt-4">
           <li v-for="link in block.links" :key="link.link" class="py-2.5 first:pt-0 last:pb-0">
             <a
-              :href="link.link"
+              :href="withBase(link.link)"
               class="group flex items-center justify-between gap-3 text-base text-primary hover:text-[var(--color-brand)] transition-colors"
             >
               <span>{{ link.text }}</span>
@@ -152,13 +159,13 @@ import TerminalPanel from './TerminalPanel.vue'
             </a>
           </li>
         </ul>
-        <a :href="block.action.link" class="button button--sm w-fit mt-4">
+        <a :href="withBase(block.action.link)" class="button button--sm w-fit mt-4">
           {{ block.action.text }}
         </a>
       </div>
     </section>
 
-    <!-- 6. 深色能力展示区（home/HeadingSection4 + FeatureToolbar + Feature* 面板） -->
+    <!-- 7. 深色能力展示区（home/HeadingSection4 + FeatureToolbar + Feature* 面板） -->
     <section id="features" data-theme="dark" class="bg-primary">
       <section
         class="wrapper wrapper--ticks border-t px-5 sm:px-10 h-70 sm:h-[22rem] flex flex-col justify-center gap-6 text-center items-center"
@@ -174,7 +181,7 @@ import TerminalPanel from './TerminalPanel.vue'
       <FeaturePanel v-for="panel in featurePanels" :key="panel.id" :panel="panel" />
     </section>
 
-    <!-- 7. 收尾大标题（home/HeadingSection3.vue） -->
+    <!-- 8. 收尾大标题（home/HeadingSection3.vue） -->
     <section
       class="wrapper border-t px-5 sm:px-10 h-70 sm:h-80 flex flex-col justify-center gap-5"
     >
@@ -184,7 +191,7 @@ import TerminalPanel from './TerminalPanel.vue'
       </p>
     </section>
 
-    <!-- 8. 内容地图（home/HeroRive.vue 的位置） -->
+    <!-- 9. 内容地图（home/HeroRive.vue 的位置） -->
     <ClosingIllustration />
   </div>
 </template>

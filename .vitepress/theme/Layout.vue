@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import OSSHeader from '@components/oss/Header.vue'
 import { VoidZeroTheme } from '@voidzero-dev/vitepress-theme'
-import { useData } from 'vitepress'
+import { useData, withBase } from 'vitepress'
 import { nextTick, onUnmounted, watch } from 'vue'
 
 import Home from './components/Home.vue'
@@ -41,6 +41,21 @@ const setupHomeHeaderObserver = (header: HTMLElement | null, isHome: boolean) =>
   homeHeaderObserver.observe(header, { childList: true, subtree: true })
 }
 
+/**
+ * 主题包（@voidzero-dev/vitepress-theme）页头把 Logo 链接写死成 href="/"，
+ * 站点部署在子路径（GitHub Pages /solution/）时点击会跳到域名根目录而 404。
+ * 这里按 base 纠正一次：base 为 '/' 时结果与原值完全一致，本地开发无副作用。
+ */
+const fixThemeLogoLink = () => {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  document.querySelectorAll<HTMLAnchorElement>('header a[href="/"]').forEach((anchor) => {
+    anchor.setAttribute('href', withBase('/'))
+  })
+}
+
 const syncHomeThemeOverride = async () => {
   if (typeof document === 'undefined') {
     return
@@ -56,6 +71,8 @@ const syncHomeThemeOverride = async () => {
   }
 
   await nextTick()
+
+  fixThemeLogoLink()
 
   const header = document.querySelector<HTMLElement>('.home-header') as HTMLElement | null
 

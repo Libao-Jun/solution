@@ -1,0 +1,63 @@
+name: Solution Docs # 工作流名称，在 Actions 页面显示
+
+# 触发条件配置
+on:
+  push:
+    branches: [main] # 仅在推送到 main 分支时触发
+  workflow_dispatch: # 支持在 Actions 页面手动触发（首次建站 / 重新发布时用）
+
+# 权限配置：赋予 GITHUB_TOKEN 必要的权限
+permissions:
+  contents: read # 允许读取仓库内容
+  pages: write # 允许写入 GitHub Pages
+  id-token: write # 允许验证身份令牌
+
+# 并发控制：防止多次连续推送导致部署冲突
+concurrency:
+  group: pages # 将所有部署任务归为一组
+  cancel-in-progress: false # 有正在进行的部署时排队等待，不取消
+
+jobs:
+  # 部署任务
+  deploy:
+    # 设置部署环境，用于在仓库主页显示部署状态与链接
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # 指定运行环境为最新版的 Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - uses: actions/checkout@v4
+
+      # 2. 安装 pnpm 包管理器（版本与 package.json 的 packageManager 保持一致）
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+
+      # 3. 安装 Node.js 环境（vite 7 要求 ^20.19.0 || >=22.12.0）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm' # 启用 pnpm 依赖缓存，加快构建速度
+
+      # 4. 安装项目依赖（CI 下按 lockfile 严格安装，不更新版本）
+      - run: pnpm install --frozen-lockfile
+
+      # 5. 构建站点（对应 package.json 中的 build 脚本，产物在 .vitepress/dist）
+      - run: pnpm run build
+
+      # 6. 配置 GitHub Pages 环境（自动处理 Jekyll 等设置）
+      - uses: actions/configure-pages@v5
+
+      # 7. 上传构建产物
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .vitepress/dist
+
+      # 8. 部署到 GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

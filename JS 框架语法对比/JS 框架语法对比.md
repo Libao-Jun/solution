@@ -13,7 +13,7 @@
 >
 > **约定**
 >
-> - 示例与 Component Party 保持一致：Vue 3 使用 `<script setup>` + 组合式 API；Vue 2 使用选项式 API（`data` / `computed` / `methods`）；Svelte 5 使用 **Runes**（`$state` / `$derived` / `$effect` / `$props`），Svelte 4 使用传统语法（`export let` / `$:` / `on:click` / `createEventDispatcher`）。
+> - 示例与 Component Party 保持一致Vue 3 使用 `<script setup>` + 组合式 API；Vue 2 使用选项式 API（`data` / `computed` / `methods`）；Svelte 5 使用 **Runes**（`$state` / `$derived` / `$effect` / `$props`），Svelte 4 使用传统语法（`export let` / `$:` / `on:click` / `createEventDispatcher`）。
 > - 每个示例右上角标注**文件名**（与 Component Party 的卡片一致）。
 > - 五个框架的展示顺序统一为：**React → Vue 3 → Vue 2 → Svelte 5 → Svelte 4**。
 
@@ -152,7 +152,11 @@ export default {
 <h1>你好 {name}</h1>
 ```
 
-> **要点**：React 用 `useState` 显式声明并返回 `[值, setter]`；Vue 3 用 `ref()`（模板自动解包，脚本内需 `.value`）；Vue 2 状态必须挂在 `data()` 返回值里才能响应式；Svelte 5 用 `$state()` rune，Svelte 4 普通 `let` 顶层变量即为响应式状态。
+> **要点**
+> - React 用 `useState` 显式声明并返回 `[值, setter]`；
+> - Vue 3 用 `ref()`（模板自动解包，脚本内需 `.value`）；
+> - Vue 2 状态必须挂在 `data()` 返回值里才能响应式；
+> - Svelte 5 用 `$state()` rune，Svelte 4 普通 `let` 顶层变量即为响应式状态。
 
 ---
 
@@ -233,7 +237,11 @@ export default {
 <h1>你好 {name}</h1>
 ```
 
-> **要点**：React 状态不可直接改，必须走 setter（且触发重渲染需异步）；Vue 3 脚本内改 `ref` 要写 `.value`（模板中不用）；Vue 2 直接 `this.x =`；Svelte 直接重新赋值即可（`$state` 是代理，Svelte 4 靠编译期插桩）。
+> **要点**
+> - React 状态不可直接改，必须走 setter（且触发重渲染需异步）；
+> - Vue 3 脚本内改 `ref` 要写 `.value`（模板中不用）；
+> - Vue 2 直接 `this.x =`；
+> - Svelte 直接重新赋值即可（`$state` 是代理，Svelte 4 靠编译期插桩）。
 
 ---
 
@@ -314,7 +322,11 @@ export default {
 <div>{doubleCount}</div>
 ```
 
-> **要点**：Vue 用 `computed`（有缓存、自动追踪依赖）；Svelte 5 用 `$derived`（惰性求值）；Svelte 4 用 `$:` 响应式声明（`$:` 后是语句，会被编译成依赖触发器）；React 无内置缓存，靠 `useMemo`。
+> **要点**
+> - Vue 用 `computed`（有缓存、自动追踪依赖）
+> - Svelte 5 用 `$derived`（惰性求值）；
+> - Svelte 4 用 `$:` 响应式声明（`$:` 后是语句，会被编译成依赖触发器）；
+> - React 无内置缓存，靠 `useMemo`。
 
 ---
 
@@ -358,7 +370,9 @@ export default function HelloWorld() {
 <h1>你好，世界</h1>
 ```
 
-> **要点**：React 的模板即 **JSX**，是「能写标签的 JS」，必须有一个返回值、可嵌套任意表达式；Vue 用 `<template>` 包裹 HTML，Svelte 则**不需要任何包裹节点**，`.svelte` 文件顶层就是模板。
+> **要点**
+> - React 的模板即 **JSX**，是「能写标签的 JS」，必须有一个返回值、可嵌套任意表达式；
+> - Vue 用 `<template>` 包裹 HTML，Svelte 则**不需要任何包裹节点**，`.svelte` 文件顶层就是模板。
 
 ---
 
@@ -717,7 +731,11 @@ export default {
 <input bind:this={inputElement} />
 ```
 
-> **要点**：React 的 `useRef` 返回一个 `{ current }` 容器；Vue 3 的模板 ref 变量名**必须与 `ref="xxx"` 字符串同名**；Vue 2 走 `this.$refs.xxx`；Svelte 用 `bind:this={变量}`，变量在挂载后自动被赋值为 DOM 节点（5 与 4 语法一致，仅「何时执行」不同）。
+> **要点**
+> - React 的 `useRef` 返回一个 `{ current }` 容器；
+> - Vue 3 的模板 ref 变量名**必须与 `ref="xxx"` 字符串同名**；
+> - Vue 2 走 `this.$refs.xxx`；
+> - Svelte 用 `bind:this={变量}`，变量在挂载后自动被赋值为 DOM 节点（5 与 4 语法一致，仅「何时执行」不同）。
 
 ---
 
@@ -2814,35 +2832,35 @@ export default function useFetchUsers() {
 
 ## 附录 A：常用语法对照速查
 
-| 语法点 | React | Vue 3 | Vue 2 | Svelte 5 | Svelte 4 |
-| --- | --- | --- | --- | --- | --- |
-| 文本插值 | `{expr}` | `{{ expr }}` | `{{ expr }}` | `{expr}` | `{expr}` |
-| 属性绑定 | `prop={val}` | `:prop="val"` | `:prop="val"` | `prop={val}` | `prop={val}` |
-| 布尔属性 | `disabled` / `disabled={true}` | `disabled` | `disabled` | `disabled` | `disabled` |
-| 事件绑定 | `onClick` | `@click` | `@click` | `onclick` | `on:click` |
-| 事件修饰符 | 手动 `e.stopPropagation()` | `@click.stop` | `@click.stop` | `onclick={e => …}` | `on:click\|stopPropagation` |
-| 键盘事件 | `onKeyDown` + 手动判断 | `@keydown.enter` | `@keydown.enter` | `onkeydown` + 手动判断 | `on:keydown` + 手动判断 |
-| class 写法 | `className="a"` | `class="a"` / `:class` | `class="a"` / `:class` | `class="a"` / `class:a` | `class="a"` / `class:a` |
-| 行内样式 | `style={{ color: "red" }}` | `:style="{ color: 'red' }"` | `:style="{ color: 'red' }"` | `style="color: red"` | `style="color: red"` |
-| 双向绑定 | 手动 `value` + `onChange` | `v-model` | `v-model` | `bind:value` | `bind:value` |
-| 表单修饰符 | 手动 `trim()` / `Number()` | `v-model.trim` / `.number` / `.lazy` | `v-model.trim` / `.number` / `.lazy` | 手动处理 | 手动处理 |
-| 组件 ref | `useRef` | `useTemplateRef` / `ref` | `this.$refs` | `bind:this` | `bind:this` |
-| 条件块 | `cond && <X />` | `v-if` | `v-if` | `{#if}` | `{#if}` |
-| 条件显示（保留 DOM） | `style={{ display }}` | `v-show` | `v-show` | `class:hidden` | `class:hidden` |
-| 列表块 | `.map()` | `v-for` | `v-for` | `{#each}` | `{#each}` |
-| 列表 key | `key={id}` | `:key="id"` | `:key="id"` | `{#each list as x (id)}` | `{#each list as x (x.id)}` |
-| 原始 HTML | `dangerouslySetInnerHTML` | `v-html` | `v-html` | `{@html}` | `{@html}` |
-| 模板注释 | `{/* 注释 */}` | `<!-- 注释 -->` | `<!-- 注释 -->` | `<!-- 注释 -->` | `<!-- 注释 -->` |
-| 多根节点 | `<>…</>` | 多根 `<template>` | 必须单根 | 多个顶层标签 | 多个顶层标签 |
-| 动态组件 | 条件渲染 / 变量调用 | `<component :is>` | `<component :is>` | `{#if}` 切换组件 | `<svelte:component this={}>` |
-| 具名插槽 | 传入多个 props | `<slot name>` + `#name` | `<slot name>` + `slot="name"` | snippet props | `<slot name>` + `slot="name"` |
-| 作用域插槽 | 回调 props | `<slot :x>` + `#default="{ x }"` | `<slot :x>` + `slot-scope` | `{#snippet}` 参数 | `<slot x>` + `let:x` |
-| 传送门 / 挂载他处 | `createPortal` | `<Teleport>` | — | 无内置 | 无内置 |
-| 过渡动画 | 第三方库（framer-motion）/ CSS | `<Transition>` | `<transition>` | `transition:` 指令 | `transition:` 指令 |
-| 异步块 | `Suspense` / 手动 | `<Suspense>`（实验） | — | `{#await}` | `{#await}` |
-| 逻辑复用 | 自定义 Hook | 组合式函数 | mixin | 函数 + rune | 函数 + store |
-| 全局状态 | Context / Redux | Pinia | Vuex | `.svelte.js` + `$state` | store |
-| 组件文件后缀 | `.jsx` / `.tsx` | `.vue` | `.vue` | `.svelte` | `.svelte` |
+| 语法点               | React                          | Vue 3                                | Vue 2                                | Svelte 5                 | Svelte 4                      |
+| -------------------- | ------------------------------ | ------------------------------------ | ------------------------------------ | ------------------------ | ----------------------------- |
+| 文本插值             | `{expr}`                       | `{{ expr }}`                         | `{{ expr }}`                         | `{expr}`                 | `{expr}`                      |
+| 属性绑定             | `prop={val}`                   | `:prop="val"`                        | `:prop="val"`                        | `prop={val}`             | `prop={val}`                  |
+| 布尔属性             | `disabled` / `disabled={true}` | `disabled`                           | `disabled`                           | `disabled`               | `disabled`                    |
+| 事件绑定             | `onClick`                      | `@click`                             | `@click`                             | `onclick`                | `on:click`                    |
+| 事件修饰符           | 手动 `e.stopPropagation()`     | `@click.stop`                        | `@click.stop`                        | `onclick={e => …}`       | `on:click\|stopPropagation`   |
+| 键盘事件             | `onKeyDown` + 手动判断         | `@keydown.enter`                     | `@keydown.enter`                     | `onkeydown` + 手动判断   | `on:keydown` + 手动判断       |
+| class 写法           | `className="a"`                | `class="a"` / `:class`               | `class="a"` / `:class`               | `class="a"` / `class:a`  | `class="a"` / `class:a`       |
+| 行内样式             | `style={{ color: "red" }}`     | `:style="{ color: 'red' }"`          | `:style="{ color: 'red' }"`          | `style="color: red"`     | `style="color: red"`          |
+| 双向绑定             | 手动 `value` + `onChange`      | `v-model`                            | `v-model`                            | `bind:value`             | `bind:value`                  |
+| 表单修饰符           | 手动 `trim()` / `Number()`     | `v-model.trim` / `.number` / `.lazy` | `v-model.trim` / `.number` / `.lazy` | 手动处理                 | 手动处理                      |
+| 组件 ref             | `useRef`                       | `useTemplateRef` / `ref`             | `this.$refs`                         | `bind:this`              | `bind:this`                   |
+| 条件块               | `cond && <X />`                | `v-if`                               | `v-if`                               | `{#if}`                  | `{#if}`                       |
+| 条件显示（保留 DOM） | `style={{ display }}`          | `v-show`                             | `v-show`                             | `class:hidden`           | `class:hidden`                |
+| 列表块               | `.map()`                       | `v-for`                              | `v-for`                              | `{#each}`                | `{#each}`                     |
+| 列表 key             | `key={id}`                     | `:key="id"`                          | `:key="id"`                          | `{#each list as x (id)}` | `{#each list as x (x.id)}`    |
+| 原始 HTML            | `dangerouslySetInnerHTML`      | `v-html`                             | `v-html`                             | `{@html}`                | `{@html}`                     |
+| 模板注释             | `{/* 注释 */}`                 | `<!-- 注释 -->`                      | `<!-- 注释 -->`                      | `<!-- 注释 -->`          | `<!-- 注释 -->`               |
+| 多根节点             | `<>…</>`                       | 多根 `<template>`                    | 必须单根                             | 多个顶层标签             | 多个顶层标签                  |
+| 动态组件             | 条件渲染 / 变量调用            | `<component :is>`                    | `<component :is>`                    | `{#if}` 切换组件         | `<svelte:component this={}>`  |
+| 具名插槽             | 传入多个 props                 | `<slot name>` + `#name`              | `<slot name>` + `slot="name"`        | snippet props            | `<slot name>` + `slot="name"` |
+| 作用域插槽           | 回调 props                     | `<slot :x>` + `#default="{ x }"`     | `<slot :x>` + `slot-scope`           | `{#snippet}` 参数        | `<slot x>` + `let:x`          |
+| 传送门 / 挂载他处    | `createPortal`                 | `<Teleport>`                         | —                                    | 无内置                   | 无内置                        |
+| 过渡动画             | 第三方库（framer-motion）/ CSS | `<Transition>`                       | `<transition>`                       | `transition:` 指令       | `transition:` 指令            |
+| 异步块               | `Suspense` / 手动              | `<Suspense>`（实验）                 | —                                    | `{#await}`               | `{#await}`                    |
+| 逻辑复用             | 自定义 Hook                    | 组合式函数                           | mixin                                | 函数 + rune              | 函数 + store                  |
+| 全局状态             | Context / Redux                | Pinia                                | Vuex                                 | `.svelte.js` + `$state`  | store                         |
+| 组件文件后缀         | `.jsx` / `.tsx`                | `.vue`                               | `.vue`                               | `.svelte`                | `.svelte`                     |
 
 ---
 

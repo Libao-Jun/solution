@@ -20,7 +20,13 @@ import TerminalPanel from './TerminalPanel.vue'
  * 首页区块与参考站 docs/.vitepress/theme/layouts/Home.vue 一一对应：
  *   Hero → Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
  *   → (深色) HeadingSection4 + FeatureToolbar + Feature* 面板
- *   → HeadingSection3 → Fullstack2Col → Spacer → HeroRive
+ *   → HeadingSection3 → HeroRive（本站为自绘 SVG 内容地图）
+ *
+ * ⚠️ 参考站在 HeadingSection3 与 HeroRive 之间还有一个 blank 的 Spacer.vue
+ *   （`<section class="wrapper wrapper--ticks border-t h-16 sm:h-30">`），
+ *   而 HeroRive 自身是 `md:border-none`：两者相拼会在页面最下方留下一个
+ *   左右有竖线、上下不封口的**空框**（看起来就是一块没渲染出来的空区块）。
+ *   本站不需要这段纯留白，直接去掉，并把外框交给内容地图自己延续。
  *
  * ★ 网格边框约定：divide-* 只给「除第一个子元素外」加边框，所以只有
  *   「单元格数量整除列数」时才安全（3 格 3 列、4 格 2×2、2 格 2 列）。
@@ -178,10 +184,7 @@ import TerminalPanel from './TerminalPanel.vue'
       </p>
     </section>
 
-    <!-- 8. 留白收尾（shared/Spacer.vue） -->
-    <section class="wrapper wrapper--ticks border-t h-16 sm:h-30"></section>
-
-    <!-- 9. 内容地图（home/HeroRive.vue 的位置） -->
+    <!-- 8. 内容地图（home/HeroRive.vue 的位置） -->
     <ClosingIllustration />
   </div>
 </template>

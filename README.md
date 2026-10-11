@@ -51,8 +51,9 @@ pnpm run preview  # 预览构建产物
 | 站点信息（4 格 / 2×2）                       | `Home.vue`（`highlights` / `statRows` / `growthBlocks`） | `home/ProductivityGrid.vue`                                                                               |
 | 深色能力展示区（吸顶工具栏 + 5 个面板）      | `FeatureToolbar.vue`、`FeaturePanel.vue`                 | `home/HeadingSection4.vue` + `home/FeatureToolbar.vue` + `home/Feature{DevBuild,Check,Test,Run,Pack}.vue` |
 | 收尾大标题                                   | `Home.vue`                                               | `home/HeadingSection3.vue`                                                                                |
-| 留白收尾                                     | `Home.vue`                                               | `shared/Spacer.vue`                                                                                       |
 | 内容地图（中心节点 + 分类节点连线）          | `ClosingIllustration.vue`                                | `home/HeroRive.vue`（参考站用 Rive 动画，本站自绘 SVG）                                                   |
+
+> 参考站在「收尾大标题」与「内容地图」之间还有 `shared/Spacer.vue`（纯留白空壳），**本站已删除**，原因见下面的边框约定。
 
 数据集中在 `.vitepress/theme/data/`：`features.ts`（能力面板 + 命令卡）、`terminal.ts`（终端演示）、`topics.ts`（分类地图 / 站点信息）。
 
@@ -66,6 +67,20 @@ pnpm run preview  # 预览构建产物
 > 所以首页的带边框网格一律只用**整除列数**的单元格数量（这也是参考站的做法）；条目多的列表
 > 放进格子里做**单列 `divide-y` 列表**，不要再堆一层卡片网格——否则最后一行的空格子必然缺边框，
 > 看起来就像样式 bug。另外横向网格要补 `divide-x-0 <bp>:divide-x`，避免窄屏堆叠时多出左边框。
+>
+> ⚠️ **外框连续性约定（首页最容易被看成「有个空框没渲染出来」的地方）**
+>
+> 首页每个区块都是 `<section class="wrapper border-t">`：`.wrapper` 提供**左右竖线**、`border-t` 提供**顶部分隔线**，
+> 区块之间靠彼此接续形成一整根外框，**中间不能出现断点**。已经踩过的坑：
+>
+> 1. 参考站的 `shared/Spacer.vue` 是个**空壳**（`<section class="wrapper wrapper--ticks border-t h-16 sm:h-30">`），
+>    它后面的 `home/HeroRive.vue` 又带 `md:border-none`：两者相拼会在页面末尾留下一个
+>    **左右有竖线、上下不封口的空框**（高 120px、无任何文字），看起来就是「有一块内容没渲染出来」。
+>    本站不要这段纯留白——`ClosingIllustration.vue` 自己带 `border-t`，让外框一路连到页脚。
+> 2. 除刻意的**全宽通栏**（如深色 `bg-primary` 区）以外，**不要给中间区块加 `md:border-none`**，否则外框断线。
+>
+> 自查：构建后用无头浏览器统计「**空的带边框块**」（无文字、无图片/SVG、四条边有任一有边框、
+> 宽 ≥200 且高 ≥24 的元素）——正常应为 **0**；顺手比对每个区块的 `borderTop/Right/Bottom/Left` 宽度签名是否一致。
 
 ## 布局宽度配置
 

@@ -15,7 +15,12 @@ const groups = [
 </script>
 
 <template>
-  <div class="wrapper md:border-none py-10 md:py-16">
+  <!--
+    ⚠️ 不要照抄参考站 HeroRive 的 `md:border-none`：
+    参考站靠它前面的 blank Spacer.vue 承接左右竖线，本站已去掉那段空留白，
+    这里必须自己带上 border-t，才能让整页外框从上到下连续、不留空框。
+  -->
+  <section class="wrapper border-t py-10 md:py-16">
     <div class="overflow-x-auto">
       <svg
         class="w-full h-auto min-w-[40rem]"
@@ -109,5 +114,5 @@ const groups = [
       </g>
       </svg>
     </div>
-  </div>
+  </section>
 </template>

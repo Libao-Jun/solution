@@ -1,0 +1,242 @@
+@import '@voidzero-dev/vitepress-theme/src/styles/index.css';
+
+/* 让 Tailwind 扫描站点自己的组件 */
+@source "./**/*.vue";
+
+/* ==========================================================================
+   1. 品牌（Vite+ 主题变体）
+   ========================================================================== */
+
+:root[data-variant='viteplus'] {
+  --color-brand: #4f30e8;
+  --terminal-blue: color-mix(in srgb, var(--vp-c-indigo-2) 72%, white);
+}
+
+:root.dark:not([data-theme])[data-variant='viteplus'],
+:root[data-theme='dark'][data-variant='viteplus'] {
+  --color-brand: #6b77f8;
+}
+
+:root[data-theme='light'][data-variant='viteplus'] {
+  --color-brand: #4f30e8;
+}
+
+/* 营销页（首页）使用标题字体 */
+.marketing-layout {
+  --font-sans: 'APK Protocol', sans-serif;
+}
+
+/* ==========================================================================
+   2. ★ 布局宽度统一配置（只改这一段即可控制整站内容区宽度）★
+   --------------------------------------------------------------------------
+   --site-layout-width   整个内容区总宽（左侧导航 + 正文 + 右侧「本页目录」）
+   --site-sidebar-width  左侧导航栏宽度
+   --site-doc-width      正文内容列宽度（含右侧目录时的正文宽度）
+   --site-aside-width    右侧「本页目录」宽度
+   改完数值后刷新浏览器即可生效，dev / build 均适用。
+   ========================================================================== */
+
+:root {
+  --site-layout-width: 90rem; /* 1440px */
+  --site-sidebar-width: 272px;
+  --site-doc-width: 688px;
+  --site-aside-width: 224px;
+}
+
+/* —— 映射到 VitePress 官方变量 —— */
+:root {
+  --vp-layout-max-width: var(--site-layout-width);
+  --vp-sidebar-width: var(--site-sidebar-width);
+}
+
+/* 内容区总宽（文档页 .content-wrapper 与首页营销区 .wrapper 共用同一数值） */
+@media (min-width: 768px) {
+  .content-wrapper,
+  .marketing-layout .wrapper {
+    max-width: min(calc(100vw - 2rem), var(--site-layout-width)) !important;
+  }
+}
+
+/* 左侧导航列宽 */
+@media (min-width: 1024px) {
+  .content-wrapper.has-sidebar {
+    grid-template-columns: var(--site-sidebar-width) minmax(0, 1fr) !important;
+  }
+}
+
+/* 正文列宽 + 右侧「本页目录」宽度 */
+@media (min-width: 1280px) {
+  .VPDoc.has-aside .content-container {
+    max-width: var(--site-doc-width) !important;
+  }
+
+  .VPDoc .aside {
+    max-width: calc(var(--site-aside-width) + 32px) !important;
+  }
+
+  .VPDoc .aside-container {
+    width: var(--site-aside-width) !important;
+  }
+}
+
+/* 窄屏下的正文容器 */
+@media (min-width: 1024px) {
+  .VPDoc:not(.has-sidebar) .content {
+    max-width: calc(var(--site-doc-width) + 64px) !important;
+  }
+}
+
+/* ==========================================================================
+   3. 文档正文细节修正
+   ========================================================================== */
+
+/*
+ * 正文里 `---` 分隔线后面紧跟章节标题时，标题自带的 border-top 会与分隔线
+ * 形成两条平行细线（看起来像一个空边框块）。这里只保留分隔线本身。
+ */
+.vp-doc hr + h2,
+.vp-doc hr + h3,
+.vp-doc hr + h4 {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 24px;
+}
+
+/* 正文中的水平分隔线保持与主题一致的纤细样式 */
+.vp-doc hr {
+  border: 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+
+/* ==========================================================================
+   4. 首页装饰
+   ========================================================================== */
+
+.shine-text {
+  background: linear-gradient(
+    110deg,
+    var(--color-primary) 0%,
+    var(--color-primary) 40%,
+    #6254fe 48%,
+    #6254fe 50%,
+    #6254fe 52%,
+    var(--color-primary) 60%,
+    var(--color-primary) 100%
+  );
+  background-size: 400% 100%;
+  background-position: 100% 0;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 5s ease-in-out 0s 1 forwards;
+}
+
+@keyframes shine {
+  to {
+    background-position: 35% 0;
+  }
+}
+
+/*
+ * ★ 边框网格约定（不要改回「任意条目数 + divide-x/divide-y」的写法）★
+ *
+ * Tailwind 的 divide-* 只会给「除第一个子元素之外」的子元素加边框：
+ *   - 单列列表 / 单行排列 → 永远正确；
+ *   - 会换行的网格 → 只有条目数整除列数时才正确（3 格 3 列、4 格 2×2、2 格 2 列），
+ *     否则最后一行的空格子会缺边框，看起来像样式 bug。
+ * 因此首页的带边框网格一律使用「整除列数」的单元格数量（见 Home.vue 顶部注释），
+ * 多条目列表则放进格子里做单列 divide-y 列表。
+ */
+
+/* ==========================================================================
+   5. 终端演示（首页「命令速查」）
+   ========================================================================== */
+
+.terminal-copy {
+  max-width: 100%;
+  font-family: var(--font-mono);
+  min-height: 22rem;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  color: var(--color-white);
+}
+
+.terminal-prompt,
+.terminal-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.terminal-spacer {
+  height: 1rem;
+}
+
+.terminal-line + .terminal-line {
+  margin-top: 0.35rem;
+}
+
+.terminal-tone-base {
+  color: var(--color-white);
+}
+
+.terminal-tone-muted {
+  color: color-mix(in srgb, var(--vp-c-text-2) 52%, white 48%);
+}
+
+.terminal-tone-brand,
+.terminal-tone-accent,
+.terminal-blue {
+  color: var(--terminal-blue);
+}
+
+.terminal-tone-success {
+  color: var(--color-zest);
+}
+
+.terminal-tone-warning {
+  color: var(--color-fire);
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 0.62rem;
+  height: 1.05rem;
+  margin-left: 0.1rem;
+  vertical-align: -0.12rem;
+  border-radius: 2px;
+  background: var(--color-white);
+  animation: terminal-blink 0.95s steps(1, end) infinite;
+}
+
+.terminal-line-enter-active,
+.terminal-line-leave-active {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.terminal-line-enter-from,
+.terminal-line-leave-to {
+  opacity: 0;
+  transform: translateY(0.35rem);
+}
+
+@keyframes terminal-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .terminal-copy {
+    font-size: 0.82rem;
+    line-height: 1.5rem;
+  }
+}

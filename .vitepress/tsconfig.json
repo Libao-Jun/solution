@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vitepress/client", "node"],
+    "paths": {
+      "@components/*": [
+        "./node_modules/@voidzero-dev/vitepress-theme/src/components/*"
+      ]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.mts", "./**/*.vue", "./**/*.d.ts"]
+}

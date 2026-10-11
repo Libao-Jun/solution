@@ -30,6 +30,7 @@
 | `.agents/skills/`                                     | **Skill 真相源**（`SKILL.md` + `references/` + `agents/`）                 | ✅                        |
 | `.codebuddy/skills/`                                  | 指向 `.agents/skills/<name>` 的 **Junction**（供 CodeBuddy 发现）          | ⚠️ 只改链接，不在此写内容 |
 | `skills-lock.json`                                    | 锁定第三方 Skill 的来源与哈希                                              | ✅ 新增 skill 时同步      |
+| `.github/workflows/`                                  | GitHub Pages 发布流水线（`deploy-docs.yml`：推送 `main` → 构建 → 部署 Pages） | ✅ 维护级                 |
 | `README.md` / `index.md`                              | 仓库说明 / 首页入口                                                        | ✅                        |
 | `.vitepress/dist`、`.vitepress/cache`、`node_modules` | 构建产物与依赖，**已 gitignore**                                           | ❌ 禁止手改/提交          |
 
@@ -86,6 +87,7 @@
 | `.vitepress/theme/Layout.vue`             | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏                                                       | 移除该同步逻辑                                    |
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
 | `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
+| `.vitepress/config.mts` `base`            | 按 `process.env.CI` 切换：CI 用 `/solution/`（GitHub Pages 子路径），本地 dev/preview 用 `/`                        | 写死 `/` 导致 Pages 上静态资源全 404              |
 
 > 遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
 

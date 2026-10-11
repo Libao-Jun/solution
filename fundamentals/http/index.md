@@ -1,21 +1,26 @@
 # HTTP / HTTPS 核心知识手册
 
-> 参考资料：[MDN Web Docs - HTTP](https://developer.mozilla.org/zh-CN/docs/Web/HTTP)、[ITBook HTTP 中文手册](https://itbook.team/book/http/)、[前端面试知识库 - Network](https://libao-jun.github.io/interview/docs/fundamentals/network/)
+> 参考资料：
+>
+> - [MDN Web Docs - HTTP](https://developer.mozilla.org/zh-CN/docs/Web/HTTP)
+> - [ITBook HTTP 中文手册](https://itbook.team/book/http/)
+> - [前端面试知识库 - Network](https://libao-jun.github.io/interview/docs/fundamentals/network/)
+>
 > 面向角色：中高级前端工程师。不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**，并补充传输层/网络层基础与协议设计 trade-off。
 
 ---
 
 ## 目录
 
-1. [HTTP 基础与协议演进](#一http-基础与协议演进)
-2. [HTTP/1.1 核心机制](#二http11-核心机制)
-3. [HTTP/2 与 HTTP/3](#三http2-与-http3)
-4. [缓存机制](#四缓存机制)
-5. [Cookie 与状态管理](#五cookie-与状态管理)
-6. [跨域与安全](#六跨域与安全)
-7. [HTTPS 与传输安全](#七https-与传输安全)
-8. [性能优化与调试实践](#八性能优化与调试实践)
-9. [计算机网络基础与传输层补充](#九计算机网络基础与传输层补充)
+1. [HTTP 基础与协议演进](#一、http-基础与协议演进)
+2. [HTTP/1.1 核心机制](#二、http-1-1-核心机制)
+3. [HTTP/2 与 HTTP/3](#三、http-2-与-http-3)
+4. [缓存机制](#四、缓存机制)
+5. [Cookie 与状态管理](#五、cookie-与状态管理)
+6. [跨域与安全](#六、跨域与安全)
+7. [HTTPS 与传输安全](#七、https-与传输安全)
+8. [性能优化与调试实践](#八、性能优化与调试实践)
+9. [计算机网络基础与传输层补充](#九、计算机网络基础与传输层补充)
 
 ---
 

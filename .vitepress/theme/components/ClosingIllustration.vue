@@ -15,26 +15,22 @@ const groups = [
 </script>
 
 <template>
-  <div class="wrapper md:border-none mt-10 md:mt-0">
-    <svg
-      class="w-full h-auto"
-      viewBox="0 0 1200 480"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      role="img"
-      aria-label="站点内容地图：中心为 Solution，向外连接五个分类节点"
-    >
+  <div class="wrapper md:border-none py-10 md:py-16">
+    <div class="overflow-x-auto">
+      <svg
+        class="w-full h-auto min-w-[40rem]"
+        viewBox="0 0 1200 480"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="站点内容地图：中心为 Solution，向外连接五个分类节点"
+      >
       <defs>
         <linearGradient id="map-center" x1="500" y1="206" x2="700" y2="274" gradientUnits="userSpaceOnUse">
           <stop stop-color="#6C3BFF" />
           <stop offset="1" stop-color="#4f30e8" />
         </linearGradient>
-        <pattern id="map-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" fill="#E5E4E7" />
-        </pattern>
       </defs>
-
-      <rect x="0" y="0" width="1200" height="480" fill="url(#map-dots)" />
 
       <!-- 连线 -->
       <g stroke="#E5E4E7" stroke-width="1">
@@ -111,6 +107,7 @@ const groups = [
           </text>
         </g>
       </g>
-    </svg>
+      </svg>
+    </div>
   </div>
 </template>

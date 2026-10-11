@@ -1,25 +1,32 @@
 # 如何选择开源许可证？
 
 > 一份可直接照做的开源许可证选型与落地指南。
-> 参考资料：[阮一峰《如何选择开源许可证？》](https://www.ruanyifeng.com/blog/2011/05/how_to_choose_free_software_licenses.html)、[阮一峰《开源许可证教程》](https://www.ruanyifeng.com/blog/2017/10/open-source-license-tutorial.html)、[Choose a License](https://choosealicense.com/zh/licenses/) 及其[附录](https://choosealicense.com/zh/appendix/)、[快猫星云《记住三个关键开源许可证》](https://flashcat.cloud/blog/open-source-license/)、[OSI 许可证列表](https://opensource.org/licenses)。
+>
+> 参考资料：
+>
+> - [阮一峰《如何选择开源许可证？》](https://www.ruanyifeng.com/blog/2011/05/how_to_choose_free_software_licenses.html)
+> - [阮一峰《开源许可证教程》](https://www.ruanyifeng.com/blog/2017/10/open-source-license-tutorial.html)
+> - [Choose a License](https://choosealicense.com/zh/licenses/) 及其[附录](https://choosealicense.com/zh/appendix/)
+> - [快猫星云《记住三个关键开源许可证》](https://flashcat.cloud/blog/open-source-license/)
+> - [OSI 许可证列表](https://opensource.org/licenses)
 
 ---
 
 ## 目录
 
-- [一、为什么必须选许可证](#一为什么必须选许可证)
-- [二、核心概念：三个词决定一切](#二核心概念三个词决定一切)
-- [三、许可证的三大阵营与全景图](#三许可证的三大阵营与全景图)
-- [四、主流许可证逐个数](#四主流许可证逐个数)
-- [五、决策树：五问定位法](#五决策树五问定位法)
-- [六、copyleft 的传染边界](#六copyleft-的传染边界)
-- [七、选许可证还要考虑的现实因素](#七选许可证还要考虑的现实因素)
-- [八、落地操作：从选到用](#八落地操作从选到用)
-- [九、许可证兼容性与依赖合规](#九许可证兼容性与依赖合规)
-- [十、常见误区与 FAQ](#十常见误区与-faq)
-- [十一、速查表](#十一速查表)
-- [十二、延伸阅读](#十二延伸阅读)
-- [附录：完整许可证对照表](#附录完整许可证对照表参考-choosealicense-附录)
+- [一、为什么必须选许可证](#一、为什么必须选许可证)
+- [二、核心概念：三个词决定一切](#二、核心概念-三个词决定一切)
+- [三、许可证的三大阵营与全景图](#三、许可证的三大阵营与全景图)
+- [四、主流许可证逐个数](#四、主流许可证逐个数)
+- [五、决策树：五问定位法](#五、决策树-五问定位法)
+- [六、copyleft 的传染边界](#六、copyleft-的传染边界)
+- [七、选许可证还要考虑的现实因素](#七、选许可证还要考虑的现实因素)
+- [八、落地操作：从选到用](#八、落地操作-从选到用)
+- [九、许可证兼容性与依赖合规](#九、许可证兼容性与依赖合规)
+- [十、常见误区与 FAQ](#十、常见误区与-faq)
+- [十一、速查表](#十一、速查表)
+- [十二、延伸阅读](#十二、延伸阅读)
+- [附录：完整许可证对照表](#附录-完整许可证对照表-参考-choosealicense-附录)
 
 ---
 
@@ -136,7 +143,7 @@ Copyleft 的三个核心条件：
 
 ---
 
-## 四、主流许可证
+## 四、主流许可证逐个数
 
 > 下面每种许可证统一用 **「许可 / 条件 / 限制」** 三段式展示，对应 choosealicense.com 的 Permissions / Conditions / Limitations。
 >

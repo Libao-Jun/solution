@@ -64,8 +64,9 @@ export default extendConfig(
     cleanUrls: true,
     // 文档保留原始交叉链接，构建时不做死链校验。
     ignoreDeadLinks: true,
-    // README 属于仓库说明，不作为站点页面。
-    srcExclude: ['README.md'],
+    // README 与 AGENTS.md 属于仓库说明 / AI 协作规则，不作为站点页面。
+    // （.agents/** 是点目录，VitePress 默认不生成页面。）
+    srcExclude: ['README.md', 'AGENTS.md'],
     head: [
       ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
       ['meta', { name: 'theme-color', content: '#4f30e8' }],

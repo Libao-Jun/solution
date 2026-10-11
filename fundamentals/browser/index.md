@@ -1,20 +1,25 @@
 # 浏览器核心知识手册
 
-> 参考资料：[MDN Web Docs — 浏览器相关](https://developer.mozilla.org/zh-CN/docs/Web)、[MDN — 浏览器工作原理（Inside look at modern web browser）](https://developer.mozilla.org/zh-CN/docs/Web/Performance/How_browsers_work)、[web.dev — 渲染性能/Web Vitals](https://web.dev/)
+> 参考资料：
+>
+> - [MDN Web Docs — 浏览器相关](https://developer.mozilla.org/zh-CN/docs/Web)
+> - [MDN — 浏览器工作原理（Inside look at modern web browser）](https://developer.mozilla.org/zh-CN/docs/Web/Performance/How_browsers_work)
+> - [web.dev — 渲染性能/Web Vitals](https://web.dev/)
+>
 > 面向角色：中高级前端工程师。本文不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**。与 `../http/http.md`（HTTP 协议层）互补：本文聚焦**浏览器内部**——架构、渲染、JS 引擎、缓存/存储、安全、性能调试。
 
 ---
 
 ## 目录
 
-1. [浏览器架构与运行原理](#一浏览器架构与运行原理)
-2. [渲染原理与关键渲染路径](#二渲染原理与关键渲染路径)
-3. [JavaScript 引擎与执行机制（V8）](#三javascript-引擎与执行机制v8)
-4. [网络与资源加载](#四网络与资源加载)
-5. [存储与状态管理](#五存储与状态管理)
-6. [安全机制](#六安全机制)
-7. [性能与调试](#七性能与调试)
-8. [兼容性与 Web 平台能力](#八兼容性与-web-平台能力)
+1. [浏览器架构与运行原理](#一、浏览器架构与运行原理)
+2. [渲染原理与关键渲染路径](#二、渲染原理与关键渲染路径)
+3. [JavaScript 引擎与执行机制（V8）](#三、javascript-引擎与执行机制-v8)
+4. [网络与资源加载](#四、网络与资源加载)
+5. [存储与状态管理](#五、存储与状态管理)
+6. [安全机制](#六、安全机制)
+7. [性能与调试](#七、性能与调试)
+8. [兼容性与 Web 平台能力](#八、兼容性与-web-平台能力)
 
 ---
 

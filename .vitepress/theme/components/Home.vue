@@ -126,13 +126,23 @@ import TerminalPanel from './TerminalPanel.vue'
           <h5>{{ block.title }}</h5>
           <p class="max-w-[26rem] text-balance">{{ block.details }}</p>
         </div>
+        <!--
+          链接行不要再用 underline：下划线（文字宽度）+ divide-y 分隔线（整格宽度）
+          会形成两条长短不一的横线，看起来像边框错乱。这里只保留分隔线做视觉分隔。
+        -->
         <ul class="flex flex-col divide-y divide-stroke mt-4">
-          <li v-for="link in block.links" :key="link.link" class="py-2 first:pt-0">
+          <li v-for="link in block.links" :key="link.link" class="py-2.5 first:pt-0 last:pb-0">
             <a
               :href="link.link"
-              class="text-base text-primary underline decoration-stroke underline-offset-4 hover:decoration-primary"
+              class="group flex items-center justify-between gap-3 text-base text-primary hover:text-[var(--color-brand)] transition-colors"
             >
-              {{ link.text }}
+              <span>{{ link.text }}</span>
+              <span
+                aria-hidden="true"
+                class="text-grey group-hover:translate-x-0.5 transition-transform"
+              >
+                →
+              </span>
             </a>
           </li>
         </ul>

@@ -86,7 +86,7 @@
 | `.vitepress/theme/index.ts`               | `themeContextKey` 覆盖 `logoDark/logoLight/footerBg/monoIcon`                                                       | 删掉覆盖导致品牌资源失效                          |
 | `.vitepress/theme/Layout.vue`             | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏                                                       | 移除该同步逻辑                                    |
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
-| 首页动效（`animations/motion.ts` + 各组件的 `useMotion()`） | 入场起点一律由 `gsap.from()` 在 JS 侧生成（CSS **不得**先把元素隐藏）；命中 `prefers-reduced-motion` 时一个动画都不建；GSAP/ScrollTrigger 只能动态 `import()`；每个用 `useMotion()` 的根节点必须带 `data-motion-scope`（否则父组件会把子组件的 `data-reveal` 收进来重复建 tween） | 用 CSS 先隐藏再由 JS 显形（JS/GSAP 失败 = 整块内容不可见）；去掉 scope 判定导致同一元素被建两份动画互相抢 opacity |
+| 首页动效（`animations/motion.ts` + 各组件的 `useMotion()`） | 入场起点用 `gsap.set()` 在 JS 侧生成、终值用 `gsap.to()` 显式写死（**不用 `gsap.from()`**：它的终值靠回读元素当前值，会被别的动画/CSS 过渡记错）；命中 `prefers-reduced-motion` 时一个动画都不建；GSAP/ScrollTrigger 只能动态 `import()`；每个用 `useMotion()` 的根节点必须带 `data-motion-scope` | 用 CSS 先隐藏再由 JS 显形（JS/GSAP 失败 = 整块内容不可见）；改用 `from()` 导致元素停在中途状态（实测 Hero CTA 停在 `opacity: 0`）；去掉 scope 判定导致同一元素被建两份动画互相抢 opacity |
 | `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
 | `.vitepress/config.mts` `base`            | 按 `process.env.CI` 切换：CI 用 `/solution/`（GitHub Pages 子路径），本地 dev/preview 用 `/`                        | 写死 `/` 导致 Pages 上静态资源全 404              |
 | 主题组件 / `config.mts` 的根路径链接与资源 | 一律经 `withBase()` 补 `base`（VitePress **只**给 Markdown 正文链接自动补 base；组件、`head`、页脚导航都不会）      | 写成裸 `/xxx`，CI 子路径部署下 404                |
@@ -118,7 +118,11 @@
 >   手写偏移极易多伸出一截，在方块之外留下一条断头线（就是「末端多出了线条」），
 >   或画到 `viewBox` 外被 `overflow: hidden` 齐平切掉（「超出容器宽度」，曾把 `from` 写成 -900，外框宽出 402px / 291px）。
 >   实测口径：每条导轨端点 → 最近方块中心距离应为 **0px**（当前 4 条均为 0）。
-> - **动画**：入场 `iso-in` → 导轨 `iso-draw` → 常驻 `iso-float`；CSS `transform` 会覆盖 SVG 的 `transform` 属性，动画必须挂在外层 `<g>` 上；`prefers-reduced-motion` 时直接呈现终态。
+> - **动画（两层，别混）**：① **入场由 GSAP 一条时间线编排**（`StackIsometric.vue` 的 `useMotion`）：投影 → 平台升起 → 正面文字字距收拢 → 台面 6 格 → 导轨从平台向外「生长」→ 导轨方块沿轨滑入 → 底部连线画出 + 卡片飞出 → 装饰虚线浮现；进场方向由数据侧 `drift` 给出（**导轨上的方块严格沿所在导轨**、卡片沿它到平台的连线），不要用 `svgOrigin` 之类把缩放原点挪到平台中心——那会粘在元素上、连带改掉后续悬停缩放的原点。SVG 上的 `.is-motion` 会停用 CSS 的 `iso-in` / `iso-draw`，**必须停**：这两条 animation 是 `fill-mode: both`，动画终值以「动画优先级」压掉内联样式（实测会让悬停变暗、虚线流动全部失效）。
+>   ② **常驻循环仍走 CSS**：`iso-float`（漂浮）/ `iso-drift`（台面虚线流动）/ `iso-shadow`（投影呼吸），GSAP 一律不碰 `.float` 这一层——同一个元素上 CSS `transform` 会覆盖 SVG 的 `transform` 属性，两套必须分层。CSS 入场保留为兜底（无 JS / GSAP 加载失败 / `prefers-reduced-motion`）。
+> - **悬停交互**：以方块自身中心缩放 1.07、同类方块变暗到 0.42、所在导轨 / 连线高亮成品牌色并跑一条流动虚线（虚线周期 10+6=16，offset 每轮走 -16 才不跳变）；交互在入场时间线 `onComplete` 后才绑定，避免与入场 tween 抢同一批 `scale` / `opacity`。
+>   ★ 缩放必须写 `gsap.to(el, { scale })`，**不要用 `gsap.quickTo(el, 'scale')`**：SVG 的 scale 在 CSSPlugin 里被拆成 scaleX / scaleY，`quickTo` 的 `resetTo('scale')` 找不到同名 propTween 会**静默不生效**（实测矩阵恒为 identity；HTML 元素的 `quickTo('x' / 'y')` 正常，Hero CTA 磁吸就是用它）。
+>   另：`StackIsometric.vue` 里元素列表一律用 `*Els` 后缀（`tileEls` / `railEls` / `lineEls`…），别和同名的数据数组（`tiles` / `rails` / `cards` / `satellites`）撞名——撞名会让 `tiles[i].drift` 读到 SVG 元素，整条入场时间线抛错。
 > - **自适应与紧凑度**：固定 `viewBox`（`min-w-[44rem]` + 外层 `overflow-x-auto`），**所有几何都要落在
 >   `viewBox` 内**：方块中心屏幕 y = 250 + 0.5·(x + y)，太靠外会被上沿裁掉（Vue / 小程序 曾被顶出画布）；
 >   导轨只比最外侧方块多伸约 65 单位。想更紧凑就**整体缩小方块 + 拉近与平台的距离**（同一导轨上相邻方块
@@ -138,12 +142,13 @@
 > ⚠️ **首页动效（GSAP，改动前必读）**
 >
 > - **唯一入口**是 `.vitepress/theme/animations/motion.ts`（组件不要各自 `import gsap`）：GSAP 与 ScrollTrigger **只在浏览器端动态 `import()`**（不进入首屏 entry chunk，构建期不求值），组件一律用 `useMotion()` 挂载，卸载（含 SPA 切路由）时自动 revert 内联样式与 ScrollTrigger。
-> - ★ **不得用 CSS 先隐藏元素再等 JS 显形**：入场起点只能由 `gsap.from()` / `fromTo()` 在 JS 侧生成——JS / GSAP 失败时页面必须是完整静态内容（这是首页「白屏」类事故的根因）。
+> - ★ **不得用 CSS 先隐藏元素再等 JS 显形**：入场起点只能用 `gsap.set()` 在 JS 侧生成——JS / GSAP 失败时页面必须是完整静态内容（这是首页「白屏」类事故的根因）。
+> - ★ **写动用 `gsap.set()` 造起点 + `gsap.to()` 写显式终值，不要用 `gsap.from()`**：`from()` 的「终值」是运行时回读元素当前值，元素一旦正处于别的动画或 CSS 过渡的中间态就会被记错——实测 Hero CTA 按钮（排在时间线靠后、且带 `transition-all`）终值被记成 0，时间线跑完仍停在 `opacity: 0; visibility: hidden`。`to()` 的终值写死，任何情况下都会回到它。
 > - 命中 `prefers-reduced-motion: reduce` 时**一个动画都不建**，直接呈现静态终态；实测口径：无任何内联样式、全部元素 `opacity = 1`。
 > - 标记约定：`data-reveal`（可选 `up`（默认）/ `scale` / `left` / `right`）做滚动入场，分组容器取最近的 `[data-reveal-group]` 或 `<section>`；`data-count` 做数字滚动（从 SSR 文本里解析数字，回填时保留前后缀）；Hero 用 `data-hero-step`（按 DOM 顺序错落）与 `data-hero-cta`（按钮组磁吸）。
 > - ★ **每个用 `useMotion()` 的组件根节点必须带 `data-motion-scope`**：`revealOnScroll()` 只处理「最近 scope 祖先 === 本 root」的 `[data-reveal]`。漏掉会让 `Home.vue` 把子组件（等距图 / 快速开始 / 工具栏）的标记一起收进来，同一元素被建两份 tween 互相抢 opacity（症状：滚到底后部分文案仍 `opacity: 0`）。
 > - **SVG 元素**：CSS transform 会覆盖 SVG 的 `transform` 属性——带等距矩阵 / `translate(...)` 的元素（等距图方块、内容地图卡片组）只能动画其**没有 transform 属性**的外层 `<g>`，或改用透明度；等距图方块的悬停缩放挂在 `<a class="iso-tile">` 上（内部 `.float` 跑 CSS 漂浮，是不同元素，互不覆盖）。
-> - Hero CTA 的磁吸位移需要 CSS 让路：`styles.css` 第 7 段的 `.marketing-layout [data-hero-cta] .button { transition-property: … }` 把 `transform` 从过渡属性里摘掉（**必须保留 `scale`**，否则主题的 `hover:scale-105` 会失效）。
+> - Hero CTA 的磁吸位移需要 CSS 让路（`styles.css` 第 7 段，两条都不可删）：① `.marketing-layout [data-hero-cta] .button { transition-property: … }` 把 `transform` 从过渡属性里摘掉交给 GSAP 独占（**必须保留 `scale`**）；② `.marketing-layout [data-hero-cta] .button:hover { scale: 105% !important }`——GSAP 一写 transform 就会顺带写下内联 `scale: none`，把主题 `hover:scale-105` 压掉，这条负责把它抢回来。
 > - **复现口径**：`pnpm run build` 后静态托管 `.vitepress/dist`，无头 Edge + CDP 慢速滚到底，断言「`[data-reveal]` / `[data-hero-step]` 全部 `opacity ≥ 0.95`」「`data-count` 回到原值」「`[data-panel-window]` / `[data-map-card]` 为 1」；再用 `Emulation.setEmulatedMedia` 模拟减少动态效果，断言无内联样式且全部可见。
 
 ---

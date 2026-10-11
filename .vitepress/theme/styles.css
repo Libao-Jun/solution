@@ -344,3 +344,32 @@ header img[alt='Solution'],
   background-color: var(--color-white);
   transition: all 300ms ease-out;
 }
+
+/* ==========================================================================
+   7. 首页动效（GSAP）
+   --------------------------------------------------------------------------
+   动画本体全部在 .vitepress/theme/animations/motion.ts 与各组件的 useMotion() 里，
+   这里只补一处必须由 CSS 让路的规则。
+   ========================================================================== */
+
+/*
+ * ★ Hero CTA 的 GSAP 磁吸位移（x / y 写到 transform 上）
+ * .button 自带 Tailwind 的 transition-all（含 transform）：GSAP 每帧写入的 transform
+ * 会被 CSS 再插值一次，表现为「跟不上指针 / 松手回弹发飘」。
+ * 这里把 transform 从过渡属性里摘出来交给 GSAP 独占，同时保留主题其它过渡
+ * （v4 的 hover:scale-105 走独立的 scale 属性，必须一并保留，否则悬停缩放会失效）。
+ * 本文件是无层级样式，优先级高于 Tailwind 的 utilities 层，无需 !important。
+ */
+.marketing-layout [data-hero-cta] .button {
+  transition-property: background-color, border-color, color, box-shadow, filter, opacity, scale,
+    translate;
+}
+
+/*
+ * ★ 把 CTA 的悬停缩放抢回来：GSAP 一旦在按钮上写 transform（磁吸位移），
+ * 会同时写下内联 `scale: none`，把主题 `hover:scale-105` 的 CSS 声明压掉。
+ * 这里用 !important 抬高悬停缩放（值同主题的 105%，只作用于这两个按钮）。
+ */
+.marketing-layout [data-hero-cta] .button:hover {
+  scale: 105% !important;
+}

@@ -3,15 +3,16 @@
 > 一份面向**新手**与**熟练开发者**的友好、实用、高效指南。
 > 不论你是刚接触构建工具、想系统补全知识，还是已在用 Webpack/Vite/Rollup 但想理清全貌，都能在这份文档里找到答案。
 >
-> 参考官方文档：
-> - Vite：https://vitejs.cn/
-> - esbuild：https://esbuild.bootcss.com/getting-started/
-> - Webpack：https://www.webpackjs.com/
-> - Rollup：https://cn.rollupjs.org/
-> - Rolldown：https://rolldown.rs/
-> - Rspack：https://rspack.rs/zh/
-> - Turbopack：https://nextjs.net.cn/docs/app/api-reference/turbopack
-> - Parcel：https://v2.parceljs.cn/
+> 参考官方文档
+>
+> - [Vite](https://vitejs.cn/)
+> - [esbuild](https://esbuild.bootcss.com/getting-started/)
+> - [Webpack](https://www.webpackjs.com/)
+> - [Rollup](https://cn.rollupjs.org/)
+> - [Rolldown](https://rolldown.rs/)
+> - [Rspack](https://rspack.rs/zh/)
+> - [Turbopack](https://nextjs.net.cn/docs/app/api-reference/turbopack)
+> - [Parcel](https://v2.parceljs.cn/)
 
 ---
 
@@ -40,13 +41,13 @@
 
 具体解决 5 类问题：
 
-| 需求 | 说明 | 没有构建工具会怎样 |
-| --- | --- | --- |
-| **模块化** | 把代码拆成多个文件、用 `import/export` 组织 | 只能全局变量 + `<script>` 顺序依赖，极易冲突 |
-| **转译（Transpile）** | TS→JS、JSX→JS、ESNext→ES5 | 新语法在旧浏览器直接报错 |
-| **压缩（Minify）** | 去空格、缩短变量名、Tree Shaking | 体积巨大、首屏慢 |
-| **资源处理** | 图片、字体、CSS、SVG 的引用与优化 | 只能手写 `url(...)` 且无法做 hash 缓存 |
-| **环境适配** | 开发 / 测试 / 生产不同配置（API 地址、开关） | 得手动改代码，极易出错 |
+| 需求                  | 说明                                         | 没有构建工具会怎样                           |
+| --------------------- | -------------------------------------------- | -------------------------------------------- |
+| **模块化**            | 把代码拆成多个文件、用 `import/export` 组织  | 只能全局变量 + `<script>` 顺序依赖，极易冲突 |
+| **转译（Transpile）** | TS→JS、JSX→JS、ESNext→ES5                    | 新语法在旧浏览器直接报错                     |
+| **压缩（Minify）**    | 去空格、缩短变量名、Tree Shaking             | 体积巨大、首屏慢                             |
+| **资源处理**          | 图片、字体、CSS、SVG 的引用与优化            | 只能手写 `url(...)` 且无法做 hash 缓存       |
+| **环境适配**          | 开发 / 测试 / 生产不同配置（API 地址、开关） | 得手动改代码，极易出错                       |
 
 一句话：**构建工具 = 把「工程化源码」变成「可部署静态资源」的自动化流水线。**
 
@@ -98,21 +99,21 @@ graph LR
 
 ### 1.4 模块化标准
 
-| 标准 | 写法 | 运行环境 | 备注 |
-| --- | --- | --- | --- |
-| **ESM** | `import` / `export` | 浏览器原生 + Node | 现代标准，Tree Shaking 的前提 |
-| **CommonJS (CJS)** | `require` / `module.exports` | Node、老构建链路 | 动态、运行时解析 |
-| **AMD** | `define` / `require` | 老浏览器异步 | 基本淘汰（RequireJS） |
-| **UMD** | 兼容 CJS+AMD+全局 | 通用 | 库发布兼容用 |
-| **IIFE** | `(function(){...})()` | 浏览器 `<script>` | 自执行函数，无模块系统 |
+| 标准               | 写法                         | 运行环境          | 备注                          |
+| ------------------ | ---------------------------- | ----------------- | ----------------------------- |
+| **ESM**            | `import` / `export`          | 浏览器原生 + Node | 现代标准，Tree Shaking 的前提 |
+| **CommonJS (CJS)** | `require` / `module.exports` | Node、老构建链路  | 动态、运行时解析              |
+| **AMD**            | `define` / `require`         | 老浏览器异步      | 基本淘汰（RequireJS）         |
+| **UMD**            | 兼容 CJS+AMD+全局            | 通用              | 库发布兼容用                  |
+| **IIFE**           | `(function(){...})()`        | 浏览器 `<script>` | 自执行函数，无模块系统        |
 
 ```js
 // ESM（静态，编译期可知依赖）
-import { foo } from './a.js';
+import { foo } from "./a.js";
 export const bar = 1;
 
 // CommonJS（动态，运行时解析）
-const { foo } = require('./a.js');
+const { foo } = require("./a.js");
 module.exports = { bar: 1 };
 ```
 
@@ -131,18 +132,18 @@ module.exports = { bar: 1 };
 
 ### 1.6 构建工具生态定位
 
-| 工具 | 语言 | 定位 | 典型使用场景 |
-| --- | --- | --- | --- |
-| **Webpack** | JS | 全能型打包器 | 老项目、复杂定制、需要成熟生态 |
-| **Vite** | JS（dev 用 esbuild，build 用 Rollup） | 新一代开发体验标杆 | 现代 Web 应用（Vue/React） |
-| **Rollup** | JS | 库打包专家 | 组件库 / 工具库，输出干净 ESM |
-| **esbuild** | Go | 极速转译/压缩引擎 | 被 Vite 等用作底层，或单独做脚本构建 |
-| **Rolldown** | Rust | Rollup 兼容的 Rust 实现 | Vite 下一代打包内核（Rolldown-Vite） |
-| **Rspack** | Rust | Webpack 兼容的高性能替代 | 想保留 Webpack 配置又要提速 |
-| **Turbopack** | Rust | 面向 Next.js 的增量打包 | Next.js 项目 |
-| **Parcel** | JS | 零配置开箱即用 | 小项目、快速原型 |
-| **SWC** | Rust | Babel 替代（转译+压缩） | Next.js 默认转译器 |
-| **tsup / unbuild** | JS（基于 esbuild/Rollup） | 库的极简打包封装 | 快速发布 npm 库 |
+| 工具               | 语言                                  | 定位                     | 典型使用场景                         |
+| ------------------ | ------------------------------------- | ------------------------ | ------------------------------------ |
+| **Webpack**        | JS                                    | 全能型打包器             | 老项目、复杂定制、需要成熟生态       |
+| **Vite**           | JS（dev 用 esbuild，build 用 Rollup） | 新一代开发体验标杆       | 现代 Web 应用（Vue/React）           |
+| **Rollup**         | JS                                    | 库打包专家               | 组件库 / 工具库，输出干净 ESM        |
+| **esbuild**        | Go                                    | 极速转译/压缩引擎        | 被 Vite 等用作底层，或单独做脚本构建 |
+| **Rolldown**       | Rust                                  | Rollup 兼容的 Rust 实现  | Vite 下一代打包内核（Rolldown-Vite） |
+| **Rspack**         | Rust                                  | Webpack 兼容的高性能替代 | 想保留 Webpack 配置又要提速          |
+| **Turbopack**      | Rust                                  | 面向 Next.js 的增量打包  | Next.js 项目                         |
+| **Parcel**         | JS                                    | 零配置开箱即用           | 小项目、快速原型                     |
+| **SWC**            | Rust                                  | Babel 替代（转译+压缩）  | Next.js 默认转译器                   |
+| **tsup / unbuild** | JS（基于 esbuild/Rollup）             | 库的极简打包封装         | 快速发布 npm 库                      |
 
 **生态关系图**：
 
@@ -170,34 +171,32 @@ module.exports = { bar: 1 };
 
 ### 2.1 核心概念
 
-| 概念 | 作用 |
-| --- | --- |
-| **Entry** | 入口，依赖图的起点 |
-| **Output** | 出口，产物路径与命名 |
-| **Loader** | 模块转换器，告诉 Webpack「如何处理非 JS 文件」（如 `.ts`、`.scss`、图片） |
+| 概念       | 作用                                                                            |
+| ---------- | ------------------------------------------------------------------------------- |
+| **Entry**  | 入口，依赖图的起点                                                              |
+| **Output** | 出口，产物路径与命名                                                            |
+| **Loader** | 模块转换器，告诉 Webpack「如何处理非 JS 文件」（如 `.ts`、`.scss`、图片）       |
 | **Plugin** | 插件，在构建生命周期的钩子上做更宽泛的事（生成 HTML、提取 CSS、压缩、拷贝文件） |
-| **Mode** | `development` / `production` / `none`，一键切换内置优化 |
-| **Module** | 被处理的每个源文件 |
-| **Chunk** | 一组 module 的中间集合 |
+| **Mode**   | `development` / `production` / `none`，一键切换内置优化                         |
+| **Module** | 被处理的每个源文件                                                              |
+| **Chunk**  | 一组 module 的中间集合                                                          |
 
 最小配置示例：
 
 ```js
 // webpack.config.js
-const path = require('path');
+const path = require("path");
 
 module.exports = {
-  mode: 'production',
-  entry: './src/index.js',
+  mode: "production",
+  entry: "./src/index.js",
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.[contenthash].js',
+    path: path.resolve(__dirname, "dist"),
+    filename: "bundle.[contenthash].js",
     clean: true, // 每次构建先清空 dist
   },
   module: {
-    rules: [
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
-    ],
+    rules: [{ test: /\.css$/, use: ["style-loader", "css-loader"] }],
   },
   plugins: [
     // ...见 2.5
@@ -213,14 +212,16 @@ Loader 负责「把某种文件变成 JS 模块」。配置里 `use` 数组的�
 - **从下到上（数组写多行时）**：
 
 ```js
-rules: [{
-  test: /\.scss$/,
-  use: [
-    'style-loader',     // 第 3 步：注入 DOM
-    'css-loader',       // 第 2 步：CSS → JS 模块，处理 @import、url()
-    'sass-loader',      // 第 1 步：Sass → CSS
-  ],
-}]
+rules: [
+  {
+    test: /\.scss$/,
+    use: [
+      "style-loader", // 第 3 步：注入 DOM
+      "css-loader", // 第 2 步：CSS → JS 模块，处理 @import、url()
+      "sass-loader", // 第 1 步：Sass → CSS
+    ],
+  },
+];
 ```
 
 > 记忆口诀：**数组最右边最先跑，像剥洋葱一样从外往里。**
@@ -231,18 +232,18 @@ Loader 只能「转换单个文件」，Plugin 才能「介入整个构建流程
 
 钩子类型（理解即可，写插件才需要深挖）：
 
-| 类型 | 含义 |
-| --- | --- |
-| `SyncHook` | 同步、顺序执行 |
-| `AsyncSeriesHook` | 异步、串行（一个完成再下一个） |
-| `AsyncParallelHook` | 异步、并行 |
-| `SyncBailHook` | 同步，某个返回非 undefined 就中断 |
+| 类型                | 含义                              |
+| ------------------- | --------------------------------- |
+| `SyncHook`          | 同步、顺序执行                    |
+| `AsyncSeriesHook`   | 异步、串行（一个完成再下一个）    |
+| `AsyncParallelHook` | 异步、并行                        |
+| `SyncBailHook`      | 同步，某个返回非 undefined 就中断 |
 
 ```js
 // 自定义插件骨架
 class MyPlugin {
   apply(compiler) {
-    compiler.hooks.emit.tapAsync('MyPlugin', (compilation, callback) => {
+    compiler.hooks.emit.tapAsync("MyPlugin", (compilation, callback) => {
       // 在产物写出前做点事
       callback();
     });
@@ -252,14 +253,14 @@ class MyPlugin {
 
 ### 2.4 常见 Loader
 
-| Loader | 用途 |
-| --- | --- |
+| Loader         | 用途                                              |
+| -------------- | ------------------------------------------------- |
 | `babel-loader` | 用 Babel 转译 JS/JSX（ESNext→目标语法、polyfill） |
-| `ts-loader` | 用 `tsc` 把 TS 编译成 JS（类型检查严格） |
-| `css-loader` | 解析 CSS 中的 `@import`/`url()`，转为 JS 模块 |
-| `style-loader` | 把 CSS 注入 `<style>` 标签（开发态常用） |
-| `file-loader` | 把文件复制到 dist 并返回路径（老方案） |
-| `url-loader` | `file-loader` 的增强，小于 `limit` 转 base64 内联 |
+| `ts-loader`    | 用 `tsc` 把 TS 编译成 JS（类型检查严格）          |
+| `css-loader`   | 解析 CSS 中的 `@import`/`url()`，转为 JS 模块     |
+| `style-loader` | 把 CSS 注入 `<style>` 标签（开发态常用）          |
+| `file-loader`  | 把文件复制到 dist 并返回路径（老方案）            |
+| `url-loader`   | `file-loader` 的增强，小于 `limit` 转 base64 内联 |
 
 > 现代项目里 `file-loader`/`url-loader` 已被 Webpack 5 内置的 **Asset Modules** 取代：`type: 'asset/resource'`（= file-loader）、`type: 'asset/inline'`（= url-loader）。
 
@@ -296,13 +297,13 @@ optimization: {
 }
 ```
 
-| 插件 | 作用 |
-| --- | --- |
-| `HtmlWebpackPlugin` | 生成 HTML、自动注入 `<script>`/`<link>` |
+| 插件                   | 作用                                     |
+| ---------------------- | ---------------------------------------- |
+| `HtmlWebpackPlugin`    | 生成 HTML、自动注入 `<script>`/`<link>`  |
 | `MiniCssExtractPlugin` | CSS 抽离为独立文件（生产必需，利于缓存） |
-| `DefinePlugin` | 编译期替换全局常量（区分环境） |
-| `CopyWebpackPlugin` | 拷贝静态资源到产物 |
-| `TerserPlugin` | JS 压缩（Webpack 生产模式默认启用） |
+| `DefinePlugin`         | 编译期替换全局常量（区分环境）           |
+| `CopyWebpackPlugin`    | 拷贝静态资源到产物                       |
+| `TerserPlugin`         | JS 压缩（Webpack 生产模式默认启用）      |
 
 ### 2.6 配置拆分（多环境）
 
@@ -310,15 +311,21 @@ optimization: {
 
 ```js
 // webpack.common.js
-module.exports = { entry: './src/index.js', /* 公共 ... */ };
+module.exports = { entry: "./src/index.js" /* 公共 ... */ };
 
 // webpack.dev.js
-const { merge } = require('webpack-merge');
-const common = require('./webpack.common.js');
-module.exports = merge(common, { mode: 'development', devtool: 'eval-cheap-module-source-map' });
+const { merge } = require("webpack-merge");
+const common = require("./webpack.common.js");
+module.exports = merge(common, {
+  mode: "development",
+  devtool: "eval-cheap-module-source-map",
+});
 
 // webpack.prod.js
-module.exports = merge(common, { mode: 'production', output: { filename: '[contenthash].js' } });
+module.exports = merge(common, {
+  mode: "production",
+  output: { filename: "[contenthash].js" },
+});
 ```
 
 运行：`webpack --config webpack.dev.js` 或 `webpack --config webpack.prod.js`。
@@ -335,6 +342,7 @@ devServer: {
 ```
 
 **HMR（Hot Module Replacement）原理简述**：
+
 1. 文件改动 → Webpack 重新编译该模块，生成「补丁（HMR update）」。
 2. 通过 **WebSocket** 把补丁推给浏览器。
 3. 浏览器运行时（HMR runtime）用新模块替换旧模块，并触发 `module.hot.accept` 回调。
@@ -419,10 +427,10 @@ Vite 启动时会扫描依赖，用 esbuild 把它们**预构建**成 ESM 并缓
 // vite.config.js
 export default {
   optimizeDeps: {
-    include: ['lodash-es'],     // 强制预构建
-    exclude: ['some-native-pkg'],
+    include: ["lodash-es"], // 强制预构建
+    exclude: ["some-native-pkg"],
   },
-}
+};
 ```
 
 > 改了 `optimizeDeps` 或遇到依赖「不刷新」问题，删掉 `node_modules/.vite` 重启即可。
@@ -430,6 +438,7 @@ export default {
 ### 3.4 HMR 机制与插件系统
 
 Vite 的 HMR 基于原生 ESM + WebSocket：
+
 - 文件改动 → Vite 用 esbuild 重新编译该模块 → 通过 WS 推送「某模块 hash 变了」。
 - 浏览器原生 ESM 重新 `import` 该模块，无需整页刷新。
 - 因为模块是独立的，HMR 边界天然清晰，速度远快于 Webpack。
@@ -448,11 +457,13 @@ vite build
 ```js
 export default {
   build: {
-    minify: 'esbuild',     // 默认，快；或 'terser'
+    minify: "esbuild", // 默认，快；或 'terser'
     sourcemap: true,
-    rollupOptions: { output: { manualChunks: { vendor: ['react', 'react-dom'] } } },
+    rollupOptions: {
+      output: { manualChunks: { vendor: ["react", "react-dom"] } },
+    },
   },
-}
+};
 ```
 
 ### 3.6 Vite 插件 API
@@ -462,26 +473,38 @@ export default {
 export default {
   plugins: [
     {
-      name: 'my-plugin',
+      name: "my-plugin",
       // —— 通用（Rollup）钩子 ——
-      resolveId(source) { /* 解析模块 id */ },
-      load(id) { /* 加载模块内容 */ },
-      transform(code, id) { /* 转换代码，返回新 code */ },
+      resolveId(source) {
+        /* 解析模块 id */
+      },
+      load(id) {
+        /* 加载模块内容 */
+      },
+      transform(code, id) {
+        /* 转换代码，返回新 code */
+      },
       // —— Vite 专属钩子 ——
-      configResolved(config) { /* 拿到最终解析后的配置 */ },
-      transformIndexHtml(html) { /* 修改 index.html */ return html; },
-      handleHotUpdate(ctx) { /* 自定义 HMR 行为 */ },
+      configResolved(config) {
+        /* 拿到最终解析后的配置 */
+      },
+      transformIndexHtml(html) {
+        /* 修改 index.html */ return html;
+      },
+      handleHotUpdate(ctx) {
+        /* 自定义 HMR 行为 */
+      },
     },
   ],
-}
+};
 ```
 
-| 钩子 | 时机 |
-| --- | --- |
-| `config` / `configResolved` | 读取/拿到最终配置 |
-| `resolveId` / `load` / `transform` | 模块解析、加载、转换 |
-| `transformIndexHtml` | 注入 `<script>`、修改 HTML |
-| `handleHotUpdate` | 拦截热更新逻辑 |
+| 钩子                               | 时机                       |
+| ---------------------------------- | -------------------------- |
+| `config` / `configResolved`        | 读取/拿到最终配置          |
+| `resolveId` / `load` / `transform` | 模块解析、加载、转换       |
+| `transformIndexHtml`               | 注入 `<script>`、修改 HTML |
+| `handleHotUpdate`                  | 拦截热更新逻辑             |
 
 ### 3.7 环境变量与 `.env`
 
@@ -496,8 +519,8 @@ SECRET_KEY=xxx
 
 ```js
 console.log(import.meta.env.VITE_API_BASE);
-console.log(import.meta.env.MODE);   // development / production
-console.log(import.meta.env.DEV);    // 是否开发态
+console.log(import.meta.env.MODE); // development / production
+console.log(import.meta.env.DEV); // 是否开发态
 ```
 
 不同环境：`.env.development`、`.env.production`、`.env.[mode]`。
@@ -508,8 +531,11 @@ Vite 原生支持 SSR（服务端渲染）：
 
 ```js
 // 开发态 SSR
-import { createServer } from 'vite';
-const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+import { createServer } from "vite";
+const vite = await createServer({
+  server: { middlewareMode: true },
+  appType: "custom",
+});
 // 用 vite.ssrLoadModule('/src/entry-server.ts') 加载服务端入口
 
 // 生产态 SSR 构建
@@ -518,14 +544,14 @@ const vite = await createServer({ server: { middlewareMode: true }, appType: 'cu
 
 ### 3.9 与 Webpack 的对比
 
-| 维度 | Webpack | Vite |
-| --- | --- | --- |
-| 冷启动 | 需先打包，慢（项目越大越慢） | 几乎瞬时（按需编译） |
-| HMR | 需重建相关模块，较慢 | 单文件级，极快 |
-| 生产构建 | 自带的打包器 | 复用 Rollup |
-| 生态/插件 | 极其成熟 | 复用 Rollup 生态，仍在成长 |
-| 灵活性 | 极高（任何定制都能做） | 高，但底层 Rollup 定制略受限 |
-| 学习曲线 | 陡 | 平缓 |
+| 维度      | Webpack                      | Vite                         |
+| --------- | ---------------------------- | ---------------------------- |
+| 冷启动    | 需先打包，慢（项目越大越慢） | 几乎瞬时（按需编译）         |
+| HMR       | 需重建相关模块，较慢         | 单文件级，极快               |
+| 生产构建  | 自带的打包器                 | 复用 Rollup                  |
+| 生态/插件 | 极其成熟                     | 复用 Rollup 生态，仍在成长   |
+| 灵活性    | 极高（任何定制都能做）       | 高，但底层 Rollup 定制略受限 |
+| 学习曲线  | 陡                           | 平缓                         |
 
 ### 3.10 Vite 的局限性
 
@@ -547,28 +573,28 @@ const vite = await createServer({ server: { middlewareMode: true }, appType: 'cu
 
 ### 4.2 核心概念
 
-| 概念 | 作用 |
-| --- | --- |
-| **Input** | 入口（对应 Webpack 的 Entry） |
-| **Output** | 出口配置（format、file、dir） |
-| **Plugin** | 插件（转译、解析、压缩等） |
-| **External** | 标记为「外部依赖」不打进包（如 `react`、`lodash`），交给使用者提供 |
-| **Treeshaking** | 默认开启，删除未用导出 |
+| 概念            | 作用                                                               |
+| --------------- | ------------------------------------------------------------------ |
+| **Input**       | 入口（对应 Webpack 的 Entry）                                      |
+| **Output**      | 出口配置（format、file、dir）                                      |
+| **Plugin**      | 插件（转译、解析、压缩等）                                         |
+| **External**    | 标记为「外部依赖」不打进包（如 `react`、`lodash`），交给使用者提供 |
+| **Treeshaking** | 默认开启，删除未用导出                                             |
 
 ```js
 // rollup.config.js
-import babel from '@rollup/plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
+import babel from "@rollup/plugin-babel";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 
 export default {
-  input: 'src/index.ts',
+  input: "src/index.ts",
   output: [
-    { file: 'dist/index.esm.js', format: 'es' },   // ESM
-    { file: 'dist/index.cjs.js', format: 'cjs' },   // CommonJS
+    { file: "dist/index.esm.js", format: "es" }, // ESM
+    { file: "dist/index.cjs.js", format: "cjs" }, // CommonJS
   ],
-  external: ['react'],          // 不打包 react
-  plugins: [resolve(), commonjs(), babel({ extensions: ['.js', '.ts'] })],
+  external: ["react"], // 不打包 react
+  plugins: [resolve(), commonjs(), babel({ extensions: [".js", ".ts"] })],
 };
 ```
 
@@ -576,34 +602,34 @@ export default {
 
 Rollup 插件是带特定钩子函数的对象：
 
-| 钩子 | 时机 |
-| --- | --- |
-| `buildStart` | 构建开始 |
-| `resolveId` | 解析模块路径（类似 Webpack 的 resolve） |
-| `load` | 加载模块内容 |
-| `transform` | 转换代码 |
-| `renderChunk` | 单个 chunk 即将输出前 |
+| 钩子             | 时机                                                |
+| ---------------- | --------------------------------------------------- |
+| `buildStart`     | 构建开始                                            |
+| `resolveId`      | 解析模块路径（类似 Webpack 的 resolve）             |
+| `load`           | 加载模块内容                                        |
+| `transform`      | 转换代码                                            |
+| `renderChunk`    | 单个 chunk 即将输出前                               |
 | `generateBundle` | 所有 chunk 生成完毕、写出前（可改产物/注入 banner） |
 
 ### 4.4 输出格式
 
-| format | 含义 | 使用场景 |
-| --- | --- | --- |
-| `es` (ESM) | 原生 ES 模块 | 现代库发布（package.json `module` 字段） |
-| `cjs` (CommonJS) | Node 用 | `require`，`main` 字段 |
-| `umd` | 兼容 CJS+AMD+全局 | 老项目/CDN |
-| `iife` | 自执行函数 | 直接 `<script>` 引入 |
-| `system` | SystemJS 模块 | 老浏览器模块系统 |
+| format           | 含义              | 使用场景                                 |
+| ---------------- | ----------------- | ---------------------------------------- |
+| `es` (ESM)       | 原生 ES 模块      | 现代库发布（package.json `module` 字段） |
+| `cjs` (CommonJS) | Node 用           | `require`，`main` 字段                   |
+| `umd`            | 兼容 CJS+AMD+全局 | 老项目/CDN                               |
+| `iife`           | 自执行函数        | 直接 `<script>` 引入                     |
+| `system`         | SystemJS 模块     | 老浏览器模块系统                         |
 
 ### 4.5 与 Webpack 的差异
 
-| 维度 | Rollup | Webpack |
-| --- | --- | --- |
-| 定位 | 库 | 应用 |
-| 运行时 | 几乎零运行时 | 有 runtime 胶水代码 |
-| Tree Shaking | 默认、最彻底 | 需配置、有运行时残留 |
-| 配置复杂度 | 低 | 高 |
-| HMR/DevServer | 不擅长 | 强 |
+| 维度          | Rollup       | Webpack              |
+| ------------- | ------------ | -------------------- |
+| 定位          | 库           | 应用                 |
+| 运行时        | 几乎零运行时 | 有 runtime 胶水代码  |
+| Tree Shaking  | 默认、最彻底 | 需配置、有运行时残留 |
+| 配置复杂度    | 低           | 高                   |
+| HMR/DevServer | 不擅长       | 强                   |
 
 ### 4.6 库打包封装工具
 
@@ -633,13 +659,15 @@ npx tsup src/index.ts --format esm,cjs --dts --clean
 
 ```js
 // 直接用 esbuild API
-require('esbuild').build({
-  entryPoints: ['app.ts'],
-  bundle: true,
-  minify: true,
-  outfile: 'dist/out.js',
-  loader: { '.png': 'dataurl' },
-}).catch(() => process.exit(1));
+require("esbuild")
+  .build({
+    entryPoints: ["app.ts"],
+    bundle: true,
+    minify: true,
+    outfile: "dist/out.js",
+    loader: { ".png": "dataurl" },
+  })
+  .catch(() => process.exit(1));
 ```
 
 > Vite 的「依赖预构建」和「生产压缩」底层就是 esbuild。
@@ -653,19 +681,21 @@ require('esbuild').build({
 
 ### 5.3 Rspack（Rust）
 
-- 字节跳动 Web  infra 团队（现社区化）出品，**Rust** 实现。
+- 字节跳动 Web infra 团队（现社区化）出品，**Rust** 实现。
 - **目标是「兼容 Webpack 配置与生态」**——把 `webpack.config.js` 换成 `rspack.config.js`，大部分 loader/plugin 直接复用，但速度提升数倍到数十倍。
 - 内置 SWC 转译、内置常用 loader（不必再装 `babel-loader`）。
 - 适合：**已有大型 Webpack 项目想提速，但不想重写配置**。
 
 ```js
 // rspack.config.js —— 几乎就是 webpack.config.js
-const path = require('path');
+const path = require("path");
 module.exports = {
-  entry: './src/index.js',
-  output: { path: path.resolve(__dirname, 'dist'), filename: '[name].js' },
-  module: { rules: [{ test: /\.tsx?$/, use: 'swc-loader' }] },
-  plugins: [/* 兼容大部分 webpack 插件 */],
+  entry: "./src/index.js",
+  output: { path: path.resolve(__dirname, "dist"), filename: "[name].js" },
+  module: { rules: [{ test: /\.tsx?$/, use: "swc-loader" }] },
+  plugins: [
+    /* 兼容大部分 webpack 插件 */
+  ],
 };
 ```
 
@@ -688,14 +718,14 @@ module.exports = {
 
 ### 5.7 选型考量
 
-| 考量点 | 建议 |
-| --- | --- |
-| **极致速度、新项目** | Vite（应用）/ tsup（库） |
-| **兼容现有 Webpack 配置** | Rspack |
-| **Next.js 项目** | Turbopack（默认） |
-| **发布 npm 库** | Rollup / tsup / unbuild |
-| **团队熟悉 Webpack** | Webpack 仍可用，或用 Rspack 平滑升级 |
-| **追求趋势/统一工具链** | Bun / Biome |
+| 考量点                    | 建议                                 |
+| ------------------------- | ------------------------------------ |
+| **极致速度、新项目**      | Vite（应用）/ tsup（库）             |
+| **兼容现有 Webpack 配置** | Rspack                               |
+| **Next.js 项目**          | Turbopack（默认）                    |
+| **发布 npm 库**           | Rollup / tsup / unbuild              |
+| **团队熟悉 Webpack**      | Webpack 仍可用，或用 Rspack 平滑升级 |
+| **追求趋势/统一工具链**   | Bun / Biome                          |
 
 ---
 
@@ -711,11 +741,14 @@ Babel 是「JS 语法转译器」，把新语法降级到目标环境，并可�
 // .babelrc / babel.config.json
 {
   "presets": [
-    ["@babel/preset-env", {
-      "targets": "> 0.5%, last 2 versions, not dead",
-      "useBuiltIns": "usage",     // 按需引入 polyfill
-      "corejs": 3
-    }],
+    [
+      "@babel/preset-env",
+      {
+        "targets": "> 0.5%, last 2 versions, not dead",
+        "useBuiltIns": "usage", // 按需引入 polyfill
+        "corejs": 3
+      }
+    ],
     "@babel/preset-react",
     "@babel/preset-typescript"
   ],
@@ -723,23 +756,23 @@ Babel 是「JS 语法转译器」，把新语法降级到目标环境，并可�
 }
 ```
 
-| 概念 | 说明 |
-| --- | --- |
-| **preset-env** | 根据目标浏览器自动决定要转译哪些语法 |
-| **plugin** | 单个语法转换（如装饰器、可选链） |
-| **polyfill（core-js）** | 补充缺失的 API（如 `Promise`、`Array.includes`） |
-| **runtime（@babel/runtime）** | 把 helper 抽成公共模块，避免每个文件重复注入 |
+| 概念                          | 说明                                             |
+| ----------------------------- | ------------------------------------------------ |
+| **preset-env**                | 根据目标浏览器自动决定要转译哪些语法             |
+| **plugin**                    | 单个语法转换（如装饰器、可选链）                 |
+| **polyfill（core-js）**       | 补充缺失的 API（如 `Promise`、`Array.includes`） |
+| **runtime（@babel/runtime）** | 把 helper 抽成公共模块，避免每个文件重复注入     |
 
 > `@babel/plugin-transform-runtime` + `@babel/runtime` 能避免「重复注入 helper」、减小体积，是库开发的标准做法。
 
 ### 6.2 TypeScript 编译：tsc / babel / esbuild / swc 的差异
 
-| 工具 | 类型检查 | 速度 | 说明 |
-| --- | --- | --- | --- |
-| **tsc** | ✅ 有 | 慢 | 官方编译器，做类型检查+转译，最严谨 |
-| **babel** | ❌ 无 | 中 | 只转译（用 preset-typescript），不查类型 |
-| **esbuild** | ❌ 无 | 极快 | 只剥离类型，不检查 |
-| **swc** | ❌ 无 | 极快 | Rust 转译，不检查 |
+| 工具        | 类型检查 | 速度 | 说明                                     |
+| ----------- | -------- | ---- | ---------------------------------------- |
+| **tsc**     | ✅ 有    | 慢   | 官方编译器，做类型检查+转译，最严谨      |
+| **babel**   | ❌ 无    | 中   | 只转译（用 preset-typescript），不查类型 |
+| **esbuild** | ❌ 无    | 极快 | 只剥离类型，不检查                       |
+| **swc**     | ❌ 无    | 极快 | Rust 转译，不检查                        |
 
 > **最佳实践**：类型检查用 `tsc --noEmit`（CI 或提交前跑），**实际转译交给 esbuild/swc/babel（快）**。不要在生产打包链路里用 `tsc` 做转译（慢），它只负责「类型守门」。
 
@@ -751,8 +784,8 @@ PostCSS 是「用 JS 处理 CSS」的工具，配合插件做前缀、降级、�
 // postcss.config.js
 module.exports = {
   plugins: [
-    require('autoprefixer'),              // 自动加 -webkit- 等前缀
-    require('postcss-preset-env')({ stage: 2 }), // 用新 CSS 语法并降级
+    require("autoprefixer"), // 自动加 -webkit- 等前缀
+    require("postcss-preset-env")({ stage: 2 }), // 用新 CSS 语法并降级
   ],
 };
 ```
@@ -763,16 +796,21 @@ module.exports = {
 
 ### 6.4 CSS 预处理
 
-| 预处理器 | 语法 | 现状 |
-| --- | --- | --- |
+| 预处理器      | 语法                    | 现状                |
+| ------------- | ----------------------- | ------------------- |
 | **Sass/SCSS** | 嵌套、变量、mixin、函数 | 最主流（Dart Sass） |
-| **Less** | 类似 Sass | Ant Design 等使用 |
-| **Stylus** | 极简语法 | 小众 |
+| **Less**      | 类似 Sass               | Ant Design 等使用   |
+| **Stylus**    | 极简语法                | 小众                |
 
 ```scss
 // style.scss
 $primary: #409eff;
-.btn { color: $primary; &:hover { color: darken($primary, 10%); } }
+.btn {
+  color: $primary;
+  &:hover {
+    color: darken($primary, 10%);
+  }
+}
 ```
 
 构建链：`sass-loader`（Webpack）/ Vite 内置支持。
@@ -807,18 +845,18 @@ ie 11  # 若需兼容 IE11
 
 ### 7.1 静态资源处理
 
-| 资源 | 处理方式 |
-| --- | --- |
+| 资源 | 处理方式                                        |
+| ---- | ----------------------------------------------- |
 | 图片 | 用 Asset Modules / `file-loader` / `url-loader` |
-| 字体 | 同上，注意 `woff2` 优先（体积最小） |
-| SVG | 可作为文件引用，或用 `svgr` 转成 React 组件 |
-| 媒体 | 直接拷贝或转流式加载 |
+| 字体 | 同上，注意 `woff2` 优先（体积最小）             |
+| SVG  | 可作为文件引用，或用 `svgr` 转成 React 组件     |
+| 媒体 | 直接拷贝或转流式加载                            |
 
 ```js
 // Vite 中把 SVG 当组件用
-import { ReactComponent as Logo } from './logo.svg';
+import { ReactComponent as Logo } from "./logo.svg";
 // 或当 URL 用
-import logoUrl from './logo.svg';
+import logoUrl from "./logo.svg";
 ```
 
 ### 7.2 资源内联（base64 / limit）
@@ -835,12 +873,12 @@ import logoUrl from './logo.svg';
 
 ### 7.3 代码压缩
 
-| 工具 | 语言 | 速度 | 适用 |
-| --- | --- | --- | --- |
-| **Terser** | JS | 慢 | Webpack 默认，压缩率最好 |
-| **esbuild** | Go | 极快 | Vite 默认压缩 |
-| **SWC** | Rust | 极快 | Next.js / Rspack |
-| **css-minimizer / cssnano** | JS | 中 | CSS 压缩 |
+| 工具                        | 语言 | 速度 | 适用                     |
+| --------------------------- | ---- | ---- | ------------------------ |
+| **Terser**                  | JS   | 慢   | Webpack 默认，压缩率最好 |
+| **esbuild**                 | Go   | 极快 | Vite 默认压缩            |
+| **SWC**                     | Rust | 极快 | Next.js / Rspack         |
+| **css-minimizer / cssnano** | JS   | 中   | CSS 压缩                 |
 
 ### 7.4 分包策略
 
@@ -861,28 +899,30 @@ manualChunks(id) { if (id.includes('echarts')) return 'echarts'; }
 
 ```js
 // 动态 import = 懒加载（运行时才加载该 chunk）
-const chart = await import('./chart');
+const chart = await import("./chart");
 
 // 预加载 / 预获取（HTML 里加 <link rel="preload/prefetch">）
-import(/* webpackPreload: true */ './critical');
-import(/* webpackPrefetch: true */ './next-page');
+import(/* webpackPreload: true */ "./critical");
+import(/* webpackPrefetch: true */ "./next-page");
 // Vite 用 magic comment：import(/* @vite-ignore */ ...) 或 <link> 手动注入
 ```
 
-| 方式 | 时机 | 场景 |
-| --- | --- | --- |
-| `preload` | 当前页面**立即可用**的高优先资源 | 当前路由关键 chunk |
-| `prefetch` | 浏览器空闲时预取 | 下一页可能用到的资源 |
+| 方式       | 时机                             | 场景                 |
+| ---------- | -------------------------------- | -------------------- |
+| `preload`  | 当前页面**立即可用**的高优先资源 | 当前路由关键 chunk   |
+| `prefetch` | 浏览器空闲时预取                 | 下一页可能用到的资源 |
 
 ### 7.6 Tree Shaking 的前提与限制
 
 **前提**：
+
 1. 用 ESM（`import/export`），不用 CJS。
 2. `mode: 'production'`（或开启 `usedExports`）。
 3. 正确声明 `sideEffects`。
 4. 避免「副作用导出」（如模块顶层直接 `document.xxx`）。
 
 **限制**：
+
 - 动态 `import()` 里的代码无法被跨 chunk 摇掉。
 - 类库若以 CJS 发布，摇不动（这也是为什么优先用 `lodash-es` 而非 `lodash`）。
 - 副作用语句（如 `Array.prototype.xxx = ...` 打补丁）会阻止摇树，需显式标记。
@@ -900,11 +940,11 @@ npx rollup-plugin-visualizer  # 或手动接入插件
 
 ### 7.8 长缓存与文件指纹
 
-| 哈希 | 变化时机 | 用途 |
-| --- | --- | --- |
-| `hash` | 每次构建全变 | 不推荐（一个文件改，所有文件 hash 变，缓存全失效） |
-| `chunkhash` | 同 chunk 内容变才变 | 按 chunk 缓存 |
-| `contenthash` | **文件内容变才变** | **最推荐**，CSS/JS 各自独立缓存 |
+| 哈希          | 变化时机            | 用途                                               |
+| ------------- | ------------------- | -------------------------------------------------- |
+| `hash`        | 每次构建全变        | 不推荐（一个文件改，所有文件 hash 变，缓存全失效） |
+| `chunkhash`   | 同 chunk 内容变才变 | 按 chunk 缓存                                      |
+| `contenthash` | **文件内容变才变**  | **最推荐**，CSS/JS 各自独立缓存                    |
 
 ```js
 output: { filename: 'js/[name].[contenthash:8].js' },
@@ -919,6 +959,7 @@ output: { filename: 'js/[name].[contenthash:8].js' },
 ### 8.1 HMR 原理回顾
 
 三种实现思路：
+
 - **Webpack**：打包后通过 WS 推补丁，需模块声明 `module.hot.accept`。
 - **Vite**：原生 ESM + WS，模块独立，边界天然清晰。
 - **Rspack/Turbopack**：基于依赖图做增量，只重编译受影响模块。
@@ -929,17 +970,17 @@ HMR 三个关键点：**模块热替换、依赖收集、边界处理**（无接
 
 Source Map 把「压缩后的代码」映射回「源码」，方便线上排查。
 
-| 类型 | 特点 | 适用 |
-| --- | --- | --- |
-| `eval` | 快，藏在 eval 里 | 开发态 |
-| `cheap-module-source-map` | 不含列、含 loader 前源码 | 开发推荐 |
-| `source-map` | 完整、独立 `.map` 文件 | 生产排查（但注意泄露源码） |
-| `hidden-source-map` | 生成 map 但不引用 | 生产（单独上传到监控平台） |
-| `inline-source-map` | map 内联进文件 | 调试小项目 |
+| 类型                      | 特点                     | 适用                       |
+| ------------------------- | ------------------------ | -------------------------- |
+| `eval`                    | 快，藏在 eval 里         | 开发态                     |
+| `cheap-module-source-map` | 不含列、含 loader 前源码 | 开发推荐                   |
+| `source-map`              | 完整、独立 `.map` 文件   | 生产排查（但注意泄露源码） |
+| `hidden-source-map`       | 生成 map 但不引用        | 生产（单独上传到监控平台） |
+| `inline-source-map`       | map 内联进文件           | 调试小项目                 |
 
 ```js
 // 生产：用 hidden-source-map，把 .map 单独上传到错误监控（如 Sentry），不随产物下发
-devtool: 'hidden-source-map';
+devtool: "hidden-source-map";
 ```
 
 ### 8.3 Mock 与代理
@@ -992,11 +1033,11 @@ packages:
 
 ### 8.7 构建产物部署
 
-| 方式 | 说明 |
-| --- | --- |
-| **静态托管** | Nginx、Vercel、Netlify、GitHub Pages、对象存储 |
-| **CDN** | 把带 hash 的静态资源推到 CDN，HTML 走源站 |
-| **Docker** | 多阶段构建：第一阶段 `npm run build`，第二阶段 `nginx` 托管 `dist` |
+| 方式         | 说明                                                               |
+| ------------ | ------------------------------------------------------------------ |
+| **静态托管** | Nginx、Vercel、Netlify、GitHub Pages、对象存储                     |
+| **CDN**      | 把带 hash 的静态资源推到 CDN，HTML 走源站                          |
+| **Docker**   | 多阶段构建：第一阶段 `npm run build`，第二阶段 `nginx` 托管 `dist` |
 
 ```dockerfile
 FROM node:18 AS build
@@ -1013,14 +1054,14 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 ### 9.1 构建速度优化
 
-| 手段 | 工具 | 说明 |
-| --- | --- | --- |
-| 缓存 | Webpack `cache: filesystem`、Vite 预构建缓存 | 二次构建大幅提速 |
-| 并行 | `thread-loader`、Rspack/Turbopack 原生 | 多核利用 |
-| 增量 | Turbopack、Rolldown、Vite HMR | 只动受影响部分 |
-| 换引擎 | esbuild / swc 替代 babel/tsc 转译 | 10~100x 提速 |
-| 缩小范围 | `exclude: /node_modules/`、精准 `include` | 减少无意义编译 |
-| 关 source map | 生产构建按需 | map 生成很耗时 |
+| 手段          | 工具                                         | 说明             |
+| ------------- | -------------------------------------------- | ---------------- |
+| 缓存          | Webpack `cache: filesystem`、Vite 预构建缓存 | 二次构建大幅提速 |
+| 并行          | `thread-loader`、Rspack/Turbopack 原生       | 多核利用         |
+| 增量          | Turbopack、Rolldown、Vite HMR                | 只动受影响部分   |
+| 换引擎        | esbuild / swc 替代 babel/tsc 转译            | 10~100x 提速     |
+| 缩小范围      | `exclude: /node_modules/`、精准 `include`    | 减少无意义编译   |
+| 关 source map | 生产构建按需                                 | map 生成很耗时   |
 
 ### 9.2 产物体积优化
 
@@ -1033,11 +1074,11 @@ COPY --from=build /app/dist /usr/share/nginx/html
 
 ### 9.3 冷启动 vs 热启动 vs 生产构建
 
-| 阶段 | 含义 | 优化重点 |
-| --- | --- | --- |
-| **冷启动** | 第一次启动/构建 | 依赖预构建、缓存、引擎速度 |
-| **热启动** | 命中缓存后启动 | 缓存命中率 |
-| **生产构建** | `build` 打包优化 | Tree Shaking、压缩、分包 |
+| 阶段         | 含义             | 优化重点                   |
+| ------------ | ---------------- | -------------------------- |
+| **冷启动**   | 第一次启动/构建  | 依赖预构建、缓存、引擎速度 |
+| **热启动**   | 命中缓存后启动   | 缓存命中率                 |
+| **生产构建** | `build` 打包优化 | Tree Shaking、压缩、分包   |
 
 > Vite 的「冷启动快」指**开发态**；其**生产构建**仍走 Rollup，速度不及 Rust 系。Rolldown 正是解决这个短板。
 
@@ -1056,15 +1097,15 @@ webpack-bundle-analyzer / rollup-plugin-visualizer
 
 ### 9.5 常见构建问题排查
 
-| 问题 | 现象 | 排查方向 |
-| --- | --- | --- |
-| **循环依赖** | 变量 `undefined`、初始化顺序错 | 用 `madge` 检测 `npx madge --circular src` |
-| **重复打包** | 同一库被打进多个 chunk | 查 `splitChunks`/vendor 配置、是否多处引用不同版本 |
-| **Loader 顺序错误** | 样式不生效 / 语法未转译 | 确认 `use` 数组「从右到左」顺序 |
-| **缓存失效** | 改了代码不生效 | 清 `node_modules/.vite`、Webpack `cache` 目录、重新安装依赖 |
-| **HMR 不热** | 改代码整页刷新 | 检查模块是否声明 `hot.accept`、代理/刷新中间件冲突 |
-| **产物体积暴涨** | dist 异常大 | 用 analyzer 找大户、查是否打进了不该打的依赖（如 moment 全量 locale） |
-| **source map 对不上** | 报错行号错 | 确认 `devtool` 配置、是否用了 `hidden-source-map` 却无 map 文件 |
+| 问题                  | 现象                           | 排查方向                                                              |
+| --------------------- | ------------------------------ | --------------------------------------------------------------------- |
+| **循环依赖**          | 变量 `undefined`、初始化顺序错 | 用 `madge` 检测 `npx madge --circular src`                            |
+| **重复打包**          | 同一库被打进多个 chunk         | 查 `splitChunks`/vendor 配置、是否多处引用不同版本                    |
+| **Loader 顺序错误**   | 样式不生效 / 语法未转译        | 确认 `use` 数组「从右到左」顺序                                       |
+| **缓存失效**          | 改了代码不生效                 | 清 `node_modules/.vite`、Webpack `cache` 目录、重新安装依赖           |
+| **HMR 不热**          | 改代码整页刷新                 | 检查模块是否声明 `hot.accept`、代理/刷新中间件冲突                    |
+| **产物体积暴涨**      | dist 异常大                    | 用 analyzer 找大户、查是否打进了不该打的依赖（如 moment 全量 locale） |
+| **source map 对不上** | 报错行号错                     | 确认 `devtool` 配置、是否用了 `hidden-source-map` 却无 map 文件       |
 
 ---
 
@@ -1078,49 +1119,68 @@ webpack-bundle-analyzer / rollup-plugin-visualizer
 
 ```js
 // webpack.config.js
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { DefinePlugin } = require('webpack');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const { DefinePlugin } = require("webpack");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 
 module.exports = {
   // ① 模式与运行目标
-  mode: 'production',                       // development / production / none
-  context: __dirname,                       // 相对路径基准
-  target: ['web', 'es2018'],                // web / node / electron-main 等
-  stats: 'errors-warnings',                 // 精简控制台输出
+  mode: "production", // development / production / none
+  context: __dirname, // 相对路径基准
+  target: ["web", "es2018"], // web / node / electron-main 等
+  stats: "errors-warnings", // 精简控制台输出
 
   // ② 入口 / 出口
-  entry: { app: './src/main.ts' },          // 多入口：{ app, admin }
+  entry: { app: "./src/main.ts" }, // 多入口：{ app, admin }
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'js/[name].[contenthash:8].js',
-    chunkFilename: 'js/[name].[contenthash:8].chunk.js',
-    publicPath: '/',                        // CDN 场景改成 https://cdn.x.com/
-    clean: true,                            // 构建前清空 dist
-    assetModuleFilename: 'assets/[hash][ext][query]',
+    path: path.resolve(__dirname, "dist"),
+    filename: "js/[name].[contenthash:8].js",
+    chunkFilename: "js/[name].[contenthash:8].chunk.js",
+    publicPath: "/", // CDN 场景改成 https://cdn.x.com/
+    clean: true, // 构建前清空 dist
+    assetModuleFilename: "assets/[hash][ext][query]",
   },
 
   // ③ 模块解析
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-    alias: { '@': path.resolve(__dirname, 'src') },
-    modules: [path.resolve(__dirname, 'src'), 'node_modules'],
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+    alias: { "@": path.resolve(__dirname, "src") },
+    modules: [path.resolve(__dirname, "src"), "node_modules"],
     // fallback: { crypto: false },         // node 核心模块在浏览器端的垫片开关
   },
 
   // ④ 模块规则（Loader）
   module: {
     rules: [
-      { test: /\.[jt]sx?$/, exclude: /node_modules/, use: 'babel-loader' },
-      { test: /\.css$/,  use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'] },
-      { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader', 'sass-loader'] },
+      { test: /\.[jt]sx?$/, exclude: /node_modules/, use: "babel-loader" },
+      {
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, "css-loader", "postcss-loader"],
+      },
+      {
+        test: /\.s[ac]ss$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          "css-loader",
+          "postcss-loader",
+          "sass-loader",
+        ],
+      },
       // 资源：<8KB 内联，否则输出文件
-      { test: /\.(png|jpe?g|gif|webp|svg)$/, type: 'asset', parser: { dataUrlCondition: { maxSize: 8 * 1024 } } },
-      { test: /\.(woff2?|eot|ttf|otf)$/, type: 'asset/resource', generator: { filename: 'fonts/[hash][ext]' } },
+      {
+        test: /\.(png|jpe?g|gif|webp|svg)$/,
+        type: "asset",
+        parser: { dataUrlCondition: { maxSize: 8 * 1024 } },
+      },
+      {
+        test: /\.(woff2?|eot|ttf|otf)$/,
+        type: "asset/resource",
+        generator: { filename: "fonts/[hash][ext]" },
+      },
     ],
   },
 
@@ -1128,82 +1188,99 @@ module.exports = {
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin(), new CssMinimizerPlugin()],
-    splitChunks: {                          // 代码分割
-      chunks: 'all',
+    splitChunks: {
+      // 代码分割
+      chunks: "all",
       cacheGroups: {
-        vendor: { test: /[\\/]node_modules[\\/]/, name: 'vendors', priority: -10 },
-        common: { minChunks: 2, name: 'common', priority: -20 },
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: "vendors",
+          priority: -10,
+        },
+        common: { minChunks: 2, name: "common", priority: -20 },
       },
     },
-    runtimeChunk: 'single',                 // 抽独立 runtime，利于长缓存
-    moduleIds: 'deterministic',
+    runtimeChunk: "single", // 抽独立 runtime，利于长缓存
+    moduleIds: "deterministic",
   },
 
   // ⑥ 插件
   plugins: [
-    new HtmlWebpackPlugin({ template: './public/index.html', minify: { collapseWhitespace: true } }),
-    new MiniCssExtractPlugin({ filename: 'css/[name].[contenthash:8].css' }),
-    new DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify('production') }),
-    new CopyWebpackPlugin({ patterns: [{ from: 'public', to: '.', globOptions: { ignore: ['**/index.html'] } }] }),
+    new HtmlWebpackPlugin({
+      template: "./public/index.html",
+      minify: { collapseWhitespace: true },
+    }),
+    new MiniCssExtractPlugin({ filename: "css/[name].[contenthash:8].css" }),
+    new DefinePlugin({ "process.env.NODE_ENV": JSON.stringify("production") }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: "public", to: ".", globOptions: { ignore: ["**/index.html"] } },
+      ],
+    }),
   ],
 
   // ⑦ 开发服务器（通常放 dev 配置）
-  devServer: { hot: true, port: 3000, historyApiFallback: true, proxy: { '/api': 'http://localhost:8080' } },
+  devServer: {
+    hot: true,
+    port: 3000,
+    historyApiFallback: true,
+    proxy: { "/api": "http://localhost:8080" },
+  },
 
   // ⑧ 性能与缓存
   performance: { hints: false, maxAssetSize: 512000 },
-  cache: { type: 'filesystem' },            // 持久化缓存，二次构建提速
+  cache: { type: "filesystem" }, // 持久化缓存，二次构建提速
 };
 ```
 
 **逐项注解（高频关注点）**：
 
-| 配置项 | 高频用法 |
-| --- | --- |
-| `resolve.alias` | `@` → `src`，避免深层 `../../` |
-| `resolve.extensions` | 省略后缀时的试探顺序，别加太多否则变慢 |
-| `output.publicPath` | 部署到子路径 / CDN 时必须改 |
-| `MiniCssExtractPlugin.loader` | 生产抽 CSS；开发可用 `style-loader`（HMR 更快） |
-| `splitChunks.cacheGroups` | 把 `node_modules` 拆成 `vendors`，业务稳定不变则长缓存 |
-| `runtimeChunk` | 抽 runtime，避免业务改动导致 vendor hash 也变 |
-| `cache.type: filesystem` | 必开，二次构建快数倍 |
+| 配置项                        | 高频用法                                               |
+| ----------------------------- | ------------------------------------------------------ |
+| `resolve.alias`               | `@` → `src`，避免深层 `../../`                         |
+| `resolve.extensions`          | 省略后缀时的试探顺序，别加太多否则变慢                 |
+| `output.publicPath`           | 部署到子路径 / CDN 时必须改                            |
+| `MiniCssExtractPlugin.loader` | 生产抽 CSS；开发可用 `style-loader`（HMR 更快）        |
+| `splitChunks.cacheGroups`     | 把 `node_modules` 拆成 `vendors`，业务稳定不变则长缓存 |
+| `runtimeChunk`                | 抽 runtime，避免业务改动导致 vendor hash 也变          |
+| `cache.type: filesystem`      | 必开，二次构建快数倍                                   |
 
 **常用 Loader / Plugin 速查**：
 
-| 类别 | 高频选择 |
-| --- | --- |
-| JS/TS | `babel-loader`（配合 `@babel/preset-env`） |
-| CSS | `css-loader` + `postcss-loader` + `sass-loader` |
-| 资源 | 内置 `type: 'asset'`（替代 file/url-loader） |
-| HTML | `html-webpack-plugin` |
-| CSS 抽离 | `mini-css-extract-plugin` |
-| 压缩 | `terser-webpack-plugin` + `css-minimizer-webpack-plugin` |
-| 环境变量 | `webpack.DefinePlugin` |
-| 拷贝 | `copy-webpack-plugin` |
-| 进度/分析 | `webpackbar`、`webpack-bundle-analyzer` |
+| 类别      | 高频选择                                                 |
+| --------- | -------------------------------------------------------- |
+| JS/TS     | `babel-loader`（配合 `@babel/preset-env`）               |
+| CSS       | `css-loader` + `postcss-loader` + `sass-loader`          |
+| 资源      | 内置 `type: 'asset'`（替代 file/url-loader）             |
+| HTML      | `html-webpack-plugin`                                    |
+| CSS 抽离  | `mini-css-extract-plugin`                                |
+| 压缩      | `terser-webpack-plugin` + `css-minimizer-webpack-plugin` |
+| 环境变量  | `webpack.DefinePlugin`                                   |
+| 拷贝      | `copy-webpack-plugin`                                    |
+| 进度/分析 | `webpackbar`、`webpack-bundle-analyzer`                  |
 
 ### 10.2 Vite 高频配置
 
 ```js
 // vite.config.js （React 项目示例，Vue 把 react() 换成 vue()）
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import legacy from '@vitejs/plugin-legacy';
-import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import legacy from "@vitejs/plugin-legacy";
+import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
   // ① 基础
-  base: '/',                               // 子路径/CDN 前缀
-  publicDir: 'public',
+  base: "/", // 子路径/CDN 前缀
+  publicDir: "public",
   // ② 别名
   resolve: {
-    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
-    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
   },
   // ③ 插件
   plugins: [
-    react(),                               // 或 vue()
-    legacy({ targets: ['defaults', 'ie >= 11'] }), // 兼容老浏览器（可选）
+    react(), // 或 vue()
+    legacy({ targets: ["defaults", "ie >= 11"] }), // 兼容老浏览器（可选）
   ],
   // ④ 开发服务器
   server: {
@@ -1212,115 +1289,140 @@ export default defineConfig({
     open: true,
     cors: true,
     hmr: { overlay: true },
-    proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: true, rewrite: p => p.replace(/^\/api/, '') } },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api/, ""),
+      },
+    },
   },
   // ⑤ 生产构建
   build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,                      // 生产建议 false 或 'hidden'
-    target: 'es2018',
-    minify: 'esbuild',                     // 'esbuild' | 'terser'
+    outDir: "dist",
+    assetsDir: "assets",
+    sourcemap: false, // 生产建议 false 或 'hidden'
+    target: "es2018",
+    minify: "esbuild", // 'esbuild' | 'terser'
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
-        manualChunks: {                    // 手动分包
-          'react-vendor': ['react', 'react-dom', 'react-router'],
-          'chart-vendor': ['echarts'],
+        manualChunks: {
+          // 手动分包
+          "react-vendor": ["react", "react-dom", "react-router"],
+          "chart-vendor": ["echarts"],
         },
       },
     },
   },
   // ⑥ CSS
   css: {
-    preprocessorOptions: { scss: { additionalData: `@use "@/styles/variables" as *;` } },
-    modules: { localsConvention: 'camelCase' },
-    postcss: { plugins: [require('autoprefixer')] },
+    preprocessorOptions: {
+      scss: { additionalData: `@use "@/styles/variables" as *;` },
+    },
+    modules: { localsConvention: "camelCase" },
+    postcss: { plugins: [require("autoprefixer")] },
   },
   // ⑦ 环境变量 / 全局替换
-  envPrefix: 'VITE_',
-  define: { '__APP_VERSION__': JSON.stringify(process.env.npm_package_version) },
+  envPrefix: "VITE_",
+  define: { __APP_VERSION__: JSON.stringify(process.env.npm_package_version) },
   // ⑧ 依赖预构建 & Worker & 资源
-  optimizeDeps: { include: ['lodash-es'], exclude: [] },
-  worker: { format: 'es' },
-  assetsInclude: ['**/*.glsl'],
+  optimizeDeps: { include: ["lodash-es"], exclude: [] },
+  worker: { format: "es" },
+  assetsInclude: ["**/*.glsl"],
 });
 ```
 
 **逐项注解（高频关注点）**：
 
-| 配置项 | 高频用法 |
-| --- | --- |
-| `base` | 部署到非根路径（如 `/app/`）必须改，否则资源 404 |
-| `resolve.alias` | 与 `tsconfig.json` 的 `paths` 保持一致 |
-| `server.proxy` | 开发态解决跨域，匹配后端 |
-| `build.rollupOptions.output.manualChunks` | 把大体积第三方库独立成 chunk，配合缓存 |
-| `build.target` | 控制语法降级目标（影响 esbuild 转译） |
-| `css.preprocessorOptions.scss.additionalData` | 全局注入变量/mixin，免去每文件 `@use` |
-| `optimizeDeps.include` | 强制预构建某些 ESM 依赖，避免首次加载慢 |
-| `define` | 注入编译期常量（注意 `JSON.stringify`） |
+| 配置项                                        | 高频用法                                         |
+| --------------------------------------------- | ------------------------------------------------ |
+| `base`                                        | 部署到非根路径（如 `/app/`）必须改，否则资源 404 |
+| `resolve.alias`                               | 与 `tsconfig.json` 的 `paths` 保持一致           |
+| `server.proxy`                                | 开发态解决跨域，匹配后端                         |
+| `build.rollupOptions.output.manualChunks`     | 把大体积第三方库独立成 chunk，配合缓存           |
+| `build.target`                                | 控制语法降级目标（影响 esbuild 转译）            |
+| `css.preprocessorOptions.scss.additionalData` | 全局注入变量/mixin，免去每文件 `@use`            |
+| `optimizeDeps.include`                        | 强制预构建某些 ESM 依赖，避免首次加载慢          |
+| `define`                                      | 注入编译期常量（注意 `JSON.stringify`）          |
 
 **常用插件速查**：
 
-| 插件 | 用途 |
-| --- | --- |
-| `@vitejs/plugin-react` / `plugin-vue` | 框架支持 + Fast Refresh |
-| `@vitejs/plugin-legacy` | 兼容不支持 ESM 的老浏览器 |
-| `vite-plugin-svgr` | SVG 当 React 组件 import |
-| `unplugin-auto-import` / `unplugin-vue-components` | 自动导入 API / 组件 |
-| `rollup-plugin-visualizer` | 产物体积可视化 |
-| `vite-plugin-checker` | 构建期跑 TS / ESLint |
+| 插件                                               | 用途                      |
+| -------------------------------------------------- | ------------------------- |
+| `@vitejs/plugin-react` / `plugin-vue`              | 框架支持 + Fast Refresh   |
+| `@vitejs/plugin-legacy`                            | 兼容不支持 ESM 的老浏览器 |
+| `vite-plugin-svgr`                                 | SVG 当 React 组件 import  |
+| `unplugin-auto-import` / `unplugin-vue-components` | 自动导入 API / 组件       |
+| `rollup-plugin-visualizer`                         | 产物体积可视化            |
+| `vite-plugin-checker`                              | 构建期跑 TS / ESLint      |
 
 ### 10.3 Rollup 高频配置（库打包）
 
 ```js
 // rollup.config.js （组件库 / 工具库，多格式输出）
-import { babel } from '@rollup/plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
-import terser from '@rollup/plugin-terser';
-import postcss from 'rollup-plugin-postcss';
-import alias from '@rollup/plugin-alias';
-import path from 'node:path';
+import { babel } from "@rollup/plugin-babel";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import json from "@rollup/plugin-json";
+import terser from "@rollup/plugin-terser";
+import postcss from "rollup-plugin-postcss";
+import alias from "@rollup/plugin-alias";
+import path from "node:path";
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = process.env.NODE_ENV === "production";
 
 export default {
-  input: 'src/index.ts',
+  input: "src/index.ts",
   // ① 多格式输出，覆盖主流消费方
   output: [
-    { file: 'dist/index.js',   format: 'es',  sourcemap: true, exports: 'named' },
-    { file: 'dist/index.cjs',  format: 'cjs', sourcemap: true, exports: 'named' },
-    { file: 'dist/index.umd.js', format: 'umd', name: 'MyLib', sourcemap: true, exports: 'named', globals: { react: 'React' } },
+    { file: "dist/index.js", format: "es", sourcemap: true, exports: "named" },
+    {
+      file: "dist/index.cjs",
+      format: "cjs",
+      sourcemap: true,
+      exports: "named",
+    },
+    {
+      file: "dist/index.umd.js",
+      format: "umd",
+      name: "MyLib",
+      sourcemap: true,
+      exports: "named",
+      globals: { react: "React" },
+    },
   ],
   // ② 外部依赖不打进包
-  external: ['react', 'react-dom'],
+  external: ["react", "react-dom"],
   // ③ 插件链
   plugins: [
-    alias({ entries: [{ find: '@', replacement: path.resolve('src') }] }),
-    resolve({ extensions: ['.ts', '.tsx', '.js'] }),
+    alias({ entries: [{ find: "@", replacement: path.resolve("src") }] }),
+    resolve({ extensions: [".ts", ".tsx", ".js"] }),
     commonjs(),
     json(),
     postcss({ extract: true, minimize: isProd }),
-    babel({ babelHelpers: 'bundled', extensions: ['.ts', '.tsx', '.js'], presets: [['@babel/preset-env', { targets: '>0.2%' }]] }),
+    babel({
+      babelHelpers: "bundled",
+      extensions: [".ts", ".tsx", ".js"],
+      presets: [["@babel/preset-env", { targets: ">0.2%" }]],
+    }),
     isProd && terser(),
   ].filter(Boolean),
   // ④ 监听
-  watch: { include: 'src/**', exclude: 'node_modules/**' },
+  watch: { include: "src/**", exclude: "node_modules/**" },
 };
 ```
 
 **逐项注解（高频关注点）**：
 
-| 配置项 | 高频用法 |
-| --- | --- |
-| `output.format` | 库通常发 `es` + `cjs`，UMD 给 CDN 用 |
-| `external` | peerDependencies（react 等）必须 external，否则重复打包 |
-| `exports: 'named'` | 禁止 `module.exports =`，保证 ESM 互操作 |
-| `globals` | UMD 模式下把 external 映射到全局变量名 |
-| `babelHelpers: 'bundled'` | 不依赖 `@babel/runtime`，打库更简单 |
-| `preserveModules` | 想保留源码目录结构时可开（输出多文件） |
+| 配置项                    | 高频用法                                                |
+| ------------------------- | ------------------------------------------------------- |
+| `output.format`           | 库通常发 `es` + `cjs`，UMD 给 CDN 用                    |
+| `external`                | peerDependencies（react 等）必须 external，否则重复打包 |
+| `exports: 'named'`        | 禁止 `module.exports =`，保证 ESM 互操作                |
+| `globals`                 | UMD 模式下把 external 映射到全局变量名                  |
+| `babelHelpers: 'bundled'` | 不依赖 `@babel/runtime`，打库更简单                     |
+| `preserveModules`         | 想保留源码目录结构时可开（输出多文件）                  |
 
 **常用插件速查**：`@rollup/plugin-node-resolve`、`@rollup/plugin-commonjs`、`@rollup/plugin-babel`、`@rollup/plugin-json`、`@rollup/plugin-alias`、`@rollup/plugin-replace`、`rollup-plugin-postcss`、`@rollup/plugin-terser`、`rollup-plugin-visualizer`。
 
@@ -1341,37 +1443,39 @@ esbuild src/index.ts \
 
 ```js
 // JS API 高频字段
-require('esbuild').build({
-  entryPoints: ['src/index.ts'],
-  bundle: true,                 // 打包依赖
-  minify: true,                 // 压缩
-  sourcemap: true,
-  format: 'esm',                // esm | cjs | iife
-  target: 'es2018',             // 语法降级目标（无 polyfill）
-  outfile: 'dist/index.js',
-  loader: { '.css': 'css', '.glsl': 'text' },
-  external: ['react'],          // 不打包
-  platform: 'browser',          // browser | node
-  jsx: 'automatic',             // React 17+ 自动导入
-  define: { 'process.env.NODE_ENV': '"production"' },
-  alias: { '@': './src' },
-  splitting: false,             // esm 格式下可开启代码分割
-  metafile: true,               // 生成分析数据，配合 analyze 看体积
-}).catch(() => process.exit(1));
+require("esbuild")
+  .build({
+    entryPoints: ["src/index.ts"],
+    bundle: true, // 打包依赖
+    minify: true, // 压缩
+    sourcemap: true,
+    format: "esm", // esm | cjs | iife
+    target: "es2018", // 语法降级目标（无 polyfill）
+    outfile: "dist/index.js",
+    loader: { ".css": "css", ".glsl": "text" },
+    external: ["react"], // 不打包
+    platform: "browser", // browser | node
+    jsx: "automatic", // React 17+ 自动导入
+    define: { "process.env.NODE_ENV": '"production"' },
+    alias: { "@": "./src" },
+    splitting: false, // esm 格式下可开启代码分割
+    metafile: true, // 生成分析数据，配合 analyze 看体积
+  })
+  .catch(() => process.exit(1));
 ```
 
 **高频 flag 速查**：
 
-| flag / 字段 | 作用 |
-| --- | --- |
-| `--bundle` / `bundle` | 解析并合并依赖 |
-| `--minify` / `minify` | 压缩（JS/CSS 都压） |
-| `--format` / `format` | 输出模块格式 |
-| `--target` / `target` | 语法降级目标（**不做 API polyfill**） |
-| `--external` / `external` | 标记外部依赖 |
-| `--loader` / `loader` | 文件类型解析器 |
-| `--define` / `define` | 编译期常量替换 |
-| `--metafile` / `metafile` | 产物分析元数据 |
+| flag / 字段               | 作用                                  |
+| ------------------------- | ------------------------------------- |
+| `--bundle` / `bundle`     | 解析并合并依赖                        |
+| `--minify` / `minify`     | 压缩（JS/CSS 都压）                   |
+| `--format` / `format`     | 输出模块格式                          |
+| `--target` / `target`     | 语法降级目标（**不做 API polyfill**） |
+| `--external` / `external` | 标记外部依赖                          |
+| `--loader` / `loader`     | 文件类型解析器                        |
+| `--define` / `define`     | 编译期常量替换                        |
+| `--metafile` / `metafile` | 产物分析元数据                        |
 
 ### 10.5 Rspack 高频配置
 
@@ -1379,55 +1483,87 @@ Rspack 配置与 Webpack **高度兼容**，主要差异是转译器和内置插
 
 ```js
 // rspack.config.js
-const path = require('path');
-const { rspack } = require('@rspack/core');
-const HtmlRspackPlugin = require('@rspack/plugin-html');
+const path = require("path");
+const { rspack } = require("@rspack/core");
+const HtmlRspackPlugin = require("@rspack/plugin-html");
 
 module.exports = {
-  mode: 'production',
-  entry: { app: './src/main.tsx' },
-  output: { path: path.resolve(__dirname, 'dist'), filename: 'js/[name].[contenthash].js', clean: true },
-  resolve: { extensions: ['.tsx', '.ts', '.js'], alias: { '@': path.resolve('src') } },
+  mode: "production",
+  entry: { app: "./src/main.tsx" },
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "js/[name].[contenthash].js",
+    clean: true,
+  },
+  resolve: {
+    extensions: [".tsx", ".ts", ".js"],
+    alias: { "@": path.resolve("src") },
+  },
   module: {
     rules: [
       // ① 用内置 SWC loader，无需 babel-loader
-      { test: /\.tsx?$/, use: [{
-        loader: 'builtin:swc-loader',
-        options: { jsc: { parser: { syntax: 'typescript' }, transform: { react: { runtime: 'automatic' } } } },
-      }] },
-      { test: /\.css$/, use: [rspack.CssExtractRspackPlugin.loader, 'css-loader'] },
-      { test: /\.(png|jpe?g|svg)$/, type: 'asset', parser: { dataUrlCondition: { maxSize: 8 * 1024 } } },
+      {
+        test: /\.tsx?$/,
+        use: [
+          {
+            loader: "builtin:swc-loader",
+            options: {
+              jsc: {
+                parser: { syntax: "typescript" },
+                transform: { react: { runtime: "automatic" } },
+              },
+            },
+          },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: [rspack.CssExtractRspackPlugin.loader, "css-loader"],
+      },
+      {
+        test: /\.(png|jpe?g|svg)$/,
+        type: "asset",
+        parser: { dataUrlCondition: { maxSize: 8 * 1024 } },
+      },
     ],
   },
   plugins: [
-    new HtmlRspackPlugin({ template: './public/index.html' }),
-    new rspack.CssExtractRspackPlugin({ filename: 'css/[name].[contenthash].css' }),
-    new rspack.DefinePlugin({ 'process.env.NODE_ENV': JSON.stringify('production') }),
+    new HtmlRspackPlugin({ template: "./public/index.html" }),
+    new rspack.CssExtractRspackPlugin({
+      filename: "css/[name].[contenthash].css",
+    }),
+    new rspack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify("production"),
+    }),
     new rspack.ProgressPlugin(),
   ],
   optimization: {
     minimize: true,
     minimizer: [
-      new rspack.SwcJsMinimizerRspackPlugin(),       // JS 压缩
+      new rspack.SwcJsMinimizerRspackPlugin(), // JS 压缩
       new rspack.LightningCssMinimizerRspackPlugin(), // CSS 压缩（基于 Lightning CSS）
     ],
-    splitChunks: { chunks: 'all' },
+    splitChunks: { chunks: "all" },
   },
-  devServer: { hot: true, port: 3000, proxy: { '/api': 'http://localhost:8080' } },
+  devServer: {
+    hot: true,
+    port: 3000,
+    proxy: { "/api": "http://localhost:8080" },
+  },
 };
 ```
 
 **与 Webpack 的关键差异（迁移时记住）**：
 
-| 维度 | Webpack | Rspack |
-| --- | --- | --- |
-| TS/JS 转译 | `babel-loader` / `ts-loader` | `builtin:swc-loader`（内置，更快） |
-| CSS 抽离插件 | `mini-css-extract-plugin` | `rspack.CssExtractRspackPlugin` |
-| 常量替换 | `webpack.DefinePlugin` | `rspack.DefinePlugin` |
-| 进度条 | `webpackbar` | `rspack.ProgressPlugin` |
-| JS 压缩 | `terser-webpack-plugin` | `rspack.SwcJsMinimizerRspackPlugin` |
-| CSS 压缩 | `css-minimizer-webpack-plugin` | `rspack.LightningCssMinimizerRspackPlugin` |
-| 资源处理 | `asset/resource` 通用 | 同样支持 `type: 'asset'`，无需 file-loader |
+| 维度         | Webpack                        | Rspack                                     |
+| ------------ | ------------------------------ | ------------------------------------------ |
+| TS/JS 转译   | `babel-loader` / `ts-loader`   | `builtin:swc-loader`（内置，更快）         |
+| CSS 抽离插件 | `mini-css-extract-plugin`      | `rspack.CssExtractRspackPlugin`            |
+| 常量替换     | `webpack.DefinePlugin`         | `rspack.DefinePlugin`                      |
+| 进度条       | `webpackbar`                   | `rspack.ProgressPlugin`                    |
+| JS 压缩      | `terser-webpack-plugin`        | `rspack.SwcJsMinimizerRspackPlugin`        |
+| CSS 压缩     | `css-minimizer-webpack-plugin` | `rspack.LightningCssMinimizerRspackPlugin` |
+| 资源处理     | `asset/resource` 通用          | 同样支持 `type: 'asset'`，无需 file-loader |
 
 > 大部分 Webpack 的 `module.rules`、`resolve`、`optimization.splitChunks`、`entry/output` 写法可直接复用，迁移成本很低。
 
@@ -1442,15 +1578,15 @@ const nextConfig = {
   experimental: {
     turbo: {
       // ① 别名
-      resolveAlias: { '@': './src' },
+      resolveAlias: { "@": "./src" },
       // ② 强制转译指定包（默认不转译 node_modules）
-      transpilePackages: ['lodash-es', 'some-esm-pkg'],
+      transpilePackages: ["lodash-es", "some-esm-pkg"],
       // ③ 自定义 loader（按文件后缀匹配）
       rules: {
-        '*.svg': { loaders: ['@svgr/webpack'], as: '*.js' },
+        "*.svg": { loaders: ["@svgr/webpack"], as: "*.js" },
       },
       // ④ 环境变量（编译期注入）
-      env: { NEXT_PUBLIC_API: 'https://api.x.com' },
+      env: { NEXT_PUBLIC_API: "https://api.x.com" },
     },
   },
 };
@@ -1461,12 +1597,12 @@ export default nextConfig;
 
 **高频关注点**：
 
-| 配置 | 说明 |
-| --- | --- |
-| `transpilePackages` | 解决某些 ESM 包未被正确转译的问题 |
-| `resolveAlias` | 替代 webpack 的 `resolve.alias` |
-| `rules` | 替代 webpack 的 `module.rules`（按扩展名） |
-| `env` | 编译期常量，等价于 DefinePlugin |
+| 配置                | 说明                                       |
+| ------------------- | ------------------------------------------ |
+| `transpilePackages` | 解决某些 ESM 包未被正确转译的问题          |
+| `resolveAlias`      | 替代 webpack 的 `resolve.alias`            |
+| `rules`             | 替代 webpack 的 `module.rules`（按扩展名） |
+| `env`               | 编译期常量，等价于 DefinePlugin            |
 
 > Turbopack 把「该转译谁、如何分包」做了智能默认，多数项目零配置即可跑；需要精细控制时再用上面的 `turbo` 字段。
 
@@ -1479,9 +1615,9 @@ Parcel 主打**零配置**：只要 `parcel src/index.html` 即可，它会从 H
 {
   "extends": "@parcel/config-default",
   "transformers": {
-    "*.module.css": ["...", "@parcel/transformer-css"]
+    "*.module.css": ["...", "@parcel/transformer-css"],
   },
-  "reporters": ["...", "./custom-reporter.js"]
+  "reporters": ["...", "./custom-reporter.js"],
 }
 ```
 
@@ -1490,23 +1626,23 @@ Parcel 主打**零配置**：只要 `parcel src/index.html` 即可，它会从 H
 {
   "browserslist": ["> 0.5%", "last 2 versions", "not dead"],
   "targets": {
-    "main": { "distDir": "./dist", "source": "src/index.html" }
+    "main": { "distDir": "./dist", "source": "src/index.html" },
   },
   "scripts": {
     "dev": "parcel src/index.html",
-    "build": "parcel build src/index.html"
-  }
+    "build": "parcel build src/index.html",
+  },
 }
 ```
 
 **高频关注点**：
 
-| 配置 | 说明 |
-| --- | --- |
-| 入口文件 | 直接传 `index.html` / `.js` / `.ts`，无需配置 entry |
-| `.parcelrc` | 需要自定义 transformer / reporter 时改 |
-| `browserslist` | 决定降级与 polyfill 目标（与 babel/postcss 共用） |
-| 缓存 | 默认 `.parcel-cache`，无需手动开 |
+| 配置           | 说明                                                |
+| -------------- | --------------------------------------------------- |
+| 入口文件       | 直接传 `index.html` / `.js` / `.ts`，无需配置 entry |
+| `.parcelrc`    | 需要自定义 transformer / reporter 时改              |
+| `browserslist` | 决定降级与 polyfill 目标（与 babel/postcss 共用）   |
+| 缓存           | 默认 `.parcel-cache`，无需手动开                    |
 
 > Parcel 适合小项目、原型、快速验证；超大型应用定制能力不如 Webpack/Vite。
 
@@ -1520,13 +1656,20 @@ Parcel 主打**零配置**：只要 `parcel src/index.html` 即可，它会从 H
 // babel.config.json
 {
   "presets": [
-    ["@babel/preset-env", { "targets": "> 0.5%, last 2 versions, not dead", "useBuiltIns": "usage", "corejs": 3 }],
+    [
+      "@babel/preset-env",
+      {
+        "targets": "> 0.5%, last 2 versions, not dead",
+        "useBuiltIns": "usage",
+        "corejs": 3
+      }
+    ],
     ["@babel/preset-react", { "runtime": "automatic" }],
     "@babel/preset-typescript"
   ],
   "plugins": [
     ["@babel/plugin-transform-runtime", { "corejs": false }],
-    "@babel/plugin-proposal-decorators"   // 按需开
+    "@babel/plugin-proposal-decorators" // 按需开
   ]
 }
 ```
@@ -1537,8 +1680,8 @@ Parcel 主打**零配置**：只要 `parcel src/index.html` 即可，它会从 H
 // postcss.config.js
 module.exports = {
   plugins: [
-    require('autoprefixer')(),                  // 按 browserslist 加前缀
-    require('postcss-preset-env')({ stage: 2 }), // 用新 CSS 语法并降级
+    require("autoprefixer")(), // 按 browserslist 加前缀
+    require("postcss-preset-env")({ stage: 2 }), // 用新 CSS 语法并降级
   ],
 };
 ```
@@ -1550,17 +1693,17 @@ module.exports = {
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Bundler",     // Vite/现代工具推荐（替代 node）
+    "moduleResolution": "Bundler", // Vite/现代工具推荐（替代 node）
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "strict": true,
-    "noEmit": true,                    // 交给打包器转译，tsc 只检查类型
-    "isolatedModules": true,           // 配合 esbuild/babel 必须开
+    "noEmit": true, // 交给打包器转译，tsc 只检查类型
+    "isolatedModules": true, // 配合 esbuild/babel 必须开
     "esModuleInterop": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }      // 与构建工具 alias 保持一致
+    "paths": { "@/*": ["src/*"] } // 与构建工具 alias 保持一致
   },
   "include": ["src"]
 }
@@ -1572,17 +1715,17 @@ module.exports = {
 
 把最常用、最容易混淆的配置项横向对比，方便「换工具时对照写」：
 
-| 配置维度 | Webpack | Vite | Rollup | Rspack | esbuild | Turbopack | Parcel |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **入口** | `entry` | `build.rollupOptions.input` / 默认 `index.html` | `input` | `entry` | `entryPoints` | 无（Next 入口固定） | 命令行传文件 |
-| **出口** | `output` | `build.outDir` | `output` | `output` | `outfile/outdir` | 无 | `targets.distDir` |
-| **别名** | `resolve.alias` | `resolve.alias` | `@rollup/plugin-alias` | `resolve.alias` | `alias` | `turbo.resolveAlias` | 默认无 |
-| **分包** | `optimization.splitChunks` | `build.rollupOptions.output.manualChunks` | `output.manualChunks` | `optimization.splitChunks` | `splitting` | 自动 | 自动 |
-| **压缩** | `terser` / `css-minimizer` | `build.minify` (esbuild) | `@rollup/plugin-terser` | `SwcJs/LightningCss`  Minimizer | `--minify` | 自动 | 自动 |
-| **代理/DevServer** | `devServer.proxy` | `server.proxy` | 无（库不跑） | `devServer.proxy` | 无 | `turbo.rules` | 自动 |
-| **环境变量** | `DefinePlugin` | `import.meta.env` / `define` | `@rollup/plugin-replace` | `DefinePlugin` | `define` | `turbo.env` | 无 |
-| **插件机制** | `plugins` 数组 | `plugins` 数组（Rollup 钩子） | `plugins` 数组 | `plugins` 数组 | 较弱 | 声明式 `turbo.*` | `.parcelrc` |
-| **配置语言** | `webpack.config.js` (CJS/ESM) | `vite.config.js` (ESM) | `rollup.config.js` (ESM) | `rspack.config.js` | `esbuild.config` / CLI | `next.config.mjs` | `.parcelrc` / `package.json` |
+| 配置维度           | Webpack                       | Vite                                            | Rollup                   | Rspack                         | esbuild                | Turbopack            | Parcel                       |
+| ------------------ | ----------------------------- | ----------------------------------------------- | ------------------------ | ------------------------------ | ---------------------- | -------------------- | ---------------------------- |
+| **入口**           | `entry`                       | `build.rollupOptions.input` / 默认 `index.html` | `input`                  | `entry`                        | `entryPoints`          | 无（Next 入口固定）  | 命令行传文件                 |
+| **出口**           | `output`                      | `build.outDir`                                  | `output`                 | `output`                       | `outfile/outdir`       | 无                   | `targets.distDir`            |
+| **别名**           | `resolve.alias`               | `resolve.alias`                                 | `@rollup/plugin-alias`   | `resolve.alias`                | `alias`                | `turbo.resolveAlias` | 默认无                       |
+| **分包**           | `optimization.splitChunks`    | `build.rollupOptions.output.manualChunks`       | `output.manualChunks`    | `optimization.splitChunks`     | `splitting`            | 自动                 | 自动                         |
+| **压缩**           | `terser` / `css-minimizer`    | `build.minify` (esbuild)                        | `@rollup/plugin-terser`  | `SwcJs/LightningCss` Minimizer | `--minify`             | 自动                 | 自动                         |
+| **代理/DevServer** | `devServer.proxy`             | `server.proxy`                                  | 无（库不跑）             | `devServer.proxy`              | 无                     | `turbo.rules`        | 自动                         |
+| **环境变量**       | `DefinePlugin`                | `import.meta.env` / `define`                    | `@rollup/plugin-replace` | `DefinePlugin`                 | `define`               | `turbo.env`          | 无                           |
+| **插件机制**       | `plugins` 数组                | `plugins` 数组（Rollup 钩子）                   | `plugins` 数组           | `plugins` 数组                 | 较弱                   | 声明式 `turbo.*`     | `.parcelrc`                  |
+| **配置语言**       | `webpack.config.js` (CJS/ESM) | `vite.config.js` (ESM)                          | `rollup.config.js` (ESM) | `rspack.config.js`             | `esbuild.config` / CLI | `next.config.mjs`    | `.parcelrc` / `package.json` |
 
 > 记忆：Vite 的 `build` 内部就是 Rollup，所以「出口 / 分包 / 插件」基本照搬 Rollup 写法；Rspack 几乎照搬 Webpack 写法；Turbopack/Parcel 走「约定优于配置」路线，需要手写的不多。
 
@@ -1617,18 +1760,18 @@ module.exports = {
 
 ### 11.2 一句话总结各工具
 
-| 工具 | 一句话定位 |
-| --- | --- |
-| Webpack | 「什么都能配」的全能老将，生态最稳 |
-| Vite | 现代应用首选，开发体验天花板 |
-| Rollup | 库打包标杆，输出最干净 |
-| esbuild | 极速引擎，被无数工具当底层 |
-| Rolldown | Rollup 的 Rust 未来版，Vite 下一代内核 |
-| Rspack | Webpack 配置的 Rust 提速平替 |
-| Turbopack | Next.js 专用的增量打包器 |
-| Parcel | 零配置、开箱即用的小项目神器 |
-| SWC | Rust 版 Babel，转译压缩都快 |
-| tsup/unbuild | 库的「懒人」打包封装 |
+| 工具         | 一句话定位                             |
+| ------------ | -------------------------------------- |
+| Webpack      | 「什么都能配」的全能老将，生态最稳     |
+| Vite         | 现代应用首选，开发体验天花板           |
+| Rollup       | 库打包标杆，输出最干净                 |
+| esbuild      | 极速引擎，被无数工具当底层             |
+| Rolldown     | Rollup 的 Rust 未来版，Vite 下一代内核 |
+| Rspack       | Webpack 配置的 Rust 提速平替           |
+| Turbopack    | Next.js 专用的增量打包器               |
+| Parcel       | 零配置、开箱即用的小项目神器           |
+| SWC          | Rust 版 Babel，转译压缩都快            |
+| tsup/unbuild | 库的「懒人」打包封装                   |
 
 ### 11.3 新手学习路线建议
 
@@ -1667,21 +1810,21 @@ npx tsup src/index.ts --format esm,cjs --dts
 
 ### B. 术语表
 
-| 术语 | 含义 |
-| --- | --- |
-| Bundle | 最终输出的可执行 JS 文件 |
-| Chunk | 构建中间的分组（一组 module） |
-| Asset | dist 下所有产物（js/css/图片/html） |
-| Module | 单个源文件 |
-| ESM | ES Module，静态 `import/export` |
-| HMR | Hot Module Replacement，热模块替换 |
-| Tree Shaking | 删除未引用代码 |
-| Code Splitting | 代码分割（拆 chunk） |
-| Pre-Bundling | Vite 对依赖预构建（CJS→ESM、合并请求） |
-| Side Effects | 副作用，影响摇树判定 |
-| Source Map | 源码映射，便于调试 |
-| Content Hash | 内容指纹，用于长缓存 |
-| Browserslist | 目标浏览器声明（统一降级标准） |
+| 术语           | 含义                                   |
+| -------------- | -------------------------------------- |
+| Bundle         | 最终输出的可执行 JS 文件               |
+| Chunk          | 构建中间的分组（一组 module）          |
+| Asset          | dist 下所有产物（js/css/图片/html）    |
+| Module         | 单个源文件                             |
+| ESM            | ES Module，静态 `import/export`        |
+| HMR            | Hot Module Replacement，热模块替换     |
+| Tree Shaking   | 删除未引用代码                         |
+| Code Splitting | 代码分割（拆 chunk）                   |
+| Pre-Bundling   | Vite 对依赖预构建（CJS→ESM、合并请求） |
+| Side Effects   | 副作用，影响摇树判定                   |
+| Source Map     | 源码映射，便于调试                     |
+| Content Hash   | 内容指纹，用于长缓存                   |
+| Browserslist   | 目标浏览器声明（统一降级标准）         |
 
 ### C. 官方文档导航
 

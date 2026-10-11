@@ -5,7 +5,15 @@
  */
 import { onMounted, onUnmounted, ref } from 'vue'
 
+import { revealOnScroll, useMotion } from '../animations/motion'
 import { featurePanels } from '../data/features'
+
+const root = ref<HTMLElement | null>(null)
+
+// 工具栏首次进入视口时，5 个标签依次落位（指示条仍由 scroll 驱动的既有逻辑负责）
+useMotion(root, (tools, element) =>
+  revealOnScroll(tools, element, { distance: 10, stagger: 0.055, start: 'top 94%' }),
+)
 
 const activeSection = ref(featurePanels[0].id)
 const underlineStyle = ref({ left: '0px', width: '0px' })
@@ -75,12 +83,22 @@ onUnmounted(() => {
 
 <template>
   <div class="wrapper wrapper--ticks border-t w-full relative z-20"></div>
-  <section class="wrapper sticky top-0 border-b bg-primary z-10 overflow-hidden">
+  <section
+    ref="root"
+    data-motion-scope
+    class="wrapper sticky top-0 border-b bg-primary z-10 overflow-hidden"
+  >
     <ul
       class="w-full sm:grid sm:grid-cols-5 flex items-center divide-x divide-nickel relative overflow-x-auto touch-none sm:touch-auto select-none sm:select-auto"
     >
       <div class="feature-toolbar-underline" :style="underlineStyle" />
-      <li v-for="panel in featurePanels" :key="panel.id" ref="listItems" class="flex-shrink-0">
+      <li
+        v-for="panel in featurePanels"
+        :key="panel.id"
+        ref="listItems"
+        data-reveal
+        class="flex-shrink-0"
+      >
         <a
           :href="`#${panel.id}`"
           class="h-full text-sm font-mono tracking-tight py-4 px-6 sm:px-0 flex justify-center items-center gap-1.5 transition-colors duration-200 whitespace-nowrap"

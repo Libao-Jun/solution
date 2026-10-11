@@ -1,5 +1,6 @@
 {
   "name": "solution-docs",
+  "description": "面向前端工程师的知识手册站：按主题整理 HTML、浏览器、HTTP、JavaScript、TypeScript、主流框架、小程序与 App 开发等前端知识，可全文检索、可离线查阅。",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +9,7 @@
     "preview": "vitepress preview"
   },
   "dependencies": {
+    "gsap": "^3.15.0",
     "reka-ui": "^2.7.0"
   },
   "devDependencies": {

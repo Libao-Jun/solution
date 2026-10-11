@@ -6,7 +6,13 @@
 import { withBase } from 'vitepress'
 import { onBeforeUnmount, ref } from 'vue'
 
+import { revealOnScroll, useMotion } from '../animations/motion'
 import { installCommandCards } from '../data/features'
+
+const root = ref<HTMLElement | null>(null)
+
+// 左栏文案与右侧命令卡分两组入场：左侧跟随区块进入视口，右侧卡片从右滑入
+useMotion(root, (tools, element) => revealOnScroll(tools, element, { distance: 20 }))
 
 const copiedId = ref<string | null>(null)
 let copiedTimer: ReturnType<typeof setTimeout> | null = null
@@ -40,15 +46,17 @@ onBeforeUnmount(() => {
 
 <template>
   <section
+    ref="root"
+    data-motion-scope
     class="wrapper border-t grid lg:grid-cols-[0.9fr_1.1fr] divide-y lg:divide-y-0 lg:divide-x divide-stroke dark:divide-nickel"
   >
     <div class="px-5 py-6 sm:p-10 flex flex-col gap-4 justify-center">
-      <span class="text-grey text-xs font-mono uppercase tracking-wide">快速开始</span>
-      <h4>两条命令跑起来</h4>
-      <p class="max-w-[28rem] text-pretty">
+      <span data-reveal class="text-grey text-xs font-mono uppercase tracking-wide">快速开始</span>
+      <h4 data-reveal>两条命令跑起来</h4>
+      <p data-reveal class="max-w-[28rem] text-pretty">
         命令取自仓库中的 React 开发规范与 TypeScript 指南，可直接复制到终端执行。
       </p>
-      <p class="text-sm text-grey">
+      <p data-reveal class="text-sm text-grey">
         想先看规范？
         <a
           class="text-primary underline decoration-stroke underline-offset-4"
@@ -59,10 +67,11 @@ onBeforeUnmount(() => {
         。
       </p>
     </div>
-    <div class="px-5 py-6 sm:p-10 grid gap-4">
+    <div data-reveal-group class="px-5 py-6 sm:p-10 grid gap-4">
       <div
         v-for="card in installCommandCards"
         :key="card.id"
+        data-reveal="right"
         class="rounded-xl bg-primary text-white p-5 outline outline-white/10 transition-colors hover:bg-[#1a1a1a]"
       >
         <div class="flex items-start justify-between gap-4">

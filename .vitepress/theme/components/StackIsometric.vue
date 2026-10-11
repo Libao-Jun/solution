@@ -3,6 +3,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 // 方块链接必须经 withBase 处理，否则子路径部署（GitHub Pages /solution/）下会 404
 import { withBase } from 'vitepress'
 
+import { revealOnScroll, useMotion } from '../animations/motion'
 import { categories } from '../data/topics'
 
 /**
@@ -80,6 +81,19 @@ const W = COLS * TILE + (COLS - 1) * GAP // 272（6 格区域）
 const H = ROWS * TILE + (ROWS - 1) * GAP // 178
 const FACE_W = W + FACE_PAD * 2
 const FACE_H = H + FACE_PAD * 2
+/** 台面中心在画布里的坐标：入场时方块「从平台往外长」的方向基准 */
+const PLATFORM_CENTER = onScreen(W / 2, H / 2)
+/**
+ * 从平台中心指向 p 的单位向量 × d（屏幕坐标）。
+ * 入场位移用它而不是缩放原点：位移方向显式可控（导轨上的方块仍严格沿导轨方向滑入），
+ * 也不会像 GSAP `svgOrigin` 那样把「缩放原点」粘在元素上、影响后续悬停缩放的原点。
+ */
+const outward = (p: { x: number; y: number }, d: number) => {
+  const dx = p.x - PLATFORM_CENTER.x
+  const dy = p.y - PLATFORM_CENTER.y
+  const len = Math.hypot(dx, dy) || 1
+  return { x: round((dx / len) * d), y: round((dy / len) * d) }
+}
 /** 6 格之间的虚线分隔（落在格与格的缝隙里） */
 const separators = [
   [TILE + GAP / 2, 0, TILE + GAP / 2, H],
@@ -99,6 +113,8 @@ const tiles = platformDocs.map((doc, i) => {
     ...doc,
     label: short(doc.text),
     size: TILE,
+    /** 入场位移：从平台中心朝向自己的方向（靠中心的格位移小，靠外沿的更明显） */
+    drift: outward(onScreen(x + TILE / 2, y + TILE / 2), 14),
     shadow: isoMatrix(x, y, 6),
     face: isoMatrix(x, y),
     labelAt: textMatrix(x + TILE / 2, y + TILE / 2),
@@ -110,6 +126,8 @@ const tiles = platformDocs.map((doc, i) => {
 /* ---------------- 导轨 + 落在导轨上的方块 ---------------- */
 const SAT_W = 92
 const SAT_H = 50
+/** 入场时方块沿导轨滑入的距离（屏幕像素） */
+const SAT_DRIFT = 24
 type RailDef = { axis: 'x' | 'y'; offset: number; to: number; cubes: { doc: Doc; at: number }[] }
 
 /**
@@ -178,7 +196,7 @@ const rails = railDefs.map((r, i) => {
 
 /** 方块：中心对齐导轨，于是「线从方块下面穿过」而不是「另拉一根支线」 */
 let satIndex = 0
-const satellites = railDefs.flatMap((r) =>
+const satellites = railDefs.flatMap((r, railIndex) =>
   r.cubes.map((c) => {
     const cx = r.axis === 'x' ? c.at : r.offset
     const cy = r.axis === 'x' ? r.offset : c.at
@@ -192,6 +210,16 @@ const satellites = railDefs.flatMap((r) =>
       label: short(c.doc.text),
       w: SAT_W,
       h: SAT_H,
+      /** 所属导轨下标：悬停时高亮这条导轨用 */
+      rail: railIndex,
+      /**
+       * 入场位移：**严格沿所在导轨**从外侧滑进来。
+       * x 轴导轨的外侧在屏幕左上（-x 方向 → (-IX, -IY)）；y 轴导轨的外侧在屏幕右上（-y 方向 → (IX, -IY)）。
+       */
+      drift:
+        r.axis === 'x'
+          ? { x: -round(IX * SAT_DRIFT), y: -round(IY * SAT_DRIFT) }
+          : { x: round(IX * SAT_DRIFT), y: -round(IY * SAT_DRIFT) },
       base: isoMatrix(x, y, 12),
       face: isoMatrix(x, y),
       labelAt: textMatrix(cx, cy),
@@ -205,23 +233,30 @@ const satellites = railDefs.flatMap((r) =>
 const CARD_W = 70
 const CARD_H = 38
 const CARD_STEP = 60
+/** 入场时卡片沿它到平台的连线滑出的距离（屏幕像素） */
+const CARD_DRIFT = 26
 const cards = bottomDocs.map((doc, i) => {
   const x = 170 + i * CARD_STEP
   const y = H + 245 - i * CARD_STEP
   const cx = x + CARD_W / 2
   const cy = y + CARD_H / 2
-  const a = onScreen(W / 2, H / 2)
+  const a = PLATFORM_CENTER
   const b = onScreen(cx, cy)
+  const len = Math.round(Math.hypot(b.x - a.x, b.y - a.y))
   return {
     ...doc,
     label: short(doc.text),
     w: CARD_W,
     h: CARD_H,
+    /** 卡片下标：悬停时高亮它到平台的那条连线用（连线在模板里按同样顺序渲染） */
+    index: i,
+    /** 入场位移：沿「平台 → 卡片」的连线，起点在靠平台一侧，卡片沿线飞出去 */
+    drift: outward(b, CARD_DRIFT),
     base: isoMatrix(x, y, 8),
     face: isoMatrix(x, y),
     labelAt: textMatrix(cx, cy),
     line: { x1: a.x, y1: a.y, x2: b.x, y2: b.y },
-    len: Math.round(Math.hypot(b.x - a.x, b.y - a.y)),
+    len,
     delay: `${700 + i * 50}ms`,
     floatDelay: `-${round((i * 0.6) % 7)}s`,
   }
@@ -248,6 +283,8 @@ const platformLabel = isoMatrix(W / 2, H + FACE_PAD, DEPTH * 0.62)
 const root = ref<HTMLElement | null>(null)
 const revealed = ref(false) // 进入视口后播放入场动画（一次）
 const visible = ref(false) // 在视口内时才跑持续漂浮（离开即暂停，省电）
+/** GSAP 接管入场的标记：样式里的 `.is-motion` 会停用 CSS 入场，避免两套动画抢 transform / stroke-dashoffset */
+const motion = ref(false)
 let io: IntersectionObserver | null = null
 
 onMounted(() => {
@@ -275,14 +312,235 @@ onUnmounted(() => {
   io?.disconnect()
   io = null
 })
+
+/**
+ * GSAP 增强（不回退上面那套 CSS 动效）：
+ *
+ * 1. 入场编排：GSAP 接管时给 svg 挂 `.is-motion`（样式里据此停用 CSS 的 iso-in / iso-draw），
+ *    改由**一条时间线**按物理层次编排：
+ *    投影 → 平台升起 → 正面文字字距收拢 → 台面 6 格从平台中心长出 → 导轨从平台向外生长 →
+ *    导轨方块沿轨滑入 → 底部连线画出 + 卡片飞出 → 装饰虚线浮现。
+ *    「向外」的位移方向由数据侧算好（`drift`）：导轨上的方块**严格沿所在导轨**滑入、
+ *    底部卡片沿「平台 → 卡片」的连线飞出、台面格子朝平台外沿长出来——
+ *    进场方向与静态几何同源，不会把方块送离它该在的那条线上。
+ *    CSS 入场仍保留为兜底：无 JS / 减少动态效果 / 进视口时 GSAP 还没就绪 三种情况都还能正常播。
+ * 2. 常驻漂浮 / 台面虚线流动 / 投影呼吸继续走 CSS（iso-float / iso-drift / iso-shadow）——
+ *    GSAP 一律不碰 `.float` 这一层：同一个元素上 CSS transform 会覆盖 SVG 的 transform 属性，两套必须分层。
+ * 3. 交互：方块悬停缩放 + 同类方块变暗聚焦 + 所在导轨 / 连线高亮并「流动」。
+ */
+useMotion(root, (tools, element) => {
+  const { gsap } = tools
+  revealOnScroll(tools, element, { distance: 16, stagger: 0.07 })
+
+  const svg = element.querySelector('svg')
+  if (!svg) {
+    return
+  }
+
+  const pick = <T extends Element>(selector: string) => gsap.utils.toArray<T>(selector, svg)
+
+  const shadowEls = pick<SVGElement>('[data-iso="shadow"]')
+  const platformEls = pick<SVGElement>('[data-iso="platform"]')
+  const labelEls = pick<SVGElement>('[data-iso="label"]')
+  // 注意命名：元素列表一律 *Els 后缀，别和上面同名的数据数组（tiles / satellites / cards）撞名——
+  // 撞名会让 `tiles[i].drift` 读到 SVG 元素而不是数据（曾因此整条入场时间线抛错）
+  const tileEls = pick<SVGElement>('[data-iso="tile"]')
+  const satEls = pick<SVGElement>('[data-iso="sat"]')
+  const cardEls = pick<SVGElement>('[data-iso="card"]')
+  const railEls = pick<SVGLineElement>('[data-iso="rail"]')
+  const lineEls = pick<SVGLineElement>('[data-iso="cardline"]')
+  const dropEls = pick<SVGElement>('[data-iso="drops"]')
+
+  const blocks = [...tileEls, ...satEls, ...cardEls]
+  const lines = [...railEls, ...lineEls]
+  const cleanups: Array<() => void> = []
+
+  /* 缩放原点显式设在方块自身中心（GSAP 会把它烘进矩阵，位移量正好是中心 ×(1-scale)） */
+  blocks.forEach((el) => gsap.set(el, { transformOrigin: '50% 50%' }))
+
+  /**
+   * ★ 悬停缩放必须用 `gsap.to`，**不要用 `gsap.quickTo(el, 'scale')`**：
+   *   SVG 元素的 scale 在 CSSPlugin 里被拆成 scaleX / scaleY 两个 propTween，
+   *   quickTo 的 `resetTo('scale')` 找不到同名 propTween → 静默不生效（实测矩阵始终是 identity）。
+   *   `overwrite: 'auto'` 让来回快速切换时旧 tween 被收掉，不会越积越多互相抢。
+   */
+  const scaleTo = (el: Element, value: number, duration = 0.3) =>
+    gsap.to(el, { scale: value, duration, ease: 'power2.out', overwrite: 'auto' })
+
+  const lineStroke = getComputedStyle(lines[0] ?? svg).stroke || '#E4E2EC'
+  const brand = getComputedStyle(element).getPropertyValue('--color-brand').trim() || '#4F30E8'
+  /** 导轨 / 连线的流动虚线动画（悬停时创建，离开时销毁） */
+  let flow: gsap.core.Tween | null = null
+
+  /** 方块 → 它所在的那条导轨 / 连线 */
+  const relatedLine = (el: Element) => {
+    const { rail, line } = (el as HTMLElement).dataset
+    if (rail !== undefined) {
+      return railEls[Number(rail)] ?? null
+    }
+    if (line !== undefined) {
+      return lineEls[Number(line)] ?? null
+    }
+    return null
+  }
+
+  /** 悬停聚焦：本方放大、同类变暗、关联线高亮并向平台方向流动；传 null 复位 */
+  const setFocus = (target: Element | null) => {
+    if (target) {
+      scaleTo(target, 1.07)
+    }
+    gsap.to(target ? blocks.filter((el) => el !== target) : blocks, {
+      scale: target ? 0.985 : 1,
+      opacity: target ? 0.42 : 1,
+      duration: 0.3,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    })
+
+    flow?.kill()
+    flow = null
+    // 复位所有线：实线 + 原色（dasharray 置 none 即实线，与入场结束后的观感一致）
+    gsap.set(lines, { strokeDasharray: 'none', strokeDashoffset: 0 })
+    gsap.to(lines, { stroke: lineStroke, strokeWidth: 1, duration: 0.3, overwrite: 'auto' })
+
+    const line = target ? relatedLine(target) : null
+    if (line) {
+      // 虚线周期 = 10 + 6 = 16：offset 每轮正好走 -16，循环处无跳变
+      gsap.set(line, { strokeDasharray: '10 6', strokeDashoffset: 0 })
+      gsap.to(line, { stroke: brand, strokeWidth: 1.8, duration: 0.25, overwrite: 'auto' })
+      flow = gsap.to(line, { strokeDashoffset: -16, duration: 0.9, ease: 'none', repeat: -1 })
+    }
+  }
+
+  /** 入场结束后才绑定指针交互：避免与入场 tween 抢同一个 scale / opacity */
+  const bindInteractions = () => {
+    blocks.forEach((el) => {
+      let hovered = false
+      const onEnter = () => {
+        hovered = true
+        setFocus(el)
+      }
+      const onLeave = () => {
+        hovered = false
+        setFocus(null)
+      }
+      const onDown = () => scaleTo(el, 0.97, 0.15)
+      const onUp = () => scaleTo(el, hovered ? 1.07 : 1, 0.2)
+      el.addEventListener('pointerenter', onEnter)
+      el.addEventListener('pointerleave', onLeave)
+      el.addEventListener('pointerdown', onDown)
+      el.addEventListener('pointerup', onUp)
+      cleanups.push(() => {
+        el.removeEventListener('pointerenter', onEnter)
+        el.removeEventListener('pointerleave', onLeave)
+        el.removeEventListener('pointerdown', onDown)
+        el.removeEventListener('pointerup', onUp)
+      })
+    })
+  }
+
+  const setupEntrance = () => {
+    /* 起点（JS 侧生成；GSAP 不参与时页面仍是完整静态内容，绝不用 CSS 先隐藏） */
+    gsap.set(shadowEls, { autoAlpha: 0, scale: 0.9, transformOrigin: '50% 50%' })
+    gsap.set(platformEls, { autoAlpha: 0, y: 34 })
+    gsap.set(labelEls, { autoAlpha: 0, letterSpacing: '18px' })
+    // x / y 起点按各自数据给的「向外位移」逐块取（函数式取值，避免 20 多个 tween 各写一遍）
+    gsap.set(tileEls, {
+      autoAlpha: 0,
+      scale: 0.88,
+      x: (i: number) => tiles[i]?.drift.x ?? 0,
+      y: (i: number) => tiles[i]?.drift.y ?? 0,
+    })
+    gsap.set(satEls, {
+      autoAlpha: 0,
+      scale: 0.8,
+      x: (i: number) => satellites[i]?.drift.x ?? 0,
+      y: (i: number) => satellites[i]?.drift.y ?? 0,
+    })
+    gsap.set(cardEls, {
+      autoAlpha: 0,
+      scale: 0.82,
+      x: (i: number) => cards[i]?.drift.x ?? 0,
+      y: (i: number) => cards[i]?.drift.y ?? 0,
+    })
+    gsap.set(dropEls, { autoAlpha: 0 })
+    railEls.forEach((line) => {
+      const len = line.getTotalLength()
+      // dashoffset 从 -len 到 0：从平台那头（P2）向外生长
+      gsap.set(line, { strokeDasharray: len, strokeDashoffset: -len })
+    })
+    lineEls.forEach((line) => {
+      const len = line.getTotalLength()
+      // 从平台那头（P1）向卡片生长
+      gsap.set(line, { strokeDasharray: len, strokeDashoffset: len })
+    })
+
+    const timeline = gsap.timeline({
+      defaults: { ease: 'power3.out' },
+      scrollTrigger: { trigger: svg, start: 'top 84%', once: true },
+      onComplete: bindInteractions,
+    })
+
+    timeline.to(shadowEls, { autoAlpha: 1, scale: 1, duration: 0.7, ease: 'power2.out' }, 0)
+    timeline.to(platformEls, { autoAlpha: 1, y: 0, duration: 0.8, ease: 'power2.out' }, 0.05)
+    timeline.to(labelEls, { autoAlpha: 1, letterSpacing: '7px', duration: 0.7 }, 0.35)
+    timeline.to(
+      tileEls,
+      { autoAlpha: 1, scale: 1, x: 0, y: 0, duration: 0.5, stagger: 0.07, ease: 'back.out(1.7)' },
+      0.4,
+    )
+    timeline.to(railEls, { strokeDashoffset: 0, duration: 0.75, stagger: 0.09, ease: 'power2.inOut' }, 0.7)
+    timeline.to(
+      satEls,
+      { autoAlpha: 1, scale: 1, x: 0, y: 0, duration: 0.6, stagger: 0.07, ease: 'back.out(1.5)' },
+      0.95,
+    )
+    timeline.to(
+      lineEls,
+      { strokeDashoffset: 0, duration: 0.6, stagger: 0.05, ease: 'power2.inOut' },
+      1.1,
+    )
+    timeline.to(
+      cardEls,
+      { autoAlpha: 1, scale: 1, x: 0, y: 0, duration: 0.55, stagger: 0.05, ease: 'back.out(1.4)' },
+      1.3,
+    )
+    timeline.to(dropEls, { autoAlpha: 1, duration: 0.5 }, 1.45)
+  }
+
+  /**
+   * ★ 一律由 GSAP 接管入场（不再看 IO 的 `revealed`）：
+   *   等距图在 900px 高的首屏里已经露了一角，IO 在页面加载时就会置 `revealed = true`，
+   *   若据此让位给 CSS 入场，用户真正滚到图前时看到的是「早就播完的静止画面」。
+   *   另外 `.reveal` 上的 iso-in / iso-draw 是 `fill-mode: both` 的 CSS 动画，
+   *   它们结束后的终值以**动画优先级**压掉内联样式（实测：悬停变暗、虚线流动全部失效），
+   *   所以只要 GSAP 在，就必须用 `.is-motion` 关掉这两组 CSS 动画（见样式段）。
+   */
+  motion.value = true
+  try {
+    setupEntrance()
+  } catch {
+    // 兜底：编排构建失败时撤回内联起点、解除接管，交回 CSS 入场（内容必须始终可见）
+    motion.value = false
+    gsap.set([...blocks, ...platformEls, ...shadowEls, ...labelEls, ...dropEls], { clearProps: 'all' })
+    gsap.set(lines, { clearProps: 'strokeDasharray,strokeDashoffset' })
+    bindInteractions()
+  }
+
+  return () => {
+    flow?.kill()
+    flow = null
+    cleanups.forEach((off) => off())
+  }
+})
 </script>
 
 <template>
-  <section ref="root" class="wrapper border-t px-5 sm:px-10 py-10 md:py-16">
+  <section ref="root" data-motion-scope class="wrapper border-t px-5 sm:px-10 py-10 md:py-16">
     <div class="flex flex-col gap-2 mb-8">
-      <p class="text-sm font-mono text-[var(--color-brand)]">技术栈覆盖</p>
-      <h3 class="text-balance">图上每一块，都是仓库里的一篇文档</h3>
-      <p class="max-w-2xl text-pretty">
+      <p data-reveal class="text-sm font-mono text-[var(--color-brand)]">技术栈覆盖</p>
+      <h3 data-reveal class="text-balance">图上每一块，都是仓库里的一篇文档</h3>
+      <p data-reveal class="max-w-2xl text-pretty">
         中心平台是 Web 基础，四周是框架与跨端，下方一排是工程化、学习路线与职业成长。点任意方块直接进入对应文档。
       </p>
     </div>
@@ -290,7 +548,7 @@ onUnmounted(() => {
     <div class="overflow-x-auto">
       <svg
         class="iso-stack w-auto h-auto mx-auto min-w-[44rem] max-w-[80rem]"
-        :class="{ 'is-revealed': revealed, 'is-visible': visible }"
+        :class="{ 'is-revealed': revealed, 'is-visible': visible, 'is-motion': motion }"
         viewBox="0 85 1280 530"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -314,6 +572,7 @@ onUnmounted(() => {
           <line
             v-for="(rail, i) in rails"
             :key="`rail-${i}`"
+            data-iso="rail"
             class="rail"
             :style="{ '--len': rail.len, '--d': rail.delay }"
             :x1="rail.x1"
@@ -328,6 +587,7 @@ onUnmounted(() => {
           <line
             v-for="(card, i) in cards"
             :key="`card-line-${i}`"
+            data-iso="cardline"
             class="rail"
             :style="{ '--len': card.len, '--d': card.delay }"
             v-bind="card.line"
@@ -336,6 +596,7 @@ onUnmounted(() => {
 
         <!-- 3. 地面投影 -->
         <ellipse
+          data-iso="shadow"
           class="shadow"
           :cx="shadow.x"
           :cy="shadow.y"
@@ -347,7 +608,7 @@ onUnmounted(() => {
         />
 
         <!-- 4. 中心平台 -->
-        <g class="reveal" :style="{ '--d': '0ms' }">
+        <g data-iso="platform" class="reveal" :style="{ '--d': '0ms' }">
           <g class="float" :style="{ '--f': '-2.4s' }">
             <!-- 底层（彩色）= 侧面 -->
             <rect
@@ -396,6 +657,7 @@ onUnmounted(() => {
               font-size="26"
               font-weight="600"
               letter-spacing="7"
+              data-iso="label"
               class="select-none"
             >
               20 篇主题文档
@@ -406,6 +668,7 @@ onUnmounted(() => {
           <a
             v-for="tile in tiles"
             :key="tile.link"
+            data-iso="tile"
             :href="withBase(tile.link)"
             class="iso-tile reveal"
             :style="{ '--d': tile.delay }"
@@ -461,7 +724,14 @@ onUnmounted(() => {
         </g>
 
         <!-- 5. 平台底边往下的装饰虚线 -->
-        <g stroke="#CCC8DA" stroke-width="1" stroke-dasharray="4 5" class="reveal" :style="{ '--d': '200ms' }">
+        <g
+          data-iso="drops"
+          stroke="#CCC8DA"
+          stroke-width="1"
+          stroke-dasharray="4 5"
+          class="reveal"
+          :style="{ '--d': '200ms' }"
+        >
           <line
             v-for="(d, i) in drops"
             :key="`drop-${i}`"
@@ -476,6 +746,8 @@ onUnmounted(() => {
         <a
           v-for="sat in satellites"
           :key="sat.link"
+          data-iso="sat"
+          :data-rail="sat.rail"
           :href="withBase(sat.link)"
           class="iso-tile reveal"
           :style="{ '--d': sat.delay }"
@@ -522,6 +794,8 @@ onUnmounted(() => {
         <a
           v-for="card in cards"
           :key="card.link"
+          data-iso="card"
+          :data-line="card.index"
           :href="withBase(card.link)"
           class="iso-tile reveal"
           :style="{ '--d': card.delay }"
@@ -637,6 +911,16 @@ onUnmounted(() => {
 /* 投影随平台一起「呼吸」 */
 .iso-stack .shadow {
   animation: iso-shadow 7s ease-in-out infinite;
+}
+
+/*
+ * GSAP 接管入场时（svg 上的 .is-motion）必须停用 CSS 入场与连线绘制：
+ * CSS animation 的优先级**高于内联样式**，不关掉会直接盖住 GSAP 写的 transform / stroke-dashoffset。
+ * 常驻的 iso-float / iso-drift / iso-shadow 不受影响（挂在不同元素上，GSAP 不碰那一层）。
+ */
+.iso-stack.is-motion .reveal,
+.iso-stack.is-motion .rail {
+  animation: none;
 }
 
 @keyframes iso-in {

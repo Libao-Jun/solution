@@ -4,6 +4,8 @@
 > 站点介绍、首页结构与样式约定见 `README.md`；本文件不重复介绍，只回答三件事：**能改什么（边界）、怎么写（规范）、按什么顺序做（流程）**。
 >
 > **第一条铁律（先读这条）：修样式、补内容、加需求，都不得影响既有正常功能；任何已修复过的 bug 都不得在后续改动中被覆盖或回退。** 详见 §2.4 与 §2.5。
+>
+> **第二条铁律：任务或对话收尾时必须执行一次收尾 Code Review（§4.6），判定本次改动是否存在问题；有问题就修复并复验，直到问题清零，不得带问题收尾。**
 
 ## 0. 一句话认识本仓库
 
@@ -73,17 +75,17 @@
 
 ### 2.5 已修复问题防回归清单（改动相关文件前先读）
 
-| 位置 | 已修复的坑 | 不得回退为 |
-| --- | --- | --- |
-| `.vitepress/config.mts` `markdown.config` | `escape-double-braces` 规则 + `code_inline` 加 `v-pre`，解决正文 `{{PLACEHOLDER}}` 被 Vue 当作插值报错 | 移除/简化这两段转义 |
-| `.vitepress/config.mts` | `srcExclude: ['README.md']`，README 不生成页面 | 删除该项导致 README 被编译 |
-| `.vitepress/config.mts` | `cleanUrls: true` + 链接统一带尾斜杠 | 改回不带尾斜杠导致 404 |
-| `.vitepress/config.mts` | `ignoreDeadLinks: true`（保留原文交叉链接） | 关掉导致构建因历史链接失败 |
-| `.vitepress/theme/styles.css` | 「布局宽度统一配置」段 4 个变量映射到 VitePress 官方变量 | 在别处零散写死宽度 |
-| `.vitepress/theme/index.ts` | `themeContextKey` 覆盖 `logoDark/logoLight/footerBg/monoIcon` | 删掉覆盖导致品牌资源失效 |
-| `.vitepress/theme/Layout.vue` | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏 | 移除该同步逻辑 |
+| 位置                                      | 已修复的坑                                                                                                          | 不得回退为                                        |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `.vitepress/config.mts` `markdown.config` | `escape-double-braces` 规则 + `code_inline` 加 `v-pre`，解决正文 `{{PLACEHOLDER}}` 被 Vue 当作插值报错              | 移除/简化这两段转义                               |
+| `.vitepress/config.mts`                   | `srcExclude: ['README.md']`，README 不生成页面                                                                      | 删除该项导致 README 被编译                        |
+| `.vitepress/config.mts`                   | `cleanUrls: true` + 链接统一带尾斜杠                                                                                | 改回不带尾斜杠导致 404                            |
+| `.vitepress/config.mts`                   | `ignoreDeadLinks: true`（保留原文交叉链接）                                                                         | 关掉导致构建因历史链接失败                        |
+| `.vitepress/theme/styles.css`             | 「布局宽度统一配置」段 4 个变量映射到 VitePress 官方变量                                                            | 在别处零散写死宽度                                |
+| `.vitepress/theme/index.ts`               | `themeContextKey` 覆盖 `logoDark/logoLight/footerBg/monoIcon`                                                       | 删掉覆盖导致品牌资源失效                          |
+| `.vitepress/theme/Layout.vue`             | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏                                                       | 移除该同步逻辑                                    |
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
-| `.codebuddy/skills/<name>` | 指向 `.agents/skills/<name>` 的 Junction | 改成复制两份内容导致源漂移 |
+| `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
 
 > 遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
 
@@ -97,6 +99,7 @@
 - **目录名用小写英文 + kebab-case**（如 `responsive-vs-adaptive`、`data-screen-adaptation`），不使用中文或驼峰。
 - 站点开启 `cleanUrls: true`，站内链接一律写成**带尾斜杠的绝对路径**：`/fundamentals/http/`。
 - 新增主题的原文链接（参考资料）保留在文首引用块，不做改写。
+- **★ 新增文档「全量联动」原则**：新增任何一篇 `xx.md`（**不论分类、不论是否首次出现**）都不是「只加一个文件」，而是「加文件 + 把全项目中所有需要登记/引用它的地方一次改齐」。**漏改任何一处都视为任务未完成**（典型后果：页面能构建出来但侧边栏里找不到、首页索引里没有、统计数字是旧值）。完整清单见 §4.2 Step 6。
 
 ### 3.2 文档书写规范（新增 / 编辑 `xx.md` 必须遵守）
 
@@ -129,7 +132,7 @@
 - **标题层级不跳级**：`#` → `##` → `###`，正文从 `##` 开始。
 - 文首必须有 **H1 + 引用块**（参考资料 + 面向角色/文档定位）。
 - 章节编号用「`## 一、` / `### 1.1`」体例，`## 目录` 的编号与正文标题一一对应（锚点由标题自动生成）。
-- 代码块**必须标注语言**（`js / `bash / `ts / `text），可复制的命令、配置、片段优先。
+- 代码块**必须标注语言**（如 `js`、`bash`、`ts`、`text`），可复制的命令、配置、片段优先。
 - 中文正文使用中文标点；中英文/数字之间保留一个空格；不滥用 emoji。
 - 表格列对齐（`| --- |`），行内术语首次出现给中英对照（如 `跨域（CORS）`）。
 - 图片、PDF 等资源放 `public/`，正文用绝对路径引用，如 `/roadmaps/beginner/frontend-beginner.pdf`、`/foo/diagram.png`。
@@ -210,7 +213,7 @@ chore(<主题>): 优化和补充 <内容>
 ```text
 收到需求
   │
-  ├─ 新增主题文档 ─────────→ §4.2（含五处联动清单）
+  ├─ 新增主题文档 ─────────→ §4.2（Step 6 全量联动 a~k + Step 6.5 全量排查，一处不漏）
   ├─ 编辑已有文档 ─────────→ §4.3
   ├─ 改导航 / 侧栏 / 首页 ─→ §4.4
   ├─ 新增 / 更新 Skill ────→ §4.5
@@ -229,7 +232,11 @@ chore(<主题>): 优化和补充 <内容>
 §5 完成前自检清单
   │
   ▼
-提交（§3.5）
+★ §4.6 收尾 Code Review（三轴：Standards / Spec / Regression）  ← 任务/对话完成必做，不得跳过
+  │        │
+  │        └─ 发现任何问题 → 立即修复 → 重跑 §4.1 回归验证 → 再评一次（直到问题清零）
+  ▼
+问题清零后提交（§3.5）
 ```
 
 ### 4.1 本地开发与验证（含回归验证）
@@ -247,8 +254,6 @@ chore(<主题>): 优化和补充 <内容>
 2. 验证「改动点周边」的原有功能未被影响：同页其他区块、同分组其他页面、首页、搜索、深色模式。
 3. 验证清单项未被回退：`{{}}` 占位符仍正常显示、`README.md` 仍未生成页面、页内目录锚点仍可跳转、首页网格仍无缺边框、品牌 Logo/页脚背景仍正常。
 4. `pnpm run build` 通过（构建期错误即视为回归，必须修完再提交）。
-
-
 
 ```bash
 pnpm install       # 安装依赖
@@ -277,19 +282,35 @@ H1 标题 + 引用块（参考资料、面向角色/文档定位）。
 **Step 5 · 写正文**
 按 `## 一、…` → `### 1.1 …` 展开；代码块标语言；表格对齐；遵守 §3.2 全部硬性要求。
 
-**Step 6 · 挂到站点（关键，必须逐项核对）**
+**Step 6 · 挂到站点（关键，必须逐项核对；★ 全量联动，一处都不能漏）**
 
-| #   | 文件                                   | 要改什么                                                                                |
-| --- | -------------------------------------- | --------------------------------------------------------------------------------------- |
-| a   | `.vitepress/config.mts` → `sidebar`    | 对应分组 `items` 追加 `{ text: '<标题>', link: '/<分类>/<主题>/' }`                     |
-| b   | `.vitepress/config.mts` → `nav`        | **仅新分类时**：加一项 `{ text, link: '/<分类>/<主题>/', activeMatch: '^/<分类>/' }`    |
-| c   | `.vitepress/config.mts` → `footer.nav` | **仅新分类/需曝光时**：把链接加入合适分组                                               |
-| d   | `.vitepress/theme/data/topics.ts`      | `topicGroups` 对应分组追加 `{ title, details, link }`；必要时补 `categories` 的 `chips` |
-| e   | `.vitepress/theme/data/topics.ts`      | 同步 `docCount`（若计入统计）                                                           |
-| f   | `README.md`                            | 更新「内容目录分类」表（仅新增分类/主题时）                                             |
+| #   | 位置                                            | 何时必改             | 要改什么                                                                                |
+| --- | ----------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------- |
+| a   | `.vitepress/config.mts` → `sidebar`             | **每次新增都必改**   | 对应分组 `items` 追加 `{ text: '<标题>', link: '/<分类>/<主题>/' }`                     |
+| b   | `.vitepress/config.mts` → `nav`                 | 新增**分类**时       | 加一项 `{ text, link: '/<分类>/<主题>/', activeMatch: '^/<分类>/' }`                    |
+| c   | `.vitepress/config.mts` → `footer.nav`          | 新增分类 / 需页脚曝光 | 把链接加入合适分组                                                                      |
+| d   | `.vitepress/theme/data/topics.ts` → `topicGroups` | **每次新增都必改** | 对应分组追加 `{ title, details, link }`                                                 |
+| e   | `.vitepress/theme/data/topics.ts` → `categories` | 需进首页「三大分类」 chips | 追加 `{ text, link }`                                                             |
+| f   | `.vitepress/theme/data/topics.ts` → 统计常量     | 数量变化时           | `docCount` +1；路线图另加 `roadmapCount`；新分类加 `categoryCount`                        |
+| g   | `README.md` → 「内容目录分类」表                 | 新增分类 / 首个主题  | 更新表格                                                                                |
+| h   | `README.md` → 其他相关描述                      | 影响描述时           | 同步「首页组成」「目录结构」等段落                                                       |
+| i   | `roadmaps/index.md`                             | 新增学习路线图时     | 追加 PDF 链接                                                                            |
+| j   | `public/`                                       | 有图片 / PDF 时      | 放入对应子目录，正文用绝对路径（如 `/roadmaps/beginner/x.pdf`）引用                       |
+| k   | 其他文档正文的交叉链接                          | 该主题被别处提及     | 补充 / 修正指向新页面的链接                                                              |
+
+**Step 6.5 · 全量排查（防止漏改，必做）**
+
+用**现有任一文档的路由片段**（如 `data-screen-adaptation` 或 `/frameworks/vue/`）在**整个项目**中做一次全量搜索，得到「引用点全集」，再对照 Step 6 表格确认新文档已覆盖全部同类位置：
+
+```bash
+# 以仓库根为工作目录，被 srcExclude/gitignore 的部分会自动排除
+rg -n "data-screen-adaptation|/engineering/data-screen-adaptation/" .
+```
+
+判定标准：**搜索命中的每一类位置（sidebar / nav / footer / topics.ts / README / 其他正文），新文档都必须同样在其中出现**。只要有一类位置旧文档在、新文档不在，就是漏改，必须补齐后再进入 Step 8。
 
 **Step 7 · 附随资源（如有）**
-图片/PDF 放 `public/<子目录>/`，正文用绝对路径引用；
+图片 / PDF 放 `public/<子目录>/`，正文用绝对路径引用；
 若属学习路线，另需同步 `roadmaps/index.md` 列表与 `topics.ts` 的 `roadmapCount`。
 
 **Step 8 · 验证（新增 + 回归）**
@@ -298,13 +319,21 @@ H1 标题 + 引用块（参考资料、面向角色/文档定位）。
 **Step 9 · 提交**
 `feat(<主题>): 新增 <主题> 文档`。
 
-> 一张「新增文档检查清单」：
+> 一张「新增文档检查清单」（**a~k 逐项打勾，缺一即未完成**）：
 
 - [ ] `<分类>/<主题>/index.md` 已创建，结构符合 §3.2
-- [ ] `config.mts` sidebar 已登记（漏登记 = 页面构建出来但侧栏里找不到）
-- [ ] 新分类已同步 nav、footer、README 表
-- [ ] `data/topics.ts` 索引与统计常量已同步
-- [ ] 附随资源已放 `public/` 并用绝对路径引用
+- [ ] (a) `config.mts` sidebar 已登记（漏登记 = 页面构建出来但侧栏里找不到）
+- [ ] (b) 新分类已加 `nav`（含 `activeMatch`）
+- [ ] (c) `footer.nav` 已按需补充
+- [ ] (d) `data/topics.ts` 的 `topicGroups` 已追加条目
+- [ ] (e) `data/topics.ts` 的 `categories` chips 已按需补充
+- [ ] (f) `docCount` / `roadmapCount` / `categoryCount` 等统计常量已同步
+- [ ] (g) `README.md` 「内容目录分类」表已更新
+- [ ] (h) `README.md` 其他受影响描述已同步
+- [ ] (i) `roadmaps/index.md` 已追加（路线图 PDF）
+- [ ] (j) 附随资源已放 `public/` 并用绝对路径引用
+- [ ] (k) 其他文档中的交叉链接已按需补充
+- [ ] **Step 6.5 全量排查已做：旧文档命中过的每一类位置，新文档都已出现**
 - [ ] **既有导航 / 侧栏 / 首页 / 搜索未受影响（§4.1 回归验证）**
 - [ ] `pnpm run build` 通过
 - [ ] 提交信息符合 §3.5
@@ -334,15 +363,36 @@ H1 标题 + 引用块（参考资料、面向角色/文档定位）。
 4. 第三方来源的 Skill 在 `skills-lock.json` 登记来源与哈希。
 5. 不改动上游第三方 Skill 的既有内容。
 
-### 4.6 评审流程（复用 `code-review` Skill）
+### 4.6 ★ 收尾 Code Review（任务 / 对话完成后必做，复用 `code-review` Skill）
 
-评审一个分支 / PR / 未提交改动时，按 `.agents/skills/code-review/SKILL.md` 的**双轴**执行：
+> **强制要求**：一次任务或一段对话收尾时（无论用户是否要求提交、是否要求评审），都必须按本节的流程对本次改动做一次自查式 Code Review，**判定「是否存在问题」**。
+> **发现问题就必须修复**：凡属于「规范违背 / 需求未落实 / 影响既有功能 / 覆盖已修 bug」的问题，一律就地修复并重跑 §4.1 回归验证，然后**再评一次**，直到问题清零；**不得带着已知问题宣布完成**。
 
-1. 固定比较基点（commit / branch / tag），用 `git diff <fixed-point>...HEAD`（三点，对比 merge-base）。
-2. **Standards 轴**：是否遵守本文件的 §3 各项规范（含 `config.mts` / `topics.ts` 是否同步）。
-3. **Spec 轴**：是否如实实现了需求，有无缺项与范围蔓延。
-4. **Regression 轴（本仓库补充轴）**：diff 中是否有「删除/重写既有内容」「触碰 §2.5 防回归清单」的动作？若有，是否给出了理由并保持了原有行为？逐条对照 §2.5 清单确认未被回退。
-5. 三轴分别输出、**不合并、不重排**；各自给出最好/最差结论。
+流程参考 `.agents/skills/code-review/SKILL.md`，并按本仓库实际扩展为三轴：
+
+**Step 1 · 固定比较基点**
+本次改动尚未提交时，基点用 `HEAD`（评审 `git diff HEAD`，即工作区改动）；需要评审分支/PR 时用用户给定的 commit / branch / tag，比较命令为 `git diff <fixed-point>...HEAD`（三点，对比 merge-base）。
+先确认基点可解析（`git rev-parse <fixed-point>`）且 diff 非空，再往下走。
+
+**Step 2 · Standards 轴（是否符合本仓库规范）**
+逐文件核对是否符合本文件 §3：内容组织、文档书写（§3.2）、VitePress 工程（§3.3）、Skill 规范（§3.4）、提交信息（§3.5）——重点是 `config.mts` 与 `data/topics.ts` 是否同步、`docCount` 是否更新。
+**若本次改动的性质是「新增文档」，必须额外执行 §4.2 Step 6.5 的全量排查**：确认 a~k 每一类联动位置都已改齐，任何一类缺失即判为规范违背（属必修问题）。
+
+**Step 3 · Spec 轴（是否忠实实现需求）**
+核对：(a) 需求要求但缺失/只做一半的部分；(b) diff 中没被要求却做了的范围蔓延；(c) 看似实现但实现有误的部分。每条结论都要引用需求原文或用户原话。
+
+**Step 4 · Regression 轴（本仓库补充轴，权重最高）**
+核对 diff 中是否存在「删除 / 重写既有内容」「触碰 §2.5 防回归清单」的动作；若有，是否给出了理由并保持了原有行为。逐条对照 §2.5 清单确认未被回退。
+
+**Step 5 · 汇总**
+三轴分别输出、**不合并、不重排**（不跨轴重排优先级），各轴给出「问题数 + 最严重问题」。
+
+**Step 6 · 修复与复验（必做，不可省略）**
+对每条确认的问题：先按 §2.4 判断影响面 → 修复 → 重跑 §4.1（dev 逐页点开 + `pnpm run build` + 回归验证）→ 重跑本流程 Step 2~5 确认问题清零。
+若某条问题判定为「可接受的取舍」，必须显式说明理由，不得静默放过。
+
+**Step 7 · 输出**
+向用户简要汇报：三轴各自的结论、已修复的问题清单、仍未解决项及原因（如有）。
 
 ---
 
@@ -354,7 +404,9 @@ H1 标题 + 引用块（参考资料、面向角色/文档定位）。
 - [ ] 内容按 `<分类>/<主题>/index.md` 组织，链接为带尾斜杠的绝对路径。
 - [ ] 文档结构符合 §3.2（H1 + 引用块 + 目录 + 编号章节 + 代码块标语言）。
 - [ ] `config.mts`（sidebar / nav / footer）与 `data/topics.ts`（索引 / 统计）已同步。
+- [ ] **若为新增文档：§4.2 Step 6 的 a~k 全部联动位置已改齐，且已用 Step 6.5 全量排查确认无遗漏。**
 - [ ] 首页网格仍满足「格子数整除列数」，未引入缺边框。
 - [ ] `{{PLACEHOLDER}}` 占位符仍正常渲染，`README.md` 仍未生成页面，页内目录锚点仍可跳转。
 - [ ] `pnpm run build` 通过。
+- [ ] **已按 §4.6 对本次改动完成收尾 Code Review（Standards / Spec / Regression 三轴），发现的问题均已修复并复验，无遗留问题。**
 - [ ] 提交信息符合 §3.5，且一次提交只做一件事。

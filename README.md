@@ -34,27 +34,27 @@ pnpm run preview  # 预览构建产物
 
 | 区块 | 组件 | 对应参考站 |
 | --- | --- | --- |
-| Hero（标题 + 按钮） | `components/Home.vue` | `home/Hero.vue` |
-| 命令速查终端（标签页 + 逐字动画） | `components/TerminalPanel.vue`、`TerminalTranscript.vue` | `home/Terminal.vue` |
-| 三大分类三列区块 | `Home.vue`（`categories`） | `home/CoreFeature3Col.vue` |
-| 分组索引（4 格 / 2×2，格内为单列列表） | `Home.vue`（`topicGroups`） | `home/ProductivityGrid.vue` |
-| 深色区块（标题 + 清单 + 数据行） | `Home.vue` | `home/HeadingSection4.vue` |
+| Hero（标题 + 描述 + 按钮） | `components/Home.vue` | `home/Hero.vue` |
+| 命令速查终端（标签页 + 逐字动画 + 滚入播放） | `TerminalPanel.vue`、`TerminalTranscript.vue` | `home/Terminal.vue` |
+| 快速开始（说明 + 深色命令卡 + 复制） | `InstallCommand.vue` | `home/InstallCommand.vue` |
+| 三大分类（3 格 / 3 列 + `code` 胶囊） | `Home.vue`（`categories`） | `home/CoreFeature3Col.vue` |
+| 站点信息（4 格 / 2×2） | `Home.vue`（`highlights` / `statRows` / `growthBlocks`） | `home/ProductivityGrid.vue` |
+| 深色能力展示区（吸顶工具栏 + 5 个面板） | `FeatureToolbar.vue`、`FeaturePanel.vue` | `home/HeadingSection4.vue` + `home/FeatureToolbar.vue` + `home/Feature{DevBuild,Check,Test,Run,Pack}.vue` |
 | 收尾大标题 | `Home.vue` | `home/HeadingSection3.vue` |
-| 资料补充双栏区块 | `Home.vue`（`growthBlocks`） | `home/Fullstack2Col.vue` |
 | 留白收尾 | `Home.vue` | `shared/Spacer.vue` |
+| 内容地图（中心节点 + 分类节点连线） | `ClosingIllustration.vue` | `home/HeroRive.vue`（参考站用 Rive 动画，本站自绘 SVG） |
 
-数据集中在 `.vitepress/theme/data/`：`topics.ts`（分类与索引）、`terminal.ts`（终端命令演示）。
+数据集中在 `.vitepress/theme/data/`：`features.ts`（能力面板 + 命令卡）、`terminal.ts`（终端演示）、`topics.ts`（分类地图 / 站点信息）。
 
 > ⚠️ **网格边框约定（改动首页前务必读）**
 >
 > Tailwind 的 `divide-x` / `divide-y` 只会给「除第一个子元素之外」的子元素加边框，因此：
 > - **单列列表 / 单行排列** 用它永远正确；
-> - **会换行的网格** 只有「条目数整除列数」时才正确（3 格 3 列、4 格 2×2、2 格 2 列）。
+> - **会换行的网格** 只有「单元格数量整除列数」时才正确（3 格 3 列、4 格 2×2、2 格 2 列）。
 >
-> 所以首页的带边框网格一律使用**整除列数**的单元格数量；多条目列表（如 `topicGroups` 的 7 条 / 5 条）
-> 是**放进格子里做单列 `divide-y` 列表**，而不是再堆一层卡片网格——否则最后一行的空格子必然缺边框，
-> 看起来就像样式 bug（这正是参考站只用 3 格 3 列、4 格 2×2 的原因）。
-> 另外横向网格要补 `divide-x-0 <bp>:divide-x`，避免窄屏堆叠时多出左边框。
+> 所以首页的带边框网格一律只用**整除列数**的单元格数量（这也是参考站的做法）；条目多的列表
+> 放进格子里做**单列 `divide-y` 列表**，不要再堆一层卡片网格——否则最后一行的空格子必然缺边框，
+> 看起来就像样式 bug。另外横向网格要补 `divide-x-0 <bp>:divide-x`，避免窄屏堆叠时多出左边框。
 
 ## 布局宽度配置
 

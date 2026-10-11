@@ -4,6 +4,24 @@
  */
 export type TerminalTone = 'base' | 'muted' | 'brand' | 'accent' | 'success' | 'warning'
 
+/** 终端 / 代码窗文字配色（与 .terminal-tone-* 一致） */
+export function terminalToneClass(tone: TerminalTone = 'base'): string {
+  switch (tone) {
+    case 'muted':
+      return 'terminal-tone-muted'
+    case 'brand':
+      return 'terminal-tone-brand'
+    case 'accent':
+      return 'terminal-tone-accent'
+    case 'success':
+      return 'terminal-tone-success'
+    case 'warning':
+      return 'terminal-tone-warning'
+    default:
+      return 'terminal-tone-base'
+  }
+}
+
 export interface TerminalSegment {
   text: string
   tone?: TerminalTone

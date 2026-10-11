@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { featurePanels } from '../data/features'
 import {
   categories,
   categoryCount,
@@ -7,22 +8,29 @@ import {
   highlights,
   roadmapCount,
   statRows,
-  topicGroups,
 } from '../data/topics'
 
+import ClosingIllustration from './ClosingIllustration.vue'
+import FeaturePanel from './FeaturePanel.vue'
+import FeatureToolbar from './FeatureToolbar.vue'
+import InstallCommand from './InstallCommand.vue'
 import TerminalPanel from './TerminalPanel.vue'
 
 /**
- * 网格边框约定（务必保持）：
- * - 只有「单元格数量能整除列数」的网格才用边框网格（3 格 3 列、4 格 2×2、2 格 2 列）。
- * - 竖直方向永远是单列列表，所以 divide-y 一定正确。
- * - 横向每行都补 `divide-x-0 <bp>:divide-x`，避免窄屏堆叠时多出左边框。
+ * 首页区块与参考站 docs/.vitepress/theme/layouts/Home.vue 一一对应：
+ *   Hero → Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
+ *   → (深色) HeadingSection4 + FeatureToolbar + Feature* 面板
+ *   → HeadingSection3 → Fullstack2Col → Spacer → HeroRive
+ *
+ * ★ 网格边框约定：divide-* 只给「除第一个子元素外」加边框，所以只有
+ *   「单元格数量整除列数」时才安全（3 格 3 列、4 格 2×2、2 格 2 列）。
+ *   多条目列表一律放进格子里做单列 divide-y 列表，别堆卡片网格。
  */
 </script>
 
 <template>
   <div class="home">
-    <!-- 1. Hero（对应参考站 home/Hero.vue） -->
+    <!-- 1. Hero（home/Hero.vue） -->
     <section class="wrapper flex flex-col justify-start items-center gap-6 pt-14 pb-6">
       <div class="w-full sm:w-2xl flex flex-col justify-start items-center gap-10 px-5 sm:px-0">
         <div class="flex flex-col justify-start items-center gap-4">
@@ -46,12 +54,15 @@ import TerminalPanel from './TerminalPanel.vue'
       </div>
     </section>
 
-    <!-- 2. 命令速查终端（对应参考站 home/Terminal.vue） -->
+    <!-- 2. 命令速查终端（home/Terminal.vue） -->
     <TerminalPanel />
 
-    <!-- 3. 三大分类：3 格 / 3 列（对应参考站 home/CoreFeature3Col.vue） -->
+    <!-- 3. 快速开始（home/InstallCommand.vue） -->
+    <InstallCommand />
+
+    <!-- 4. 三大分类：3 格 / 3 列（home/CoreFeature3Col.vue） -->
     <section
-      class="wrapper border-t grid grid-rows-3 lg:grid-rows-1 lg:grid-cols-3 lg:h-80 divide-x-0 lg:divide-x divide-y lg:divide-y-0 divide-stroke dark:divide-nickel"
+      class="wrapper border-t grid grid-rows-3 lg:grid-rows-1 lg:grid-cols-3 lg:h-80 divide-x-0 lg:divide-x divide-y lg:divide-y-0 divide-stroke"
     >
       <div
         v-for="category in categories"
@@ -70,101 +81,53 @@ import TerminalPanel from './TerminalPanel.vue'
       </div>
     </section>
 
-    <!-- 4. 全部文档索引：4 格 / 2×2（对应参考站 home/ProductivityGrid.vue） -->
+    <!-- 5. 站点信息：4 格 / 2×2（home/ProductivityGrid.vue） -->
     <section
-      class="wrapper wrapper--ticks border-t grid lg:grid-cols-2 divide-x-0 lg:divide-x divide-y divide-stroke dark:divide-nickel"
+      class="wrapper wrapper--ticks border-t grid lg:grid-cols-2 divide-x-0 lg:divide-x divide-y divide-stroke"
     >
-      <div
-        v-for="group in topicGroups"
-        :key="group.eyebrow"
-        class="p-5 sm:p-10 flex flex-col gap-3"
-      >
-        <span class="text-grey text-xs font-mono uppercase tracking-wide">
-          {{ group.eyebrow }}
-        </span>
-        <ul class="mt-2 -mx-5 sm:mx-0 divide-y divide-stroke dark:divide-nickel">
-          <li v-for="topic in group.topics" :key="topic.link">
-            <a
-              :href="topic.link"
-              class="group flex flex-col gap-1 py-4 -mx-5 px-5 sm:mx-0 sm:px-0 hover:bg-beige transition-colors"
-            >
-              <span class="text-base sm:text-lg font-medium text-primary text-balance">
-                {{ topic.title }}
-              </span>
-              <span class="text-sm leading-snug text-grey text-pretty">{{ topic.details }}</span>
-            </a>
-          </li>
+      <div class="p-5 sm:p-10 flex flex-col gap-3">
+        <h5>站点怎么用</h5>
+        <p class="max-w-[26rem] text-pretty">所有内容都来自本仓库已有文档，按主题归档，随取随用。</p>
+        <!-- 浅色区块用 list-disc（checkmark-list 的勾选图标是为深色背景准备的） -->
+        <ul class="list-disc pl-3 flex flex-col gap-2 marker:text-ruby mt-1">
+          <li v-for="item in highlights" :key="item" class="leading-tight">{{ item }}</li>
         </ul>
       </div>
-    </section>
 
-    <!-- 5. 深色区块：标题 + 勾选清单 + 内容概览（对应参考站 home/HeadingSection4.vue） -->
-    <section id="highlights" data-theme="dark" class="bg-primary">
-      <section
-        class="wrapper wrapper--ticks border-t border-nickel px-5 sm:px-10 h-70 sm:h-[22rem] flex flex-col justify-center gap-6 text-center items-center"
-      >
-        <h2 class="text-white">把散落的前端知识，整理成可检索的手册</h2>
-        <p class="max-w-md text-white/70 text-balance sm:text-pretty">
-          不写教程连载，只把日常开发里最容易踩坑、最容易忘记的知识点按主题归档。
-        </p>
-      </section>
-
-      <section
-        class="wrapper border-t border-nickel grid lg:grid-cols-2 divide-x-0 lg:divide-x divide-y lg:divide-y-0 divide-nickel"
-      >
-        <div class="p-5 sm:p-10 flex flex-col gap-4">
-          <h5 class="text-white">站点怎么用</h5>
-          <ul class="checkmark-list">
-            <li v-for="item in highlights" :key="item">{{ item }}</li>
-          </ul>
-        </div>
-        <div class="p-5 sm:p-10 flex flex-col gap-4">
-          <h5 class="text-white">内容概览</h5>
-          <!-- 每行 2 项 → divide-x 正确；行与行之间是单列 → divide-y 正确 -->
-          <div class="flex flex-col divide-y divide-nickel mt-1">
+      <div class="p-5 sm:p-10 flex flex-col gap-3">
+        <h5>内容概览</h5>
+        <p class="max-w-[26rem] text-pretty">下面这些数字都来自仓库里的实际文件，没有估算。</p>
+        <!-- 每行 2 项 → divide-x 正确；行与行之间是单列 → divide-y 正确 -->
+        <div class="flex flex-col divide-y divide-stroke mt-1">
+          <div
+            v-for="(row, rowIndex) in statRows"
+            :key="rowIndex"
+            class="grid grid-cols-2 divide-x divide-stroke py-5 first:pt-0 last:pb-0"
+          >
             <div
-              v-for="(row, rowIndex) in statRows"
-              :key="rowIndex"
-              class="grid grid-cols-2 divide-x divide-nickel py-5 first:pt-0 last:pb-0"
+              v-for="(item, itemIndex) in row"
+              :key="item.label"
+              class="flex flex-col gap-1"
+              :class="itemIndex === 0 ? 'pr-5' : 'pl-5'"
             >
-              <div
-                v-for="(item, itemIndex) in row"
-                :key="item.label"
-                class="flex flex-col gap-1"
-                :class="itemIndex === 0 ? 'pr-5' : 'pl-5'"
-              >
-                <p class="text-white font-medium text-base sm:text-xl">{{ item.value }}</p>
-                <p class="leading-tight text-base text-white/70">{{ item.label }}</p>
-              </div>
+              <p class="text-primary font-medium text-base sm:text-xl">{{ item.value }}</p>
+              <p class="leading-tight text-base text-grey">{{ item.label }}</p>
             </div>
           </div>
         </div>
-      </section>
-    </section>
+      </div>
 
-    <!-- 6. 收尾大标题（对应参考站 home/HeadingSection3.vue） -->
-    <section class="wrapper border-t border-stroke dark:border-nickel px-5 sm:px-10 h-70 sm:h-80 flex flex-col justify-center gap-5">
-      <h3>前端知识，一处可查</h3>
-      <p class="max-w-md text-pretty">
-        从语言基础到框架规范、从工程化配置到跨端适配，全部按主题整理，支持全文检索与离线保存。
-      </p>
-    </section>
-
-    <!-- 7. 资料补充：2 格 / 2 列（对应参考站 home/Fullstack2Col.vue） -->
-    <section
-      class="wrapper wrapper--ticks border-t grid lg:grid-cols-2 divide-x-0 lg:divide-x divide-y lg:divide-y-0 divide-stroke dark:divide-nickel"
-    >
       <div
         v-for="block in growthBlocks"
         :key="block.title"
         class="p-5 sm:p-10 flex flex-col gap-3 justify-between"
       >
         <div class="flex flex-col gap-3">
-          <h6>{{ block.title }}</h6>
-          <p class="max-w-[22rem] text-balance">{{ block.details }}</p>
+          <h5>{{ block.title }}</h5>
+          <p class="max-w-[26rem] text-balance">{{ block.details }}</p>
         </div>
-        <ul class="flex flex-col gap-2 mt-6 divide-y divide-stroke dark:divide-nickel">
-          <li v-for="link in block.links" :key="link.link" class="pt-2 first:pt-0">
+        <ul class="flex flex-col divide-y divide-stroke mt-4">
+          <li v-for="link in block.links" :key="link.link" class="py-2 first:pt-0">
             <a
               :href="link.link"
               class="text-base text-primary underline decoration-stroke underline-offset-4 hover:decoration-primary"
@@ -179,7 +142,36 @@ import TerminalPanel from './TerminalPanel.vue'
       </div>
     </section>
 
-    <!-- 8. 留白收尾（对应参考站 shared/Spacer.vue） -->
+    <!-- 6. 深色能力展示区（home/HeadingSection4 + FeatureToolbar + Feature* 面板） -->
+    <section id="features" data-theme="dark" class="bg-primary">
+      <section
+        class="wrapper wrapper--ticks border-t px-5 sm:px-10 h-70 sm:h-[22rem] flex flex-col justify-center gap-6 text-center items-center"
+      >
+        <h2 class="text-white">一款手册覆盖日常所需</h2>
+        <p class="max-w-md text-white/70 text-balance sm:text-pretty">
+          五个分类、二十篇主题文档，从语言基础到工程化与职业成长，按需跳转即可。
+        </p>
+      </section>
+
+      <FeatureToolbar />
+
+      <FeaturePanel v-for="panel in featurePanels" :key="panel.id" :panel="panel" />
+    </section>
+
+    <!-- 7. 收尾大标题（home/HeadingSection3.vue） -->
+    <section
+      class="wrapper border-t px-5 sm:px-10 h-70 sm:h-80 flex flex-col justify-center gap-5"
+    >
+      <h3>前端知识，一处可查</h3>
+      <p class="max-w-md text-pretty">
+        从语言基础到框架规范、从工程化配置到跨端适配，全部按主题整理，支持全文检索与离线保存。
+      </p>
+    </section>
+
+    <!-- 8. 留白收尾（shared/Spacer.vue） -->
     <section class="wrapper wrapper--ticks border-t h-16 sm:h-30"></section>
+
+    <!-- 9. 内容地图（home/HeroRive.vue 的位置） -->
+    <ClosingIllustration />
   </div>
 </template>

@@ -7,19 +7,32 @@
  * 端点圆点依次亮起 → 分类卡片错落上浮，最后中心节点常驻轻微浮动。
  * ★ 分类卡片的外层 `<g>` 没有 transform 属性（位移在内层 `<g>` 上），
  *   所以外层可以安全地做 y 位移；内层带 `translate(...)` 的绝对不要动画 transform。
+ *
+ * ★ 版式（改动前必读，防止「模块里大片空白」回归）：
+ *   卡片宽度按**最长的一条真实文案**定（实测「求职 · 简历 · 职场」= 92.4px），
+ *   即 CARD_WIDTH = 128（左内边距 16，右侧余约 20）；**不要退回「固定 190 宽」那种盒子大、内容小**的写法。
+ *   卡片高度 = 42 + 条目数 × 20（标题基线 26、条目基线 50/70/90），上下留白分别约 16 / 12。
+ *   画布 1000 × 360：左右外边距（130）与卡片间走廊（178）都由「3 张卡片 + 2 条走廊 + 2 个外边距」等分，
+ *   卡片以节点坐标为**中心**（连线终点落在卡片正中，被卡片盖住）。改坐标后要复查：四周不越界、卡片互不重叠。
+ *   渲染比例 = 容器宽 / 1000（1440 视口下约 1.41），比旧的 1200 画布放大后文字更清晰、整体更紧凑。
  */
 import { ref } from 'vue'
 
 import { useMotion } from '../animations/motion'
 
-const center = { x: 600, y: 240 }
+/** 卡片宽度：最长文案 92.4px + 左内边距 16px（右余约 20px），避免内容只占左半、右半全空 */
+const CARD_WIDTH = 128
+/** 卡片高度：标题一行 + 每条目 20px */
+const cardHeight = (count: number) => 42 + count * 20
+
+const center = { x: 500, y: 180 }
 
 const groups = [
-  { title: 'Web 基础', x: 180, y: 120, leaves: ['HTML5', '浏览器', 'HTTP / HTTPS'] },
-  { title: '框架与端', x: 600, y: 78, leaves: ['React', 'Vue / Svelte', '小程序 / App'] },
-  { title: '工程化与适配', x: 1020, y: 120, leaves: ['打包构建', 'Emmet', '大屏 / H5 唤起'] },
-  { title: '学习路线', x: 300, y: 396, leaves: ['初学者', '网站开发', '语言与平台'] },
-  { title: '职业成长', x: 900, y: 396, leaves: ['开源许可证', '求职 · 简历 · 职场'] },
+  { title: 'Web 基础', x: 194, y: 63, leaves: ['HTML5', '浏览器', 'HTTP / HTTPS'] },
+  { title: '框架与端', x: 500, y: 63, leaves: ['React', 'Vue / Svelte', '小程序 / App'] },
+  { title: '工程化与适配', x: 806, y: 63, leaves: ['打包构建', 'Emmet', '大屏 / H5 唤起'] },
+  { title: '学习路线', x: 260, y: 297, leaves: ['初学者', '网站开发', '语言与平台'] },
+  { title: '职业成长', x: 740, y: 297, leaves: ['开源许可证', '求职 · 简历 · 职场'] },
 ]
 
 const root = ref<HTMLElement | null>(null)
@@ -89,14 +102,22 @@ useMotion(root, ({ gsap }, element) => {
     <div class="overflow-x-auto">
       <svg
         class="w-full h-auto min-w-[40rem]"
-        viewBox="0 0 1200 480"
+        viewBox="0 0 1000 360"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         role="img"
         aria-label="站点内容地图：中心为 Solution，向外连接五个分类节点"
       >
       <defs>
-        <linearGradient id="map-center" x1="500" y1="206" x2="700" y2="274" gradientUnits="userSpaceOnUse">
+        <!-- 渐变随中心节点走：从徽标左上角斜向右下角 -->
+        <linearGradient
+          id="map-center"
+          :x1="center.x - 82"
+          :y1="center.y - 34"
+          :x2="center.x + 82"
+          :y2="center.y + 34"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stop-color="#6C3BFF" />
           <stop offset="1" stop-color="#4f30e8" />
         </linearGradient>
@@ -125,12 +146,12 @@ useMotion(root, ({ gsap }, element) => {
         />
       </g>
 
-      <!-- 中心节点 -->
+      <!-- 中心节点：180 宽（副标题实测约 136px + 左右各 20 内边距），不再是「盒大内容小」的 216 -->
       <g data-map-center>
-        <rect :x="center.x - 108" :y="center.y - 36" width="216" height="72" rx="16" fill="url(#map-center)" />
+        <rect :x="center.x - 90" :y="center.y - 36" width="180" height="72" rx="16" fill="url(#map-center)" />
         <text
           :x="center.x"
-          :y="center.y - 2"
+          :y="center.y - 6"
           text-anchor="middle"
           font-family="Inter, system-ui, sans-serif"
           font-size="20"
@@ -141,7 +162,7 @@ useMotion(root, ({ gsap }, element) => {
         </text>
         <text
           :x="center.x"
-          :y="center.y + 22"
+          :y="center.y + 18"
           text-anchor="middle"
           font-family="'KH Teka Mono', ui-monospace, monospace"
           font-size="12"
@@ -152,19 +173,21 @@ useMotion(root, ({ gsap }, element) => {
         </text>
       </g>
 
-      <!-- 分类节点 -->
+      <!-- 分类节点：卡片以节点坐标为**中心**，连线终点正好被卡片盖住 -->
       <g v-for="group in groups" :key="`card-${group.title}`" data-map-card>
-        <g :transform="`translate(${group.x - 95}, ${group.y - 56})`">
+        <g
+          :transform="`translate(${group.x - CARD_WIDTH / 2}, ${group.y - cardHeight(group.leaves.length) / 2})`"
+        >
           <rect
-            width="190"
-            :height="46 + group.leaves.length * 20"
+            :width="CARD_WIDTH"
+            :height="cardHeight(group.leaves.length)"
             rx="12"
             fill="#FFFFFF"
             stroke="#E5E4E7"
           />
           <text
             x="16"
-            y="28"
+            y="26"
             font-family="Inter, system-ui, sans-serif"
             font-size="14"
             font-weight="600"
@@ -176,7 +199,7 @@ useMotion(root, ({ gsap }, element) => {
             v-for="(leaf, index) in group.leaves"
             :key="leaf"
             x="16"
-            :y="54 + index * 20"
+            :y="50 + index * 20"
             font-family="Inter, system-ui, sans-serif"
             font-size="12"
             fill="#867e8e"

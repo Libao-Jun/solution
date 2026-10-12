@@ -73,8 +73,13 @@ export const featurePanels: FeaturePanel[] = [
         detail: '指标体系、加载 / 渲染 / 运行时优化与监控',
         link: '/fundamentals/front-end-performance/',
       },
+      {
+        text: 'Browser Storage 浏览器存储指南',
+        detail: 'Cookie / Web Storage / IndexedDB / Cache 的选型与封装',
+        link: '/fundamentals/browser-storage/',
+      },
     ],
-    meta: '收录 8 篇文档',
+    meta: '收录 9 篇文档',
     tone: 1,
     command: '$ npx tsc --noEmit',
     lines: [

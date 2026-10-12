@@ -27,6 +27,7 @@
 9. [性能监控与度量工具](#九、性能监控与度量工具)
 10. [注意事项、坑点与常见反模式](#十、注意事项、坑点与常见反模式)
 11. [性能优化 Checklist 速查](#十一、性能优化-checklist-速查)
+12. [性能工程化治理：预算 / 分析流程 / 三阶段落地](#十二、性能工程化治理-预算-分析流程-三阶段落地)
 
 ---
 
@@ -131,6 +132,23 @@ DNS 解析 → TCP/TLS 握手 → 发送请求 → 服务端处理 → 响应传
 - **Lab（实验室）**：Lighthouse、DevTools、本地模拟——可控可复现，但设备 / 网络环境与真实用户不同。
 - **Field（真实用户）**：CrUX、RUM 上报——反映真实分布（关注 P75 分位），但样本有噪声。
 - **典型坑**：本地 Lighthouse 满分、线上用户仍抱怨卡——因为你用的是高性能开发机 + 近距离网络。**以线上 P75 数据为准做决策**。
+
+### 2.6 其他常用指标（运行时 / 实验室补充）
+
+Core Web Vitals 之外，这些指标用于更细的归因与专项优化：
+
+| 指标              | 含义                                                         | 说明                                                         |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **Speed Index**   | 页面「视觉填充速度」的综合分（首屏内容以多快速度呈现）       | Lighthouse 报告项；重首屏可交互前的体感，LCP 只管「最大元素」 |
+| **TTI**           | Time To Interactive，页面完全可交互                          | 已逐步被 INP 取代；仍是实验室常用「可交互时间点」            |
+| **TBT**           | Total Blocking Time，FCP→TTI 间长任务的阻塞总和             | INP 的实验室近似量，Lighthouse 重点卡分项                    |
+| **FPS**           | 每秒渲染帧数                                                 | 60Hz 设备应稳定 ≥ 60fps；掉到 < 50 即肉眼卡顿（见第八章）   |
+| **Long Tasks**    | 主线程 > 50ms 的任务数 / 总时长                              | 直接关联 INP 与 TTI；用 `longtask` 条目监控（见 §9.2）      |
+| **JS 堆内存**     | JS Heap Size / Used                                          | 持续增长不回落 = 怀疑内存泄漏（见 §6.6）                     |
+| **CPU 占用**      | 主线程繁忙占比                                               | 高占用 → 交互延迟、滚动卡顿                                  |
+| **请求数 / 体积** | 首屏请求数量与传输字节                                       | 弱网下「每请求一个 RTT」都贵；用 `resource` 条目统计（§9.1） |
+
+> 选型原则：**对外汇报 / SEO 看 Core Web Vitals（LCP/INP/CLS）**；**对内定位瓶颈看 TBT / Long Tasks / FPS / 堆内存 / 请求瀑布**。两者互补，不要互相替代。
 
 ---
 
@@ -261,6 +279,7 @@ If-Modified-Since: Mon, 18 Aug 2026 12:00:00 GMT
 - **`immutable` 的意义**：避免用户刷新时浏览器对静态资源补发条件请求（304 也要一个 RTT）。
 - **memory cache 与 disk cache**：小 / 频繁用的进内存，大的进磁盘；页面刷新常走 memory，重新打开走 disk——命中路径不同，不要误判为「缓存没生效」。
 - **启发式缓存**：没写 `Cache-Control` 只有 `Last-Modified` 时，浏览器按「距 `Last-Modified` 时长的 10%」自行猜缓存期——**永远显式写 `Cache-Control`，别依赖猜测**。
+- **BFCache（往返缓存 / Back/Forward Cache）**：用户前进 / 后退时，浏览器把整个页面（JS 堆、滚动位置、DOM 状态）冻结保存，再次回来**瞬时恢复**（比任何缓存都快）。它和 HTTP 缓存是正交的两套机制——**注意它会让 `unload` 事件不可靠**，且以下情况会禁用 BFCache：页面监听了 `unload` 事件、`Cache-Control: no-store`、页面用了 `opener` 且未 `noopener`、以及部分 `Cache-Control` 组合。正确做法：用 `pageshow` + `event.persisted` 判断恢复、用 `pagehide` 代替 `unload` 做清理、资源避免 `no-store`。可用 Chrome DevTools → Application → Back/forward cache 检测「不可缓存原因」。
 
 ### 3.4 传输与压缩
 
@@ -268,6 +287,8 @@ If-Modified-Since: Mon, 18 Aug 2026 12:00:00 GMT
 - **注意**：小文件（< 1KB）压缩收益为负；动态内容压缩消耗 CPU，静态内容构建期预压缩（`.gz` / `.br`）最佳。
 - **HTTP/2**：多路复用（单连接并行多请求）、头部压缩（HPACK）、二进制分帧——消灭 HTTP/1.1 的队头阻塞（应用层）。
 - **HTTP/3（QUIC）**：基于 UDP，解决 TCP 层队头阻塞，握手更快（0/1-RTT），弱网与移动端收益明显。
+- **`103 Early Hints` 取代 HTTP/2 Server Push**：Server Push 因「浏览器比服务器更懂该推什么」「推送资源难进 HTTP 缓存」等问题，Chrome 已移除支持，**不要再依赖 Push**；改用响应头 `103 Early Hints` + `Link: <style.css>; rel=preload`，在响应 body 还在传输时就让浏览器并行去拉关键 CSS / 字体 / 首图（本质是服务端代发 `preload`），显著缩短 LCP。
+- **压缩算法选择**：文本优先 **brotli**（比 gzip 再小 15~25%）；新兴的 **zstd** 在部分 CDN / 服务器已可开启（压缩率与解压速度更优）。图片 / 字体本身已压缩，不要再套 gzip/brotli。
 - **减少重定向链**：每多一跳就多一次完整 RTT，HSTS 可省掉 http→https 跳转。
 
 ### 3.5 资源提示（Resource Hints）
@@ -353,7 +374,7 @@ If-Modified-Since: Mon, 18 Aug 2026 12:00:00 GMT
 
 ### 4.3 图片（页面体积的最大头）
 
-- **格式选型**：**AVIF > WebP > JPEG/PNG**；图标 / 简单图形用 SVG；动画考虑 WebM/APNG 替代 GIF（GIF 体积巨大）。
+- **格式选型与量化收益**：**AVIF > WebP > JPEG/PNG**；经验数据：WebP 比同质量 JPEG 小约 **25~35%**，AVIF 比 WebP 再小约 **50%**（移动端 / 视觉密集图收益最大）。图标 / 简单图形用 SVG；动画考虑 WebM/APNG 替代 GIF（GIF 体积巨大）。
 
 ```html
 <picture>
@@ -370,10 +391,12 @@ If-Modified-Since: Mon, 18 Aug 2026 12:00:00 GMT
 </picture>
 ```
 
-- **响应式图片**：`srcset` + `sizes` 按视口下发合适尺寸，别给 375px 的手机发 2560px 的图。
+- **响应式图片**：`srcset` + `sizes` 按视口下发合适尺寸，别给 375px 的手机发 2560px 的图；`sizes` 要写对（常见错误是 `sizes="100vw"` 却只显示 1/3 宽，导致下发过大图）。
+- **艺术指导（Art Direction）**：同一张图在桌面 / 移动端用不同构图时，用 `<picture>` 的多个 `<source media="(max-width: 600px)">` 分别指不同图，而非仅缩放同一张。
 - **懒加载**：`loading="lazy"`（首屏图禁用，见 LCP 一节）；滚动容器内的图用 IntersectionObserver。
-- **压缩**：构建期（sharp / squoosh）或 CDN 按需压缩；质量 75~85 通常肉眼无差。
-- **占位防 CLS**：声明宽高比；可选 LQIP / BlurHash 低质量占位。
+- **压缩与质量**：构建期（sharp / squoosh / imagemin）或 CDN 按需压缩；质量 75~85 通常肉眼无差；**渐进式 JPEG** 先传模糊再变清晰，首屏体感优于基线 JPEG。
+- **CDN 图片处理（Image CDN）**：用 imgix / 阿里云 OSS 图片处理 / Cloudinary 等，按 URL 参数实时出图（尺寸、格式 `fm=avif`、质量、裁剪），避免仓库里存一堆静态衍生图，并自动协商 `Accept` 返回最优格式。
+- **占位防 CLS**：声明宽高比；可选 LQIP / BlurHash / 主色背景低质量占位，配合 `background-color` 兜底避免空白闪烁。
 - **图标**：SVG symbol / 组件化内联，替代图标字体（字体加载慢且可访问性差）。
 - **Base64 内联**：只对小图标（< 2~4KB）使用——base64 让体积膨胀约 33%，且无法独立缓存；大图内联进 CSS/JS 会把「可缓存资源」绑死在宿主文件上。
 
@@ -434,6 +457,13 @@ items.forEach((el, i) => {
 - **收益**：该元素的动画 / 滚动不再牵动主线程。
 - **代价与坑（层爆炸 Layer Explosion）**：每个合成层都要占 GPU 内存，层数失控反而变卡。**只对真正动画的元素临时提升**，动画结束后移除 `will-change`（常驻 `will-change` 是常见误用）。
 - 调试：DevTools → Layers 面板查看层数量 / 大小 / 提升原因。
+
+### 5.4 事件委托与 DOM 操作优化
+
+- **事件委托（Event Delegation）**：对列表 / 大量同类元素，把监听挂在**父容器**上，用 `event.target` 判定目标，而非给每个子元素单独 `addEventListener`——监听器数量从 N 降到 1，节点增删无需重新绑定（React / Vue 的合成就用了同样的思路）。注意：部分事件（如 `focus`/`blur`）不冒泡，需用 `focusin`/`focusout`，或对捕获阶段监听。
+- **避免全局变量**：全局变量驻留整个页面生命周期、易引发命名冲突与意外引用泄漏（见 §6.6）；模块作用域 / 闭包 / `const`/`let` 替代 `var` 与隐式全局。
+- **高频事件治理**：`scroll` / `mousemove` / `resize` / `pointermove` 触发极频繁——统一走「防抖节流 + `passive` + rAF 合并 + `getBoundingClientRect` 结果缓存」（见 §6.3、§8.3），禁止在回调里读写布局或做重计算。
+- **批量 DOM 更新**（已在 §5.2 提及）：`DocumentFragment`、整块 `innerHTML`、隐藏态（`display:none`）下改完再显示——只触发一次重排。
 
 ---
 
@@ -517,14 +547,51 @@ worker.onmessage = (e) => render(e.data);
 - **代码拆分**：`React.lazy` + `Suspense` 路由级拆分；首屏页面**禁止**静态 import 重依赖（编辑器 / 图表 / PDF），一律用到才 `import()`。
 - **并发特性**：大列表筛选等低优先级更新用 `startTransition` 包裹，保持输入响应（直接改善 INP）。
 - **大表单 / 大列表**：受控输入每键触发重渲时，考虑非受控 + 事件外同步；列表虚拟化（见第八章）。
+- **`Context` 拆分避免全量重渲染**：一个大型 `Context` 值变化会让所有消费组件重渲；按「稳定值 / 高频变化值」拆多个 Provider，或用「状态外置（如 Zustand / Jotai 的细粒度订阅）」替代 Context 广播。
+- **内联对象 / 函数会令 `React.memo` 失效**：每次渲染新建 `{onClick: () => ...}` 或 `{}` 作为 prop，引用变化导致 memo 子组件照样重渲——用 `useCallback` / `useMemo` 稳定引用，或把内联对象移到组件外。
+- **`React Compiler`（曾名 Forget）**：编译期自动插入 `memo` / `useMemo` / `useCallback`，免去手写记忆化（需严格模式兼容的纯组件）；渐进接入时可作为「免 manual memo」的升级路径。
+- **并发特性进阶**：`useDeferredValue` 给「搜索结果」等非紧急值降优先级，输入框保持即时响应；`useTransition` 标记低优先级更新（见 §6.2 任务切片思想同源）。`Profiler` API / React DevTools Profiler 火焰图定位「哪个组件重渲、花多久」。
+- **Fiber 与可中断渲染（理解即可）**：React 的 Fiber 架构把渲染拆成可中断、可恢复的单元，长列表 / 复杂树的 reconcile 不再一次性阻塞主线程——这是并发特性与 `startTransition` 的底层基础。
 
 ### 7.2 Vue
 
-- **`v-show` vs `v-if`**：频繁切换用 `v-show`（display 切换），条件很少变化 / 初始代价大用 `v-if`（不渲染销毁）。
-- **`keep-alive`**：缓存组件实例避免重复创建（配合 `include` 控制范围——无上限缓存是内存泄漏源）。
-- **computed 缓存**：依赖不变不重算，替代方法调用式模板取值。
-- **大数据响应式**：超大数据集（万级 JSON）用 `shallowRef` / `markRaw` 跳过深度响应式代理（Vue3 的 Proxy 深层代理对大对象初始化与读取都有成本）。
-- **`v-memo`**：列表项级缓存，依赖不变跳过 diff。
+#### 7.2.1 编译时优化（Vue3 性能的核心优势）
+
+Vue3 的模板编译器在编译期做了大量优化，使运行时 diff 极轻——这是 Vue 生态高级工程师必须理解、也是面试高频点：
+
+- **PatchFlag（动态标记）**：编译器为每个**动态节点**打上类型标记（如 `TEXT` / `CLASS` / `PROPS`），运行时 diff 只比对带 PatchFlag 的节点与对应字段，**静态部分完全跳过**。
+- **Block Tree（区块树）**：模板按 `v-if` / `v-for` / 插槽等「结构可能变化」的边界切成 Block，每个 Block 收集其下所有动态子节点进一个扁平数组，diff 时直接遍历动态节点数组，避免递归整棵树。
+- **静态提升（hoistStatic）**：静态节点与静态 `class` / `style` 提升到 `render` 函数外，只在首render 创建一次，后续复用同一 VNode——大段静态模板收益明显。
+- **事件处理缓存（cacheHandler）**：`@click="foo"` 这类内联事件在编译期缓存，避免因「每次渲染生成新函数」触发子组件无谓更新。
+- **认知收益**：正因为这些编译优化，Vue3 中「大量静态节点 + 少量动态」的页面开销很低；但用 `v-html`、手动 `h()` 渲染函数、或在 `setup` 里做重计算会绕过编译优化，需另行优化。
+
+#### 7.2.2 响应式系统性能特征
+
+- **Proxy 深层代理的代价**：Vue3 对 `reactive` 对象递归用 Proxy 代理，**初始化（首次访问深层属性才懒代理）和读取都有开销**；超大对象（万级 JSON）或高频更新的大数组是重灾区。
+- **响应式 API 选型**：
+  - `shallowRef` / `shallowReactive`：只代理一层，深层不转响应式——大列表 / 配置对象首选，配合手动 `.value = 新数组` 整体替换触发更新。
+  - `markRaw`：显式标记「永不转响应式」，用于第三方实例（图表、编辑器、`window` 句柄），避免无意义的代理。
+  - `triggerRef`：浅层 ref 改了深层属性后手动触发更新。
+  - `toRaw`：需要拿原始对象做高性能遍历 / 传给无响应式依赖的库时取原值。
+  - `ref` vs `reactive`：基础类型用 `ref`；大数组用 `shallowRef`（而非 `reactive` 深层包裹）。
+- **跳过响应式**：一次性展示、不再变的数据（如死配置、枚举表）用 `markRaw` / `Object.freeze` 或干脆存模块变量，别塞进 `reactive`。
+
+#### 7.2.3 渲染相关指令与 API
+
+- **`v-if` vs `v-show`**：频繁切换用 `v-show`（仅 `display` 切换），条件很少变 / 初始代价大用 `v-if`（不渲染销毁、不占响应式与事件）。注意 `v-if` 与 `v-for` 同元素时 `v-if` 优先级更高（Vue3），易踩「列表里条件过滤」的坑——用 `computed` 过滤列表再 `v-for`。
+- **列表 `key`**：用稳定唯一 id，禁用数组下标（头插 / 删除引发错误复用与全量重渲染）。
+- **`v-once`**：节点只渲染一次、后续跳过更新——适合静态大段（如页脚、常量区），但会**永久**脱离响应式，别用在会变的内容上。
+- **`v-memo`**：列表项级缓存，依赖数组不变就跳过该节点及其子树 diff，`[ ]` 表示永不更新（极致优化，滥用反伤可维护性）。
+- **`computed` 缓存**：依赖不变不重算，替代模板里的「方法调用取值」（方法每次渲染都执行）。
+- **函数式组件（`<script setup>` 中的 `functional` / 纯函数组件）**：无状态、无实例、无响应式开销，适合纯展示包装层。
+- **`defineAsyncComponent`**：重组件 / 路由级组件按需加载，避免首屏扛全部 bundle。
+- **事件修饰符**：`@scroll.passive` / `@touchmove.passive` 等声明被动监听，提升滚动性能（见 §6.3、§8.3）。
+
+#### 7.2.4 缓存范围与大数据冻结
+
+- **`keep-alive`**：缓存组件实例避免重复创建；用 `include` / `exclude` / `max` 控制范围——**无上限缓存是内存泄漏源**（尤其路由级 keep-alive 堆积）。
+- **`Object.freeze` 冻结非响应式大数据**：对只读的大数组 / 大对象 `Object.freeze`，Vue 检测到 frozen 会跳过响应式转换，初始化与遍历开销大幅下降（配合 `shallowRef` 效果更佳）。
+- **`v-for` + 大数据**：万级列表一律虚拟化（见 §8.4）；非列表的大 JSON 展示考虑分页 / 折叠。
 
 ### 7.3 通用与工程化
 
@@ -572,6 +639,14 @@ worker.onmessage = (e) => render(e.data);
 - **离屏 canvas**（OffscreenCanvas）：把绘制移到 Worker，或预渲染重复元素（图元缓存位图后 drawImage）。
 - **帧率控制**：用 rAF 驱动重绘循环，页面不可见（`document.hidden`）时暂停。
 - 高频粒子 / 大规模图形优先 WebGL（batch draw），Canvas 2D 大量 drawCall 是 CPU 瓶颈。
+
+### 8.6 首屏体验与白屏治理
+
+- **骨架屏（Skeleton）**：内容未到时先画结构占位（固定尺寸的灰块），既是「加载中」反馈，也固定了布局高度防止 CLS（见 §2.3）。SSR 直出骨架、CSR 用组件占位皆可。
+- **App Shell 模型**：把「外壳（顶栏 / 侧边 / 布局）」离线缓存（Service Worker），内容按需填充——二次访问外壳秒出，首屏从「白屏 → 内容」变为「外壳 → 内容」，体感大幅提升。
+- **流式 SSR / 分块输出**：服务器边查边吐 HTML（`<Suspense>` 流式、Edge SSR），首屏无需等全量数据齐了才渲染；配合 `<link rel="preload">` / `103 Early Hints` 缩短 LCP（见 §3.4、§3.6）。
+- **CSR 白屏治理**：纯 CSR 在 JS 下载执行前是白屏——关键首屏用 SSR / SSG / 预渲染（见 §3.6）；至少用内联骨架 + 关键 CSS 让首屏「先有结构」。
+- **首屏资源顺序**：CSS 内联关键、JS `defer`、字体 `font-display: swap`、LCP 图 `fetchpriority="high"` 且**不要 `lazy`**（见 §2.2）——首屏的每一毫秒都在 LCP 阈值内。
 
 ---
 
@@ -647,7 +722,7 @@ onCLS(console.log);
 
 - **RUM（真实用户监控）**：web-vitals 采集 + 埋点上报，看 **P75** 分布；关联版本号 / 路由 / 设备分层归因。
 - **上报细节**：`navigator.sendBeacon` 或 `fetch(..., { keepalive: true })`；采样控制量；SPA 路由切换要重新评估指标窗口。
-- **性能预算（Performance Budget）**：给关键指标与产物体积设红线（如首屏 JS < 200KB、LCP < 2.5s），CI 里用 bundle-size-action / Lighthouse CI 卡口，**超预算即失败**——性能必须有「防回归机制」，否则会随迭代无声劣化。
+- **性能预算（Performance Budget）**：给关键指标与产物体积设红线（如首屏 JS < 200KB、LCP < 2.5s），CI 里用 bundle-size-action / Lighthouse CI 卡口，**超预算即失败**——性能必须有「防回归机制」，否则会随迭代无声劣化。预算的落地与「开发 / 部署 / 运维三阶段」完整流程见[第十二章](#十二、性能工程化治理-预算-分析流程-三阶段落地)。
 
 ---
 
@@ -715,6 +790,8 @@ onCLS(console.log);
 - [ ] WebP/AVIF + 响应式 `srcset`
 - [ ] 中文字体子集化 + `font-display`
 - [ ] 按页面类型选 CSR / SSR / SSG
+- [ ] 关键资源用 `103 Early Hints` 代发 preload（弃用已废弃的 HTTP/2 Server Push）
+- [ ] 资源避免 `no-store`、页面避免 `unload` 监听，保住 BFCache 往返缓存
 
 ### 11.2 渲染层
 
@@ -724,13 +801,14 @@ onCLS(console.log);
 - [ ] `passive: true` + scroll 回调 rAF 化 / IntersectionObserver 化
 - [ ] `will-change` 临时使用，动画后移除
 - [ ] 长页面 / 长列表上 `content-visibility` 或虚拟化
+- [ ] 列表 / 高频同类元素用事件委托（父容器单一监听）
 
 ### 11.3 运行时
 
 - [ ] 长任务切片，CPU 密集进 Worker
 - [ ] 防抖节流用对场景（scroll 节流 / 输入防抖，不碰首交互）
 - [ ] 定时器 / 监听器 / 副作用在卸载时清理
-- [ ] 大数据集跳过深度响应式（`shallowRef` / `markRaw`）
+- [ ] 大数据集跳过深度响应式（`shallowRef` / `markRaw`），只读大数组 `Object.freeze`
 - [ ] 生产环境剥离 `console` 与调试代码
 
 ### 11.4 监控与防回归
@@ -739,3 +817,55 @@ onCLS(console.log);
 - [ ] longtask 观测 + 错误监控关联
 - [ ] Lighthouse CI / 体积预算进 CI 卡口
 - [ ] 以线上 P75 数据驱动优化排序，一次一改一复测
+- [ ] 性能预算 + 三阶段落地（开发 / 部署 / 运维）纳入 CI 卡口与告警（见第十二章）
+
+---
+
+## 十二、性能工程化治理：预算 / 分析流程 / 三阶段落地
+
+> 性能不是「一次性优化」，而是**工程能力**：没有预算、没有流程、没有监控，所有优化都会随迭代无声回退。本节面向「高级前端 / 前端负责人」——把性能从「个人技巧」变成「团队可复制、可防回归的机制」。
+
+### 12.1 性能预算（Performance Budget）
+
+- **两类预算都要有**：
+  - **指标预算**：LCP < 2.5s、INP < 200ms、CLS < 0.1、TBT < 200ms、Lighthouse 总分 ≥ 90（按业务定阈值）。
+  - **体积预算**：首屏 JS / CSS 总传输（gzip 后）上限、单路由 bundle 上限、依赖「黑名单」（如禁入 moment / lodash 整包）。
+- **预算要落到 CI 卡口**（否则只是文档）：`Lighthouse CI`（`lhci`）、`lighthouse-ci`、bundle 体积用 `size-limit` / `bundlewatch` / `bundlesize`，PR 阶段自动比对 master 的体积与评分，**超阈值直接失败 / 评论报警**。
+- **预算要分层**：全站基线预算 + 单路由更严格的预算（首屏路由最严）；与「缓存分层」（§3.3）配合——哈希资源长缓存，所以体积预算重点盯「首屏关键路径体积」。
+- **常见坑**：只设预算不接 CI = 形同虚设；预算过严导致频繁失败被团队「绕过」——阈值要基于真实数据（线上 P75）倒推，而非拍脑袋。
+
+### 12.2 性能分析流程（实验室 + 现场 + 归因闭环）
+
+把「优化」做成可复用的排查 SOP，而不是凭手感：
+
+1. **建立现场数据（Field）**：web-vitals + RUM 上报，按版本 / 路由 / 设备 / 网络分层看 **P75**（见 §9.5）；先回答「谁慢、慢在哪、占比多少」。
+2. **复现到实验室（Lab）**：对慢的路由跑 Lighthouse / WebPageTest（选中端安卓 + 4G 弱网，贴近真实用户），拿到可复现的分数与瀑布。
+3. **定位瓶颈**：DevTools Performance 录制火焰图——看是「网络等待（TTFB / 资源下载）」「长任务（JS 阻塞）」还是「渲染（布局 / 绘制 / 合成）」占大头；Network 面板看请求瀑布与优先级；Coverage 面板看「加载了但没用」的字节（见 §9.4）。
+4. **归因与决策**：二八原则，先打最大头（首屏 JS 体积、LCP 资源、长任务）；把指标拆到子项（如 LCP 拆 TTFB / 发现延迟 / 加载 / 渲染，见 §2.2）逐个击破。
+5. **改一类、复测一类**：一次只改一处，改完回实验室 + 现场对比；把「原因 → 手段 → 前后数值」写进 PR 描述，沉淀为团队知识。
+6. **固化防回归**：把关键路由纳入 Lighthouse CI 预算（§12.1），并把本次优化登记进 Checklist（第十一章）。
+
+> 一句话：**现场定问题、实验室定位、火焰图定因、CI 防回归**。
+
+### 12.3 开发 / 部署 / 运维三阶段落地
+
+**开发阶段**
+- 把性能预算写进组件评审清单（首屏体积、是否引入重依赖、是否懒加载）。
+- 用 Coverage / Bundle Analyzer 在开发期就发现「加载了没用到」的代码。
+- 组件级性能意识：列表虚拟化、事件委托、避免内联对象、大数据冻结 / 浅响应（Vue，见 §7.2）、memo 用对（React，见 §7.1）。
+
+**部署阶段**
+- CDN + 边缘缓存、强缓存分层（`no-cache` HTML + 哈希资源 `immutable`，见 §3.3）、开启 brotli / zstd 压缩。
+- `103 Early Hints` 代发关键资源 preload（见 §3.4）；按页面类型选 CSR / SSR / SSG / 流式（见 §3.6、§8.6）。
+- 发布用「灰度 + 回滚」：因为缓存分层，发布异常时需要有快速回滚与 CDN purge 预案（见 §3.3 排查链）。
+
+**运维阶段**
+- 真实用户监控常态化：Core Web Vitals P75 看板 + 告警阈值（如 LCP P75 连续超 2.5s 报警）。
+- 定期评估：新设备 / 新浏览器 / 新网络下复测；技术更新（新格式 AVIF、新压缩 zstd、新 API `scheduler.yield`）及时引入。
+- 性能技术债偿还：把「历史页面」纳入定期优化排期，而非只优化新页面。
+
+### 12.4 协作机制（让性能真正被重视）
+
+- **性能作为 SLI/SLO**：把 LCP / INP / CLS 写进服务的 SLO，有负责人、有告警、有复盘，性能问题才有「被排期」的资格。
+- **性能回归 Gate**：CI 红 = 不可合并；发布前性能验收单（对照第十一章 Checklist）。
+- **知识沉淀**：典型优化写成「原因 → 复现 → 手段 → 数值」的 case，形成团队性能知识库（本文即此类沉淀的骨架）。

@@ -24,7 +24,7 @@ import TerminalPanel from './TerminalPanel.vue'
 
 /**
  * 首页区块与参考站 docs/.vitepress/theme/layouts/Home.vue 一一对应：
- *   Hero → StackIsometric（技术栈等距图）→ Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
+ *   Hero → StackIsometric（技术栈覆盖，深色 Bento 面板）→ Terminal → InstallCommand → CoreFeature3Col → ProductivityGrid
  *   → (深色) HeadingSection4 + FeatureToolbar + Feature* 面板
  *   → HeadingSection3 → HeroRive（本站为自绘 SVG 内容地图）
  *

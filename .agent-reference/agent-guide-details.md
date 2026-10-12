@@ -136,7 +136,7 @@ rg -n "data-screen-adaptation|/engineering/data-screen-adaptation/" .
 - **品牌资源**（`theme/index.ts`）：`themeContextKey` 覆盖 `logoDark` / `logoLight` / `footerBg` / `monoIcon`，删掉覆盖品牌资源失效。
 - **首屏主题**（`theme/Layout.vue`）：首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏。
 - **首页网格**（`Home.vue` / `topics.ts`）：带边框网格单元格数**整除列数**（3 格 3 列、4 格 2×2、2 格 2 列）；多条目列表放格内做单列 `divide-y`；横向网格补 `divide-x-0 <bp>:divide-x`。直接给会换行的网格套 `divide-x/y` 末行缺边框。
-- **等距图底部卡片**（`StackIsometric.vue`）：正面 4 篇沿 **x 轴**、侧面 4 篇沿 **y 轴**，各落对应台面边之外、同净空；两排导轨在平台底角正下方汇合（Λ / V 对称）。8 张卡片沿屏幕水平排成一行、或按卡片**宽度**算 y 轴排间距均为回退。
+- **技术栈面板**（`StackIsometric.vue`，2026-10 由 SVG 等距图重构为深色 Bento 面板）：卡片与芯片完全由 `topics.ts` 的 `categories` / `growthBlocks` 数据驱动（新增文档只需在 `topics.ts` 加一条 chip，组件零改动）；`lg:grid-cols-6` 下首行 3 卡各 `lg:col-span-2`、次行 2 卡各 `lg:col-span-3`，每行都整除 6 列；面板恒深色固定 `bg-[#12131d]`、文字固定色，**不用 `data-theme="dark"`**（否则 `border-t` 与相邻浅色区块横线变色）；悬停只动 paint 属性，禁 `transform`（与入场时间线抢 transform / opacity）。把芯片写死进模板、或写死 `data-theme="dark"`、或手算间距失整除均为回退。
 - **首页动效**（`animations/motion.ts`）：`gsap.set()` 造起点 + `gsap.to()` 写死终值（**不用 `from()`**——停在中途态，实测 Hero CTA 停在 `opacity: 0`）；`prefers-reduced-motion` 时零动画；GSAP 只能动态 `import()`；`useMotion()` 根节点带 `data-motion-scope`。CSS 先隐藏再由 JS 显形 = JS 失败整块不可见；去 scope 会让同元素两份动画互抢 opacity。
 - **`base` 与资源引用**：`base` 按 `process.env.CI` 切换（CI `/solution/`、本地 `/`）；组件 / `head` / 页脚的根路径链接与 favicon 一律经 `withBase()`（组件从 `vitepress` 导入，`config.mts` 用本地同名辅助函数）。写死 `/` 或裸写 `/xxx` 在子路径部署下全 404。
 - **页头 Logo 根链接**：主题包写死 `href="/"`——构建期 `transformHtml` 精确匹配补 base，运行时 `fixThemeLogoLink()` 兜底（含移动端菜单动态插入的链接）。删除后子路径部署点 Logo 跳到域名根目录。

@@ -5,7 +5,7 @@
 > **铁律一**：改样式、补内容、加需求，都不得影响既有正常功能；已修复过的 bug 不得被覆盖或回退（§2.4 / §2.5）。
 > **铁律二**：每次任务 / 对话收尾必须执行一次收尾 Code Review（§4.6），发现问题就修复并复验，不得带问题收尾。
 
-> **配套细节（示例 / 排查命令 / 三轴详程 / 首页实现细则）**统一放在 `.agent-reference/` 下：详见 `agent-guide-details.md`（文档骨架、Skill 样例、新增文档排查与清单、Code Review 三轴详程）与 `homepage-implementation-notes.md`（首页网格 / 等距图 / 动效的实现原理与自查口径）。本文件只保留关键规则。
+> **配套细节（示例 / 排查命令 / 三轴详程 / 首页实现细则）**统一放在 `.agent-reference/` 下：详见 `agent-guide-details.md`（文档骨架、Skill 样例、新增文档排查与清单、Code Review 三轴详程）与 `homepage-implementation-notes.md`（首页网格 / 技术栈面板 / 动效的实现原理与自查口径）。本文件只保留关键规则。
 
 ## 0. 项目概览
 
@@ -87,7 +87,7 @@ pnpm run preview # 预览构建产物
 | `theme/index.ts`           | `themeContextKey` 品牌资源覆盖                                        | 删除覆盖                                 |
 | `theme/Layout.vue`         | 首页 `data-theme="light"` 同步                                        | 移除同步                                 |
 | 首页网格                   | 格子数**整除列数** + divide 规则（§2.6 A）                            | 直接套 `divide-x/y`，缺边框              |
-| 等距图底部卡片             | 正面 x 轴 / 侧面 y 轴 / Λ-V 汇合                                      | 水平一排 / 按宽度算距                    |
+| 技术栈面板 `StackIsometric.vue` | 数据驱动（`categories`/`growthBlocks` 来自 `topics.ts`）；6 列 Bento 首行 3×2、次行 2×3（每行整除）；深色固定 `bg-[#12131d]` 不用 `data-theme="dark"` | 写死 `data-theme="dark"`（border-t 与相邻浅色区块横线变色）/ 手算间距失整除 / 把芯片写死进组件 |
 | 首页动效                   | `set`+`to`（禁 `from`）/ 零动画 / 动态 `import` / `data-motion-scope` | CSS 隐藏 / `from()` / 去 scope           |
 | `base` + 资源引用          | CI 切换 + 一律 `withBase()`                                           | 写死 `/` 或裸 `/xxx`，404                |
 | 页头 Logo 根链接           | `transformHtml` + `fixThemeLogoLink()`                                | 删除（子路径跳域名根）                   |
@@ -95,7 +95,7 @@ pnpm run preview # 预览构建产物
 
 > 各条目的完整「现状」说明见 `.agent-reference/agent-guide-details.md` 六。遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
 
-### 2.6 首页改动细则（网格 / 等距图 / 动效，改动前必读）
+### 2.6 首页改动细则（网格 / 技术栈面板 / 动效，改动前必读）
 
 **A. 网格边框（Tailwind）**
 
@@ -106,21 +106,19 @@ pnpm run preview # 预览构建产物
 | 外框连续    | 骨架 `<section class="wrapper border-t">`；禁空白 `Spacer.vue`、禁中间区块 `md:border-none`（全宽通栏除外） |
 | 自查        | 无头浏览器统计「空的带边框块」（无内容、任一边有框、宽 ≥200 高 ≥24）= **0**                                 |
 
-**B. 等距图 `StackIsometric.vue`**
+**B. 技术栈面板 `StackIsometric.vue`**（2026-10 由 SVG 等距图重构为深色 Bento 面板）
 
 | 模块         | 规则（勿动）                                                                                                                                                 |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 数据         | 方块 = 仓库已有文档，取 `topics.ts` 的 `categories`                                                                                                          |
-| 几何         | 2:1 等距投影；厚度 = 圆角矩形下移 `DEPTH` 叠两层（**禁手算六顶点**）；台面外扩 `FACE_PAD`                                                                    |
-| 文字         | 方块标签 `textMatrix()`（切变 ≈13°）；台面前沿长文字 `isoMatrix()`（≈26 + `letter-spacing` ≈7）                                                              |
-| 中文清晰     | 三前提：① `max-w-[80rem]` 与 `viewBox` **1:1**；② `text-rendering: geometricPrecision`；③ 字号 +1px（卡片 12/13.5，方块 13/14.5/16）                         |
-| 线网         | 一条线只画一次；导轨外端由 `Math.min(...cubes.map(c => c.at))` 推导；上方 4 条「端点 → 最近方块中心」= 0px，底部 2 条 `from` 最外侧卡片中心、`to` = 导轨交点 |
-| 底部两排卡片 | 正面沿 **x 轴**、侧面沿 **y 轴**；容量 **5 + 4**；同净空 `ROW_CLEARANCE`；**y 轴排间距按卡片高度 38**                                                        |
-| 动画分层     | 入场 GSAP 单时间线沿导轨滑入，不用 `svgOrigin`；`.is-motion` 停 CSS `iso-in`/`iso-draw`；常驻循环走 CSS，GSAP 不碰 `.float`                                  |
-| 悬停         | 缩放 1.07、变暗 0.42、导轨高亮 + 虚线（周期 16，offset 每轮 -16）；底部卡片绑 `data-rail`；`onComplete` 后绑定                                               |
-| 布局         | 固定 `viewBox`（`min-w-[44rem]` + `overflow-x-auto`）；同轨相邻间距 ≥ ≈105                                                                                   |
+| 数据         | 卡片 = 仓库已有文档，取 `topics.ts` 的 `categories`（内容分类）/ `growthBlocks`（学习路线 + 职业成长）；芯片 flex-wrap 自动换行，新增文档只需在 `topics.ts` 加一条 chip，组件零改动 |
+| 版式         | 深色面板铺满 `wrapper`（无内边距、无圆角），与收尾内容地图同一设计语言；外框由 section 的 `border-t` 延续                                                        |
+| 配色         | 面板恒深色、文字用固定色（`bg-[#12131d]` + `text-white`/`white/60`），**不用 `data-theme="dark"`**——避免改变本区块 `border-t` 主题变量，与相邻浅色区块横线不一致      |
+| Bento 网格   | `lg:grid-cols-6`；第一行 3 卡各 `lg:col-span-2`、第二行 2 卡各 `lg:col-span-3`（**每行都整除 6 列**）；卡内芯片是 flex-wrap 链接组，**不使用共享 divide 边框**    |
+| 动效分层     | 入场由组件内一条 GSAP 时间线编排（背景淡入 → 扫描线扫过 → 标题 → 卡片上浮 + 边框通电闪光 → 芯片弹性 pop → 计数滚动，ScrollTrigger 一次性触发）；零 JS / GSAP / 减少动态时内容完整静态可见（起点一律 `gsap.set()` 生成，结束 `clearProps` 释放 transform） |
+| 常驻循环     | 仅顶部「数据流」光带，走 CSS 且包在 `prefers-reduced-motion: no-preference` 内                                                                              |
+| 悬停         | 只改 `color`/`border`/`background`（paint 属性），不碰 `transform`，不与 GSAP 抢                                                                           |
 
-> ★ **两条硬禁令**：① 缩放用 `gsap.to(el, { scale })`，**禁 `quickTo('scale')`**；② 元素列表一律 `*Els` 后缀，**禁与数据数组撞名**。
+> ★ **硬约束**：① 悬停只动 paint 属性（`color`/`border-color`/`background-color`），**禁止 `transform`**，否则与 `revealOnScroll` 入场 tween 抢同一批 transform / opacity（症状：滚到底后部分文案仍 `opacity: 0`）；② 卡 / 芯片全部由 `topics.ts` 数据驱动，**禁止把文档列表写死进模板**——新增文档应在数据侧加 chip。
 
 **C. 首页动效（GSAP）**
 
@@ -130,10 +128,10 @@ pnpm run preview # 预览构建产物
 | ★ 三禁   | 禁 CSS 先隐藏再等 JS 显形（起点 `gsap.set()` 生成）；禁 `gsap.from()`（用 `set()` + `to()` 写死终值）；`prefers-reduced-motion` 时零动画                       |
 | 标记     | `data-reveal`（`up`/`scale`/`left`/`right`）、`data-count`、`data-hero-step`、`data-hero-cta`（磁吸）                                                          |
 | ★ scope  | `useMotion()` 根节点必须带 `data-motion-scope`，否则同元素被建两份 tween 互抢 opacity                                                                          |
-| SVG      | CSS `transform` 覆盖 SVG `transform` 属性：带矩阵 / `translate` 的元素只动画无 transform 的外层 `<g>` 或改用 opacity；悬停缩放挂 `<a class="iso-tile">`        |
+| SVG      | CSS `transform` 覆盖 SVG `transform` 属性：带 `translate` 的元素（**内容地图卡片组** `ClosingIllustration.vue` 的内层 `<g transform>`）只能动画其**无 transform 属性的外层 `<g data-map-card>`**，或改用 opacity |
 | Hero CTA | `styles.css` 第 7 段两条让路（**都不可删**）：① `.button` 的 `transition-property` 摘掉 `transform`（**保留 `scale`**）；② `:hover { scale: 105% !important }` |
 
-> 以上规则的**完整实现原理、失败复盘与逐项自查口径**（含中文发虚成因、导轨推导、悬停数学、GSAP 三禁复盘、无头 Edge 验证步骤）见 **`.agent-reference/homepage-implementation-notes.md`**（关键规则见本表，详程见附件）。
+> 以上规则的**完整实现原理、失败复盘与逐项自查口径**（含 Bento 网格与边框口径、数据驱动收益、动效与悬停分层、SVG transform 覆盖、GSAP 三禁复盘、无头 Edge 验证步骤）见 **`.agent-reference/homepage-implementation-notes.md`**（关键规则见本表，详程见附件）。
 
 ## 3. 规范（Standards）
 

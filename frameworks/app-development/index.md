@@ -62,13 +62,9 @@
 | ②   | **Web 应用** | web application / Web App       | 用网页技术做，**必须在浏览器中使用**                                    |
 | ③   | **混合应用** | hybrid application / hybrid App | **原生外壳 + 网页内核**，原生与 Web 结合                                |
 
-```text
-     Native Apps            Web Apps             Hybrid Apps
-   ┌────────────┐        ┌────────────┐        ┌────────────┐
-   │  平台专属   │   VS   │  浏览器中   │   VS   │  原生外壳   │
-   │  性能最好   │        │  跨平台免装 │        │ + 网页内核  │
-   └────────────┘        └────────────┘        └────────────┘
-     iOS 徽标 / Android 徽标     浏览器 + 网页           HTML5 徽标
+```mermaid
+flowchart LR
+    N["Native Apps<br>平台专属 · 性能最好<br>iOS / Android 徽标"] --- V1["VS"] --- W["Web Apps<br>浏览器中 · 跨平台免装<br>浏览器 + 网页"] --- V2["VS"] --- H["Hybrid Apps<br>原生外壳 + 网页内核<br>HTML5 徽标"]
 ```
 
 > 这三类 App 的**技术模型都不一样，各有优缺点**。企业一般会**选择其中一种作为主要技术栈**，来构建自己的手机 App。
@@ -162,14 +158,9 @@
 
 混合 App 自上而下分三层：
 
-```text
-┌─────────────────────────────┐
-│  ① HTML5 网页层（前端页面）  │  ← 前端工程师写这层（Vue/React/原生 JS）
-├─────────────────────────────┤
-│  ② 网页引擎层（WebView 实例）│  ← 本质是一个隔离的浏览器内核
-├─────────────────────────────┤
-│  ③ 容器层（原生外壳）        │  ← 原生工程师写这层
-└─────────────────────────────┘
+```mermaid
+flowchart TD
+    A["① HTML5 网页层（前端页面）<br>前端工程师写这层（Vue/React/原生 JS）"] --> B["② 网页引擎层（WebView 实例）<br>本质是一个隔离的浏览器内核"] --> C["③ 容器层（原生外壳）<br>原生工程师写这层"]
 ```
 
 - **容器**：原生外壳，内部隐藏一个浏览器；能提供**API Bridge**（常以 JavaScript 形式暴露，故称 **JSBridge**），让网页调用底层系统 API（相机、GPS、支付……）。
@@ -316,19 +307,20 @@
 
 ### 3.2 选型决策树（前端开发者视角）
 
-```text
-你的团队/技术底色是什么？
-├─ 会 React / React Native 生态 → RN（快速）或 Expo
-├─ 会 Vue → uni-app（要覆盖小程序）或 Ionic/Capacitor（纯 H5 壳）
-├─ 无前端包袱、追求体验一致 → Flutter
-├─ 已有原生团队、只想共享逻辑 → KMP
-└─ 只做展示页/活动页，预算极低 → Hybrid（WebView + Vue/React）
+```mermaid
+flowchart TD
+    Q1["你的团队 / 技术底色是什么？"]
+    Q1 -->|会 React / RN 生态| A1["RN（快速）或 Expo"]
+    Q1 -->|会 Vue| A2["uni-app（覆盖小程序）或 Ionic/Capacitor（纯 H5 壳）"]
+    Q1 -->|无前端包袱 · 追求体验一致| A3["Flutter"]
+    Q1 -->|已有原生团队 · 只共享逻辑| A4["KMP"]
+    Q1 -->|只做展示页 / 活动页 · 预算极低| A5["Hybrid（WebView + Vue/React）"]
 
-项目诉求是什么？
-├─ 性能与体验要求高、预算充足、大型 App → 原生（Kotlin/Compose、Swift/SwiftUI）
-├─ 一个团队要覆盖双端 → 跨平台（Flutter / RN）
-├─ 要同时覆盖小程序 + App → uni-app / Taro
-└─ 只要快速拉新、内容展示 → Web App / H5 / PWA
+    Q2["项目诉求是什么？"]
+    Q2 -->|性能体验高 · 预算足 · 大型 App| B1["原生（Kotlin/Compose、Swift/SwiftUI）"]
+    Q2 -->|一个团队覆盖双端| B2["跨平台（Flutter / RN）"]
+    Q2 -->|同时覆盖小程序 + App| B3["uni-app / Taro"]
+    Q2 -->|快速拉新 · 内容展示| B4["Web App / H5 / PWA"]
 ```
 
 ### 3.3 经典选型结论（阮一峰原文总结）
@@ -449,13 +441,9 @@
 
 > 这是**"App 从开发到上架的整个流程"**的标准骨架。
 
-```text
- 1. 需求分析       →  2. 原型设计      →  3. UI 设计
- 4. 技术选型       →  5. 搭建项目      →  6. 开发页面
- 7. 封装网络请求   →  8. 登录注册      →  9. 状态管理
-10. 本地存储       → 11. 权限处理      → 12. 接入推送/支付/地图/相机
-13. 真机测试       → 14. 性能优化      → 15. 打包
-16. 应用市场上架   → 17. 后续版本迭代
+```mermaid
+flowchart TD
+    s1["1. 需求分析"] --> s2["2. 原型设计"] --> s3["3. UI 设计"] --> s4["4. 技术选型"] --> s5["5. 搭建项目"] --> s6["6. 开发页面"] --> s7["7. 封装网络请求"] --> s8["8. 登录注册"] --> s9["9. 状态管理"] --> s10["10. 本地存储"] --> s11["11. 权限处理"] --> s12["12. 接入推送/支付/地图/相机"] --> s13["13. 真机测试"] --> s14["14. 性能优化"] --> s15["15. 打包"] --> s16["16. 应用市场上架"] --> s17["17. 后续版本迭代"]
 ```
 
 ### 阶段一：需求与设计（1–3）
@@ -681,14 +669,11 @@ struct LoginView: View {
 
 ### 8.1 缓存的分层模型（一张图看懂）
 
-```text
-用户请求
-   │
-   ├─① 内存缓存（L1）  ← 最快，进程内，重启即失（LruCache / Map / 图片内存缓存）
-   │        未命中 ↓
-   ├─② 磁盘缓存（L2）  ← 文件 / SQLite / Room / Core Data / UserDefaults / WebView Cache
-   │        未命中 ↓
-   └─③ 网络（L3 源）   ← HTTP 缓存（OkHttp / URLCache）+ CDN 边缘缓存 + 服务端缓存（Redis）
+```mermaid
+flowchart TD
+    U[用户请求] --> L1["① 内存缓存 L1<br>最快 · 进程内 · 重启即失<br>LruCache / Map / 图片内存缓存"]
+    L1 -->|未命中| L2["② 磁盘缓存 L2<br>文件 / SQLite / Room / Core Data / WebView Cache"]
+    L2 -->|未命中| L3["③ 网络 L3 源<br>HTTP 缓存 + CDN 边缘缓存 + 服务端缓存(Redis)"]
 ```
 
 **四个核心指标**：**命中率**（越高越省）、**新鲜度**（什么时候过期）、**容量**（占多少内存/磁盘）、**一致性**（会不会看到旧数据）。
@@ -792,12 +777,10 @@ val client = OkHttpClient.Builder()
 
 **经典三级缓存**（Android 高频考点）：
 
-```text
-内存缓存 LruCache（强引用、按 size 计量，最快）
-    ↓ 未命中
-磁盘缓存 DiskLruCache / 文件（journal 日志索引，key 用 MD5 作文件名）
-    ↓ 未命中
-网络（下载后依次写入 磁盘 → 内存）
+```mermaid
+flowchart TD
+    M["内存缓存 LruCache<br>强引用 · 按 size 计量 · 最快"] -->|未命中| D["磁盘缓存 DiskLruCache / 文件<br>journal 日志索引 · key 用 MD5 作文件名"]
+    D -->|未命中| N["网络<br>下载后依次写入 磁盘 → 内存"]
 ```
 
 - **LRU（Least Recently Used，最近最少使用）**：缓存将满时淘汰"最近最少被使用"的对象。Android 3.1+ 自带 `LruCache`（内部基于 `LinkedHashMap`，**按占用的 size 而非条数计量**，需重写 `sizeOf()`）；`DiskLruCache` **不属于 SDK**，需额外引入。
@@ -1122,13 +1105,13 @@ jarsigner -keystore my.jks -signedjar signed.apk unsigned.apk myalias
 
 ### 11.2 iOS
 
-```text
-① 注册 Apple Developer Program（个人 $99/年 或 公司账号需 D-U-N-S 编号）
-② 创建 App ID（Bundle Identifier，如 com.company.app）
-③ 配置证书（Certificates：开发/发布）与描述文件（Provisioning Profiles）
-④ Xcode → Product → Archive（Archive 打包）
-⑤ 上传 App Store Connect（Xcode 或 Transporter）
-⑥ TestFlight 内测 → 提交审核 → 通过后发布
+```mermaid
+flowchart TD
+    A["① 注册 Apple Developer Program<br>（个人 $99/年 或 公司需 D-U-N-S 编号）"] --> B["② 创建 App ID（Bundle Identifier）"]
+    B --> C["③ 配置证书与描述文件（Certificates / Provisioning Profiles）"]
+    C --> D["④ Xcode → Product → Archive 打包"]
+    D --> E["⑤ 上传 App Store Connect（Xcode / Transporter）"]
+    E --> F["⑥ TestFlight 内测 → 提交审核 → 通过后发布"]
 ```
 
 | 项           | 说明                                                                        |
@@ -1384,17 +1367,18 @@ plus.runtime.getProperty(plus.runtime.appid, function (widgetInfo) {
 
 ### 12.13 更新方案选型速查
 
-```text
-要更新什么？
-├─ 原生代码 / 新增原生能力 ──────→ 只能整包更新（走商店或自托管 APK）
-├─ 前端资源 / JS 业务逻辑 ───────→ 热更新（RN CodePush / uni-app wgt / 离线包）
-├─ 仅改开关 / 文案 / 阈值 ───────→ 远程配置（Feature Flag），不发版
-└─ 图片 / 配置等静态资源 ────────→ 资源热更新（iOS 也可，但不得改核心功能）
+```mermaid
+flowchart TD
+    Q1["要更新什么？"]
+    Q1 -->|原生代码 / 新增原生能力| A1["整包更新（走商店或自托管 APK）"]
+    Q1 -->|前端资源 / JS 业务逻辑| A2["热更新（RN CodePush / uni-app wgt / 离线包）"]
+    Q1 -->|仅改开关 / 文案 / 阈值| A3["远程配置（Feature Flag），不发版"]
+    Q1 -->|图片 / 配置等静态资源| A4["资源热更新（iOS 也可，不得改核心功能）"]
 
-用什么渠道？
-├─ iOS ────────────────────────→ 跳 App Store（不可强制）；热更仅限资源 / H5
-├─ Android 国内 ───────────────→ 自托管 APK 覆盖安装（包名 + 证书一致）或跳各市场
-└─ Android 海外 ───────────────→ Google Play In-App Updates / Staged Rollout / DFM
+    Q2["用什么渠道？"]
+    Q2 -->|iOS| B1["跳 App Store（不可强制）；热更仅限资源 / H5"]
+    Q2 -->|Android 国内| B2["自托管 APK 覆盖安装（包名+证书一致）或跳各市场"]
+    Q2 -->|Android 海外| B3["Google Play In-App Updates / Staged Rollout / DFM"]
 ```
 
 > **一句话总结**：**能走商店就走商店，能配置就不发版，热更新只当"急救包"**——且永远守住 iOS 的合规红线。
@@ -1416,12 +1400,9 @@ plus.runtime.getProperty(plus.runtime.appid, function (widgetInfo) {
 
 ### 13.1 通用上线流程（Android 视角）
 
-```text
-开发完成 → 真机测试 → 隐私合规检查 → 准备应用资料
-        → 准备 APP 备案 / 软著 / 特殊资质 → 生成正式签名包
-        → 注册开发者账号 → 创建应用 → 上传 APK / AAB → 填写应用信息
-        → 填写权限 / 隐私 / 数据安全说明 → 提交审核 → 处理驳回
-        → 审核通过 → 正式上线 → 监控崩溃/评论/数据 → 版本迭代
+```mermaid
+flowchart LR
+    A[开发完成] --> B[真机测试] --> C[隐私合规检查] --> D[准备应用资料] --> E[APP 备案/软著/资质] --> F[生成正式签名包] --> G[注册开发者账号] --> H[创建应用] --> I[上传 APK/AAB] --> J[填写应用信息] --> K[权限/隐私/数据安全说明] --> L[提交审核] --> M[处理驳回] --> N[审核通过] --> O[正式上线] --> P[监控崩溃/评论/数据] --> Q[版本迭代]
 ```
 
 ### 13.2 上线前资料准备（清单）
@@ -1475,10 +1456,9 @@ plus.runtime.getProperty(plus.runtime.appid, function (widgetInfo) {
 
 ### 13.7 iOS App Store 上架
 
-```text
-注册 Apple Developer → 创建 App ID → 配置证书与描述文件
-→ Xcode Archive → 上传 App Store Connect → TestFlight 测试
-→ 填写信息/截图/隐私 → 提交审核 → 通过后发布
+```mermaid
+flowchart LR
+    A[注册 Apple Developer] --> B[创建 App ID] --> C[配置证书与描述文件] --> D[Xcode Archive] --> E[上传 App Store Connect] --> F[TestFlight 测试] --> G[填写信息/截图/隐私] --> H[提交审核] --> I[通过后发布]
 ```
 
 **iOS 审核特别注意**：
@@ -1667,27 +1647,18 @@ plus.runtime.getProperty(plus.runtime.appid, function (widgetInfo) {
 
 ### 17.1 前端开发者转移动端（推荐路线）
 
-```text
-阶段一（基础）
-  HTML / CSS / JS → TypeScript → Vue 或 React（精其一）
-  ↓
-阶段二（移动端认知）
-  理解 App 页面 / 路由 / 状态 / 权限 / 打包 / 上架全流程
-  ↓
-阶段三（选一个主战场）
-  · 快速做 App        → React Native / uni-app
-  · 高质量跨平台      → Flutter
-  · 覆盖小程序 + App  → uni-app / Taro
-  ↓
-阶段四（做完整项目）
-  从 0 到 1 做一个完整 App（含登录、网络、存储、推送、支付）
-  ↓
-阶段五（原生能力补充）
-  Android：Kotlin + Jetpack Compose
-  iOS：Swift + SwiftUI
-  ↓
-阶段六（工程与发布）
-  打包签名 → 各市场/商店上架 → 监控与迭代 → 性能优化
+```mermaid
+flowchart TD
+    S1["阶段一（基础）<br>HTML/CSS/JS → TypeScript → Vue 或 React（精其一）"]
+    S2["阶段二（移动端认知）<br>页面/路由/状态/权限/打包/上架全流程"]
+    Q{"阶段三（选主战场）"}
+    Q -->|快速做 App| A["React Native / uni-app"]
+    Q -->|高质量跨平台| B["Flutter"]
+    Q -->|覆盖小程序 + App| C["uni-app / Taro"]
+    S4["阶段四（做完整项目）<br>从 0 到 1 做完整 App（登录/网络/存储/推送/支付）"]
+    S5["阶段五（原生能力补充）<br>Android：Kotlin + Jetpack Compose / iOS：Swift + SwiftUI"]
+    S6["阶段六（工程与发布）<br>打包签名 → 各市场/商店上架 → 监控与迭代 → 性能优化"]
+    S1 --> S2 --> Q --> S4 --> S5 --> S6
 ```
 
 ### 17.2 分阶段能力对照

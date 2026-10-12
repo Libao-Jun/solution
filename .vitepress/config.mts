@@ -377,6 +377,29 @@ export default extendConfig(
           md.renderer.rules.code_inline = (tokens, idx, options, env, self) =>
             codeInline(tokens, idx, options, env, self).replace('<code', '<code v-pre')
         }
+
+        // mermaid：把 ```mermaid 代码块渲染为占位 <div class="mermaid" v-pre data-src="…">，
+        // 真正的 SVG 由主题层（theme/index.ts）的客户端脚本调用 mermaid 生成。
+        // 源码以 JSON 形式存入 data-src，浏览器端 JSON.parse 精确还原——避免直接放进
+        // textContent 时被 Vue 空白压缩（换行丢失）或编码错乱（中文乱码）导致 mermaid 解析失败。
+        // v-pre 防止源码里的 {{}} 被 Vue 模板编译；data-src 已对 & " < > 转义，外层 HTML 安全。
+        const defaultFence =
+          md.renderer.rules.fence ||
+          ((tokens: any, idx: any, opts: any, env: any, self: any) =>
+            self.renderToken(tokens, idx, opts))
+        md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+          const token = tokens[idx]
+          if (token.info.trim() === 'mermaid') {
+            const json = JSON.stringify(token.content)
+            const attr = json
+              .replace(/&/g, '&amp;')
+              .replace(/"/g, '&quot;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+            return `<div class="mermaid" v-pre data-src="${attr}"></div>\n`
+          }
+          return defaultFence(tokens, idx, options, env, self)
+        }
       },
     },
   }),

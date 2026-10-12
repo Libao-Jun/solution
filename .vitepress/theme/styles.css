@@ -373,3 +373,20 @@ header img[alt='Solution'],
 .marketing-layout [data-hero-cta] .button:hover {
   scale: 105% !important;
 }
+
+/* mermaid 图：居中、窄屏横向滚动，避免宽图溢出内容区 */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+}
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+.mermaid-error {
+  white-space: pre-wrap;
+  color: #e5484d;
+  font-family: var(--vp-font-family-mono);
+}

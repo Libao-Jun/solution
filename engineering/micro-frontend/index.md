@@ -132,12 +132,14 @@
 
 在决定上微前端之前，先依次排除更廉价的方案：
 
-```text
-只是想复用组件？        → 组件库 / npm 包 / Monorepo（pnpm workspace + Turborepo）
-只是想拆目录和构建？    → Monorepo + 路由级懒加载
-只是想跨应用共享代码？  → Module Federation / 私有 npm 源
-只是想统一技术栈升级？  → 渐进式重构 + 路由分流
-真的需要「独立部署 + 独立技术栈 + 独立团队」同时成立？ → 才考虑微前端
+```mermaid
+flowchart TD
+    S["想解决什么问题？"]
+    S -->|只是想复用组件| A["组件库 / npm 包 / Monorepo"]
+    S -->|只是想拆目录和构建| B["Monorepo + 路由级懒加载"]
+    S -->|只是想跨应用共享代码| C["Module Federation / 私有 npm 源"]
+    S -->|只是想统一技术栈升级| D["渐进式重构 + 路由分流"]
+    S -->|独立部署+独立技术栈+独立团队 同时成立| E["才考虑微前端"]
 ```
 
 > 结论：**微前端的本质是用工程复杂度换取组织协作效率与技术演进自由**。团队只有一两个人、技术栈统一时，Monorepo 往往更划算。
@@ -355,15 +357,15 @@ location ^~ /user/    { alias /srv/user/dist/;     try_files $uri /user/index.ht
 
 ### 5.3 决策链
 
-```text
-子应用能否改造？
- ├─ 不能改造（第三方 / 遗留老系统） → 无界（保活/重建模式）或 micro-app
- └─ 能改造
-     ├─ 需要成熟生态 + 复杂状态共享 + 渐进迁移 → qiankun
-     ├─ 追求极简接入、标准化容器              → micro-app
-     └─ 追求极致隔离、多应用同屏、弹窗体验    → 无界
-
-同时满足「同技术栈 + 只需共享模块」？ → 直接用 Module Federation，不必上微前端框架
+```mermaid
+flowchart TD
+    Q["子应用能否改造？"]
+    Q -->|不能改造（第三方 / 遗留老系统）| A["无界（保活/重建）或 micro-app"]
+    Q -->|能改造| Q2{"改造诉求？"}
+    Q2 -->|成熟生态 + 复杂状态共享 + 渐进迁移| B["qiankun"]
+    Q2 -->|极简接入、标准化容器| C["micro-app"]
+    Q2 -->|极致隔离、多应用同屏、弹窗体验| D["无界"]
+    E["同技术栈 + 只需共享模块？"] -->|是| F["直接用 Module Federation，不必上微前端框架"]
 ```
 
 一句话结论：**求稳定、功能全 → qiankun；求快速、轻量 → micro-app；求安全、零改造、隔离彻底 → 无界**。大型项目里也常见「qiankun 做主框架 + MF 做依赖共享」的混合架构。
@@ -473,15 +475,14 @@ if (window.__POWERED_BY_QIANKUN__) {
 
 ### 6.3 HTML Entry 加载流程
 
-```text
-[路由命中 activeRule]
-  1. 请求子应用 index.html（HTML Entry）
-  2. import-html-entry 解析出 <script> / <style> / 外链资源
-  3. 调用 bootstrap()                （首次加载，仅一次）
-  4. 调用 mount(props)，把 JS 放进沙箱执行、模板注入容器
-  5. 子应用渲染完成 → 通知主应用
-[路由离开]
-  6. 调用 unmount()，清理实例、移除样式、还原 window
+```mermaid
+flowchart TD
+    H["路由命中 activeRule"] --> S1["1. 请求子应用 index.html（HTML Entry）"]
+    S1 --> S2["2. import-html-entry 解析 script / style / 外链资源"]
+    S2 --> S3["3. 调用 bootstrap()（首次加载，仅一次）"]
+    S3 --> S4["4. 调用 mount(props)<br>JS 进沙箱执行 · 模板注入容器"]
+    S4 --> S5["5. 子应用渲染完成 → 通知主应用"]
+    L["路由离开"] --> S6["6. 调用 unmount()<br>清理实例 · 移除样式 · 还原 window"]
 ```
 
 ### 6.4 生命周期与内存泄漏

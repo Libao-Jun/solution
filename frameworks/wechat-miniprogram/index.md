@@ -70,22 +70,14 @@
 
 ### 2.1 完整流程
 
-```text
-① 注册账号       mp.weixin.qq.com → 立即注册 → 选择「小程序」
-                 （个人 / 企业 / 政府 / 媒体 / 其他组织）
-      ↓
-② 填写主体信息   个人主体：身份证 + 微信扫码验证
-                 企业主体：营业执照 + 对公打款验证或微信认证（300元/年）
-      ↓
-③ 完善小程序信息 名称（唯一，一年可改 2 次）、头像、简介、服务类目
-      ↓
-④ 获取 AppID     后台 → 开发 → 开发设置 → AppID(小程序ID)
-      ↓
-⑤ 安装开发者工具 https://developers.weixin.qq.com/miniprogram/dev/devtools/download.html
-      ↓
-⑥ 创建项目       工具中填入 AppID，选择「不使用云服务」或「小程序·云开发」
-      ↓
-⑦ 编译预览       工具内模拟器 / 点「预览」扫码真机体验
+```mermaid
+flowchart TD
+    A["① 注册账号<br>mp.weixin.qq.com → 立即注册 → 选择「小程序」<br>（个人 / 企业 / 政府 / 媒体 / 其他组织）"] --> B["② 填写主体信息<br>个人：身份证 + 微信扫码 / 企业：营业执照 + 对公打款或微信认证"]
+    B --> C["③ 完善小程序信息<br>名称(唯一,一年改2次)、头像、简介、服务类目"]
+    C --> D["④ 获取 AppID<br>后台 → 开发 → 开发设置 → AppID"]
+    D --> E["⑤ 安装开发者工具"]
+    E --> F["⑥ 创建项目<br>填入 AppID，选云服务 / 云开发"]
+    F --> G["⑦ 编译预览<br>模拟器 / 预览扫码真机"]
 ```
 
 ### 2.2 关键 ID 与密钥（务必分清）
@@ -271,19 +263,24 @@
 
 ### 5.1 双线程模型
 
-```text
-┌─────────────────────────┐         ┌─────────────────────────┐
-│      视图层 (View)       │         │    逻辑层 (AppService)   │
-│  WebView / Skyline      │         │  JSCore / V8            │
-│  WXML + WXSS            │◄───────►│  JS (App / Page)        │
-│  多个页面 = 多个 WebView │  Native │  单线程，全局唯一 App    │
-└─────────────────────────┘  中转   └─────────────────────────┘
-                    ▲
-                    │
-            ┌───────┴────────┐
-            │  Native (微信)  │
-            │  转发/API 能力  │
-            └────────────────┘
+```mermaid
+flowchart LR
+    subgraph View["视图层 View"]
+      V1["WebView / Skyline"]
+      V2["WXML + WXSS"]
+      V3["多个页面 = 多个 WebView"]
+    end
+    subgraph Logic["逻辑层 AppService"]
+      L1["JSCore / V8"]
+      L2["JS (App / Page)"]
+      L3["单线程，全局唯一 App"]
+    end
+    subgraph Native["Native (微信)"]
+      N1["转发 / API 能力"]
+    end
+    View <-->|Native 中转| Logic
+    View -->|Native 中转| Native
+    Logic -->|Native 中转| Native
 ```
 
 **关键推论（必考）**：
@@ -372,21 +369,24 @@ App({
 
 **冷启动：**
 
-```text
-App.onLaunch → App.onShow → Page.onLoad → Page.onShow → Page.onReady
+```mermaid
+flowchart LR
+    A[App.onLaunch] --> B[App.onShow] --> C[Page.onLoad] --> D[Page.onShow] --> E[Page.onReady]
 ```
 
 **热启动（后台回前台）：**
 
-```text
-App.onShow → Page.onShow
+```mermaid
+flowchart LR
+    A[App.onShow] --> B[Page.onShow]
 ```
 
 **进后台 / 回前台：**
 
-```text
-进入后台：Page.onHide → App.onHide
-回到前台：App.onShow  → Page.onShow
+```mermaid
+flowchart LR
+    A["进入后台：Page.onHide"] --> B["App.onHide"]
+    C["回到前台：App.onShow"] --> D["Page.onShow"]
 ```
 
 **页面跳转：**
@@ -1038,13 +1038,15 @@ const { SDKVersion } = wx.getAppBaseInfo();
 
 ### 16.2 关键差异：openid vs unionid
 
-```text
-同一开放平台账号
-├── 小程序 A  →  用户 U 的 openid = oA_xxx   ┐
-├── 小程序 B  →  用户 U 的 openid = oB_yyy   ├── 三者 unionid 相同 = oU_zzz
-└── 公众号 C  →  用户 U 的 openid = oC_www   ┘
-
-不同开放平台账号 → 同一用户 unionid 不同
+```mermaid
+flowchart TD
+    P["同一开放平台账号"] --> A["小程序 A<br>openid = oA_xxx"]
+    P --> B["小程序 B<br>openid = oB_yyy"]
+    P --> C["公众号 C<br>openid = oC_www"]
+    A --> U["unionid = oU_zzz（三者相同）"]
+    B --> U
+    C --> U
+    D["不同开放平台账号"] --> E["同一用户 unionid 不同"]
 ```
 
 - **openid**：换 appid 就变，只在单个应用内唯一。
@@ -1053,33 +1055,22 @@ const { SDKVersion } = wx.getAppBaseInfo();
 
 ### 16.3 标准登录时序图（官方推荐）
 
-```text
-┌──────────────┐        ┌──────────────┐        ┌──────────────┐
-│   小程序端    │        │  开发者服务端  │        │   微信服务器   │
-└──────┬───────┘        └──────┬───────┘        └──────┬───────┘
-       │  ①wx.login()          │                       │
-       │───────────────────────│                       │
-       │  返回 code（5分钟有效） │                       │
-       │                       │                       │
-       │  ②wx.request({code})  │                       │
-       │──────────────────────►│                       │
-       │                       │  ③code2Session        │
-       │                       │  (appid+secret+code)  │
-       │                       │──────────────────────►│
-       │                       │  {openid, session_key,│
-       │                       │   unionid?}           │
-       │                       │◄──────────────────────│
-       │                       │                       │
-       │                       │ ④生成自定义登录态 token │
-       │                       │   关联 openid 存库     │
-       │  ⑤返回 token          │                       │
-       │◄──────────────────────│                       │
-       │                       │                       │
-       │  ⑥wx.setStorageSync   │                       │
-       │     ('token', token)  │                       │
-       │                       │                       │
-       │  ⑦后续请求带 token     │                       │
-       │──────────────────────►│ ⑧校验 token → openid  │
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 小程序端
+    participant S as 开发者服务端
+    participant W as 微信服务器
+    C->>C: ① wx.login()
+    C-->>S: ② wx.request({ code })
+    Note right of C: code 5 分钟有效
+    S->>W: ③ code2Session(appid + secret + code)
+    W-->>S: { openid, session_key, unionid? }
+    S->>S: ④ 生成自定义登录态 token<br>关联 openid 存库
+    S-->>C: ⑤ 返回 token
+    C->>C: ⑥ wx.setStorageSync('token', token)
+    C->>S: ⑦ 后续请求带 token
+    S->>S: ⑧ 校验 token → openid
 ```
 
 ### 16.4 前端代码
@@ -1195,10 +1186,9 @@ GET https://api.weixin.qq.com/sns/jscode2session
 
 **绑定路径**（官方强调容易走错）：
 
-```text
-登录 https://developers.weixin.qq.com/platform
-  → 控制台首页
-  → 我的业务 → 开放平台 → 绑定关系 → 小程序
+```mermaid
+flowchart LR
+    A["登录 platform 后台"] --> B[控制台首页] --> C[我的业务] --> D[开放平台] --> E[绑定关系] --> F[小程序]
 ```
 
 > ⚠️ **不是**「我的业务 → 小程序 → 绑定关系 → 开放平台」，方向相反，走错就配不上。
@@ -1454,38 +1444,25 @@ POST https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=ACCE
 
 ### 19.1 整体时序图
 
-```text
-┌──────────────┐        ┌──────────────┐        ┌──────────────┐
-│   小程序端    │        │  开发者服务端  │        │   微信支付     │
-└──────┬───────┘        └──────┬───────┘        └──────┬───────┘
-       │ ①提交订单              │                       │
-       │──────────────────────►│                       │
-       │                       │ ②JSAPI 下单            │
-       │                       │ POST /v3/pay/         │
-       │                       │   transactions/jsapi  │
-       │                       │ (含 openid, 商户私钥签名)│
-       │                       │──────────────────────►│
-       │                       │  返回 prepay_id       │
-       │                       │◄──────────────────────│
-       │                       │                       │
-       │                       │ ③用商户私钥对          │
-       │                       │  appId/timeStamp/     │
-       │                       │  nonceStr/package 签名│
-       │ ④返回支付参数          │                       │
-       │◄──────────────────────│                       │
-       │ ⑤wx.requestPayment()  │                       │
-       │───────────────────────────────────────────────►│
-       │       用户完成支付（输入密码/指纹）              │
-       │◄───────────────────────────────────────────────│
-       │ ⑥success 回调          │                       │
-       │                       │                       │
-       │                       │ ⑦异步通知 notify_url   │
-       │                       │◄──────────────────────│
-       │                       │ ⑧验签 + 幂等改单       │
-       │                       │ ⑨返回 SUCCESS 应答     │
-       │                       │──────────────────────►│
-       │ ⑩主动查单确认          │                       │
-       │──────────────────────►│──────────────────────►│
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as 小程序端
+    participant S as 开发者服务端
+    participant P as 微信支付
+    C->>S: ① 提交订单
+    S->>P: ② JSAPI 下单（POST /v3/pay/transactions/jsapi，含 openid、商户私钥签名）
+    P-->>S: 返回 prepay_id
+    S->>S: ③ 用商户私钥对 appId/timeStamp/nonceStr/package 签名
+    S-->>C: ④ 返回支付参数
+    C->>P: ⑤ wx.requestPayment()
+    Note right of C: 用户完成支付（输入密码 / 指纹）
+    C-->>P: ⑥ success 回调
+    P->>S: ⑦ 异步通知 notify_url
+    S->>S: ⑧ 验签 + 幂等改单
+    S-->>P: ⑨ 返回 SUCCESS 应答
+    C->>S: ⑩ 主动查单确认
+    S->>P: 查单
 ```
 
 ### 19.2 接入前置条件
@@ -1912,17 +1889,11 @@ POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCES
 
 ### 23.2 发布四步
 
-```text
-① 预览      开发者工具「预览」→ 扫码在真机验证（开发版，仅开发者本人可扫）
-     ↓
-② 上传代码  开发者工具「上传」→ 填版本号 + 项目备注
-             （版本号建议语义化：1.0.0；备注写清变更点，便于回滚定位）
-     ↓
-③ 提交审核  mp.weixin.qq.com → 管理 → 版本管理 → 开发版本 → 提交审核
-             填写测试账号、功能页面路径、补充说明、类目资质
-     ↓
-④ 发布      审核通过后，管理员微信收到通知 → 版本管理 → 审核版本 → 发布
-             选「全量发布」或「分阶段发布（灰度）」
+```mermaid
+flowchart TD
+    A["① 预览<br>开发者工具「预览」→ 扫码真机验证（开发版，仅本人可扫）"] --> B["② 上传代码<br>开发者工具「上传」→ 填版本号 + 项目备注"]
+    B --> C["③ 提交审核<br>版本管理 → 开发版本 → 提交审核（测试账号/路径/说明/资质）"]
+    C --> D["④ 发布<br>审核通过 → 版本管理 → 审核版本 → 发布（全量/分阶段灰度）"]
 ```
 
 ### 23.3 成员与权限
@@ -2036,19 +2007,25 @@ POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCES
 
 ### 25.1 进阶路线
 
-```text
-入门（1-2 周）
-  环境搭建 → 代码构成 → 配置 → WXML/WXSS → 事件 → setData
-  → 生命周期 → 路由 → 网络请求 → Storage
-        ↓
-进阶（2-4 周）
-  自定义组件 → 组件通信 → 分包 → 性能优化 → 基础库兼容
-  → 登录体系（code/openid/unionid）→ 授权体系 → 订阅消息
-        ↓
-精通（持续）
-  微信支付全链路 → 服务端对接（Node/Java/Go）→ 高并发与幂等设计
-  → Skyline 渲染引擎 → 云开发/云托管 → 性能诊断与调优
-  → 安全加固 → CI/CD 与多环境管理 → 数据驱动运营
+```mermaid
+flowchart TD
+    subgraph P1["入门（1-2 周）"]
+      direction LR
+      E1["环境搭建"] --> E2["代码构成"] --> E3["配置"] --> E4["WXML/WXSS"] --> E5["事件"] --> E6["setData"]
+      E6 --> E7["生命周期"] --> E8["路由"] --> E9["网络请求"] --> E10["Storage"]
+    end
+    subgraph P2["进阶（2-4 周）"]
+      direction LR
+      F1["自定义组件"] --> F2["组件通信"] --> F3["分包"] --> F4["性能优化"] --> F5["基础库兼容"]
+      F5 --> F6["登录体系"] --> F7["授权体系"] --> F8["订阅消息"]
+    end
+    subgraph P3["精通（持续）"]
+      direction LR
+      G1["微信支付全链路"] --> G2["服务端对接"] --> G3["高并发与幂等"]
+      G3 --> G4["Skyline"] --> G5["云开发/云托管"] --> G6["性能诊断调优"]
+      G6 --> G7["安全加固"] --> G8["CI/CD 与多环境"] --> G9["数据驱动运营"]
+    end
+    P1 --> P2 --> P3
 ```
 
 ### 25.2 官方资源

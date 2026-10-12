@@ -11,13 +11,15 @@
  * ★ 版式（改动前必读，防止「模块里大片空白」回归）：
  *   卡片宽度按**最长的一条真实文案**定（实测「求职 · 简历 · 职场」= 92.4px），
  *   即 CARD_WIDTH = 128（左内边距 16，右侧余约 20）；**不要退回「固定 190 宽」那种盒子大、内容小**的写法。
- *   卡片高度 = 42 + 条目数 × 20（标题基线 26、条目基线 50/70/90），上下留白分别约 16 / 12。
+ *   卡片高度 = 42 + 条目数 × 20（标题基线 26、条目基线 50/70/90/110），上下留白分别约 11 / 12；
+ *   顶部一排中心 y 取 `TOP_ROW_Y`（72）而不是 63——条目最多的一张（工程化，4 条）要到 122 高。
  *   画布 1000 × 360：左右外边距（130）与卡片间走廊（178）都由「3 张卡片 + 2 条走廊 + 2 个外边距」等分，
  *   卡片以节点坐标为**中心**（连线终点落在卡片正中，被卡片盖住）。改坐标后要复查：四周不越界、卡片互不重叠。
  *   渲染比例 = 容器宽 / 1000（1440 视口下约 1.41），比旧的 1200 画布放大后文字更清晰、整体更紧凑。
  */
 import { ref } from 'vue'
 
+import { categoryCount, docCount } from '../data/topics'
 import { useMotion } from '../animations/motion'
 
 /** 卡片宽度：最长文案 92.4px + 左内边距 16px（右余约 20px），避免内容只占左半、右半全空 */
@@ -27,10 +29,17 @@ const cardHeight = (count: number) => 42 + count * 20
 
 const center = { x: 500, y: 180 }
 
+/**
+ * 顶部一排的卡片中心 y = 72（不是 63）：工程化那张卡片有 4 条条目（含 Git），
+ * 高度 = 42 + 4×20 = 122，若仍取 63 则上边缘只剩 2px；下移到 72 后上边距 ≈ 11px，
+ * 与底部一排（297，下边距 ≈ 12px）对称。新增条目时记得同步这一处。
+ */
+const TOP_ROW_Y = 72
+
 const groups = [
-  { title: 'Web 基础', x: 194, y: 63, leaves: ['HTML5', '浏览器', 'HTTP / HTTPS'] },
-  { title: '框架与端', x: 500, y: 63, leaves: ['React', 'Vue / Svelte', '小程序 / App'] },
-  { title: '工程化与适配', x: 806, y: 63, leaves: ['打包构建', 'Emmet', '大屏 / H5 唤起'] },
+  { title: 'Web 基础', x: 194, y: TOP_ROW_Y, leaves: ['HTML5', '浏览器', 'HTTP / HTTPS'] },
+  { title: '框架与端', x: 500, y: TOP_ROW_Y, leaves: ['React', 'Vue / Svelte', '小程序 / App'] },
+  { title: '工程化与适配', x: 806, y: TOP_ROW_Y, leaves: ['打包构建', 'Emmet', '大屏 / H5 唤起', 'Git 速查'] },
   { title: '学习路线', x: 260, y: 297, leaves: ['初学者', '网站开发', '语言与平台'] },
   { title: '职业成长', x: 740, y: 297, leaves: ['开源许可证', '求职 · 简历 · 职场'] },
 ]
@@ -169,7 +178,7 @@ useMotion(root, ({ gsap }, element) => {
           fill="#FFFFFF"
           fill-opacity="0.8"
         >
-          5 大分类 · 20 篇文档
+          {{ categoryCount }} 大分类 · {{ docCount }} 篇文档
         </text>
       </g>
 

@@ -19,7 +19,7 @@ export interface StatItem {
   label: string
 }
 
-export const docCount = 20
+export const docCount = 21
 export const roadmapCount = 47
 export const categoryCount = 5
 
@@ -62,6 +62,7 @@ export const categories: CategoryCard[] = [
       { text: '响应式/自适应', link: '/engineering/responsive-vs-adaptive/' },
       { text: '数据大屏', link: '/engineering/data-screen-adaptation/' },
       { text: 'H5 唤起 APP', link: '/engineering/h5-app-invoke/' },
+      { text: 'Git', link: '/engineering/git/' },
     ],
   },
 ]

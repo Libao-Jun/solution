@@ -92,7 +92,7 @@ solution/
 | --------------- | ------------------------------------------------------------------------------ |
 | `fundamentals/` | Web 基础（HTML5、浏览器、HTTP、JavaScript、ECMAScript 6、TypeScript）          |
 | `frameworks/`   | 框架与端（React、Vue、Svelte、框架对比、Taro、微信小程序、App 开发）           |
-| `engineering/`  | 工程化与适配（打包构建工具、Emmet、响应式与自适应、数据大屏适配、H5 唤起 APP） |
+| `engineering/`  | 工程化与适配（打包构建工具、Emmet、响应式与自适应、数据大屏适配、H5 唤起 APP、Git） |
 | `roadmaps/`     | 学习路线图索引页（PDF 原件位于 `public/roadmaps/`，随站点原样发布）            |
 | `career/`       | 职业成长（开源许可证、求职与职场）                                             |
 
@@ -102,7 +102,7 @@ solution/
 
 文档骨架为 **H1 + 参考资料引用块 + `## 目录` + `## 一、` / `### 1.1` 正文**；全部书写要求（层级不跳级、代码块标语言、`{{PLACEHOLDER}}` 原样保留、图片与 PDF 放 `public/` 并以绝对路径引用等）见 `AGENTS.md` §3.2。
 
-新增文档不是「只加一个文件」，而是把所有登记位置一次改齐：`config.mts` 的 `sidebar`（**必改**）、`data/topics.ts` 的 `topicGroups` 与统计常量、本文件的「内容目录分类」表，以及 `nav` / `footer.nav` / `roadmaps/index.md` 等按需联动；**完整清单（a~k）与自查方法见 `AGENTS.md` §4.2**。漏改症状：页面能打开，但侧栏里找不到、首页索引里没有、统计数字是旧值。
+新增文档不是「只加一个文件」，而是把所有登记位置一次改齐：`config.mts` 的 `sidebar`（**必改**）、`data/topics.ts` 的 `topicGroups` 与统计常量、本文件的「内容目录分类」表，以及 `nav` / `footer.nav` / `roadmaps/index.md` 等按需联动；**完整清单（a~j）与自查方法见 `AGENTS.md` §4.2**。漏改症状：页面能打开，但侧栏里找不到、首页索引里没有、统计数字是旧值。
 
 ## 文档「目录」锚点规则
 

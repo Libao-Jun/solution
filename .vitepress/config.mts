@@ -40,6 +40,7 @@ const sidebar = [
       { text: '响应式与自适应设计', link: '/engineering/responsive-vs-adaptive/' },
       { text: '前端数据大屏通用适配方案', link: '/engineering/data-screen-adaptation/' },
       { text: 'H5 唤起 APP 与跳转应用商店', link: '/engineering/h5-app-invoke/' },
+      { text: 'Git 入门、避坑与速查指南', link: '/engineering/git/' },
     ],
   },
   {
@@ -102,6 +103,7 @@ const siteKeywords = [
   '微信小程序',
   'App 开发',
   '前端工程化',
+  'Git',
   '打包构建',
   '响应式与自适应',
   '数据大屏',
@@ -283,6 +285,7 @@ export default extendConfig(
               { text: '响应式与自适应', link: withBase('/engineering/responsive-vs-adaptive/') },
               { text: '数据大屏适配', link: withBase('/engineering/data-screen-adaptation/') },
               { text: 'H5 唤起 APP', link: withBase('/engineering/h5-app-invoke/') },
+              { text: 'Git 速查指南', link: withBase('/engineering/git/') },
             ],
           },
           {

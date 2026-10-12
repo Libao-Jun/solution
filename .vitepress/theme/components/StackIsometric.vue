@@ -4,15 +4,18 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { withBase } from 'vitepress'
 
 import { revealOnScroll, useMotion } from '../animations/motion'
-import { categories } from '../data/topics'
+import { categories, docCount } from '../data/topics'
 
 /**
  * 首页「技术栈覆盖」等距 3D 示意图（对应参考站 home/HeroRive.vue 的视觉位置）。
  *
  * ★ 内容约定：图上出现的每一个方块都必须对应仓库里**已有的一篇文档**，数据直接取自
- *   ../data/topics.ts 的 categories（标题与链接都不另写一份）。20 篇主题文档全部在图上：
+ *   ../data/topics.ts 的 categories（标题与链接都不另写一份）。**图容量 22 格**：
  *   中心平台 6 篇（Web 基础）+ 左右导轨上 7 篇（框架 / 跨端）
- *   + 下方「正面」一排 4 篇（工程化）+ 下方「侧面」一排 4 篇（H5 唤起 / 学习路线 / 开源许可证 / 求职职场）。
+ *   + 下方「正面」一排 5 篇（工程化含 Git）+ 下方「侧面」一排 4 篇（H5 唤起 / 学习路线 / 开源许可证 / 求职职场）。
+ * ★ 新增文档时先看底部两排的容量：**正面一排最多 5 张、侧面一排最多 4 张**
+ *   （侧面第 5 张的右下角会到屏幕 y ≈ 625，超出 viewBox 的 615 被裁掉）；
+ *   因此 `engineering` 里多出的那篇（H5 唤起）放在侧面一排，正面一排才腾得出位置放 Git。
  * ★ 实现约定：纯 SVG 等距投影（不引入 Rive / 3D 库）。块体厚度用「同一圆角矩形向屏幕
  *   下方偏移 DEPTH 叠两层」实现——底层有色、顶层白色，露出的边自然成为侧面；比手算六个
  *   顶点稳妥，圆角处也不会出现接缝。
@@ -22,7 +25,7 @@ import { categories } from '../data/topics'
  * ★ 底部两组必须**分别对齐平台的「正面」与「侧面」，不要挤成一排**（曾经的做法是把 8 张
  *   卡片全部沿屏幕水平方向排成一行，等于既不平行于正面也不平行于侧面，且相邻卡片只有
  *   10px 间距，视觉上「挤在一堆」）：
- *   - 「正面」= 顶面在 max y 的那条边（贴「20 篇主题文档」的那面），其台面内方向是局部 +x，
+ *   - 「正面」= 顶面在 max y 的那条边（贴「N 篇主题文档」标签的那面，N 取 topics.ts 的 docCount），其台面内方向是局部 +x，
  *     所以正面一排沿 **x 轴**排布、整体位于该边之外（局部 y > 台面边 + 厚度）；
  *   - 「侧面」= 顶面在 max x 的那条边，其台面内方向是局部 +y，所以侧面一排沿 **y 轴**排布、
  *     整体位于该边之外（局部 x > 台面边 + 厚度）。
@@ -72,11 +75,30 @@ const short = (t: string) => SHORT[t] ?? t
 const platformDocs = categories[0].chips // Web 基础 6 篇
 const leftDocs = categories[1].chips.slice(0, 4) // React / Vue / Svelte / 语法对比
 const rightDocs = categories[1].chips.slice(4) // Taro / 微信小程序 / App 开发
-const bottomDocs: Doc[] = [
-  ...categories[2].chips, // 工程化 5 篇
-  { text: '学习路线', link: '/roadmaps/' },
-  { text: '开源许可证', link: '/career/open-source-license/' },
-  { text: '求职 · 简历 · 职场', link: '/career/resume-and-career/' },
+/** 工程化与适配 6 篇：打包构建 / Emmet / 响应式 / 数据大屏 / H5 唤起 APP / Git */
+const engineeringDocs: Doc[] = categories[2].chips
+/** 放到「侧面」那一排的工程化文档：让「正面」一排正好留下 5 个位置（含 Git） */
+const SIDE_ROW_ENGINEERING = ['/engineering/h5-app-invoke/']
+/**
+ * 底部两排（分别对齐平台的「正面」与「侧面」，改动前必读 §2.6）：
+ * - 正面一排沿 **x 轴**、5 张：工程化 5 篇（打包构建 / Emmet / 响应式 / 数据大屏 / Git）；
+ * - 侧面一排沿 **y 轴**、固定 4 张：H5 唤起 + 学习路线 / 开源许可证 / 求职职场。
+ * 侧面一排不能再加：第 5 张卡片会越过 viewBox 下边界被裁掉。新增文档时优先占正面这一排。
+ */
+const bottomRows: { axis: 'x' | 'y'; docs: Doc[] }[] = [
+  {
+    axis: 'x',
+    docs: engineeringDocs.filter((doc) => !SIDE_ROW_ENGINEERING.includes(doc.link)),
+  },
+  {
+    axis: 'y',
+    docs: [
+      ...engineeringDocs.filter((doc) => SIDE_ROW_ENGINEERING.includes(doc.link)),
+      { text: '学习路线', link: '/roadmaps/' },
+      { text: '开源许可证', link: '/career/open-source-license/' },
+      { text: '求职 · 简历 · 职场', link: '/career/resume-and-career/' },
+    ],
+  },
 ]
 
 /* ---------------- 中心平台尺寸 ---------------- */
@@ -259,16 +281,16 @@ const SIDE_ROW_X = W + FACE_PAD + DEPTH + ROW_CLEARANCE
 const ROW_VERTEX = { x: SIDE_ROW_X + CARD_W / 2, y: FRONT_ROW_Y + CARD_H / 2 }
 
 /**
- * 前 4 篇（工程化）对齐**正面**：沿 x 轴排布，整体落在正面那条边之外；
- * 后 4 篇（H5 唤起 / 学习路线 / 开源许可证 / 求职职场）对齐**侧面**：沿 y 轴排布，整体落在侧面那条边之外。
+ * 两排的组成在上面（`bottomRows`）定义：正面一排沿 x 轴（工程化 5 篇）、侧面一排沿 y 轴（4 篇）。
  * 两排的 `rail` 指向下方那两条导轨线（下标接在上方 4 条之后）。
+ * ★ 入场 / 漂浮的错落序号用**全局序号**：两排卡片数不等，沿用 rowIndex*4+i 会让第 5 张与
+ *   第二排第 1 张序号撞车（同一时刻入场 + 漂浮相位相同）。
  */
-const bottomRows = [
-  { axis: 'x' as const, docs: bottomDocs.slice(0, 4) },
-  { axis: 'y' as const, docs: bottomDocs.slice(4) },
-]
+let cardIndex = 0
 const cards = bottomRows.flatMap((row, rowIndex) =>
   row.docs.map((doc, i) => {
+    const index = cardIndex
+    cardIndex += 1
     const along = ROW_FROM + i * CARD_PITCH
     const x = row.axis === 'x' ? along : SIDE_ROW_X
     const y = row.axis === 'x' ? FRONT_ROW_Y : along
@@ -290,8 +312,8 @@ const cards = bottomRows.flatMap((row, rowIndex) =>
       base: isoMatrix(x, y, 8),
       face: isoMatrix(x, y),
       labelAt: textMatrix(x + CARD_W / 2, y + CARD_H / 2),
-      delay: `${760 + (rowIndex * 4 + i) * 50}ms`,
-      floatDelay: `-${round(((rowIndex * 4 + i) * 0.6) % 7)}s`,
+      delay: `${760 + index * 50}ms`,
+      floatDelay: `-${round((index * 0.6) % 7)}s`,
     }
   }),
 )
@@ -689,7 +711,7 @@ useMotion(root, (tools, element) => {
               data-iso="label"
               class="select-none"
             >
-              20 篇主题文档
+              {{ docCount }} 篇主题文档
             </text>
           </g>
 
@@ -819,7 +841,7 @@ useMotion(root, (tools, element) => {
           </g>
         </a>
 
-        <!-- 6. 底部两组卡片：前 4 篇沿正面（x 轴）排布、后 4 篇沿侧面（y 轴）排布 -->
+        <!-- 6. 底部两组卡片：正面一排 5 张沿 x 轴、侧面一排 4 张沿 y 轴（组成见脚本里的 bottomRows） -->
         <a
           v-for="card in cards"
           :key="card.link"

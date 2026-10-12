@@ -126,7 +126,7 @@ export const featurePanels: FeaturePanel[] = [
     eyebrow: '工程化与适配 · engineering',
     title: '构建配置可以直接抄',
     description:
-      'Webpack / Vite / Rollup / tsup 的配置与优化，加上响应式、数据大屏与 H5 唤起 APP 这类端适配方案。',
+      'Webpack / Vite / Rollup / tsup 的配置与优化，加上响应式、数据大屏与 H5 唤起 APP 这类端适配方案，以及 Git 入门、避坑与速查。',
     bullets: [
       {
         text: '前端打包构建工具',
@@ -149,8 +149,13 @@ export const featurePanels: FeaturePanel[] = [
         detail: 'Scheme / Universal Link 与兜底',
         link: '/engineering/h5-app-invoke/',
       },
+      {
+        text: 'Git 入门、避坑与速查指南',
+        detail: '安装、分支推送、撤销 commit / push 与命令速查',
+        link: '/engineering/git/',
+      },
     ],
-    meta: '收录 5 篇文档',
+    meta: '收录 6 篇文档',
     tone: 3,
     command: '$ npm run build',
     lines: [

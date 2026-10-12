@@ -1259,10 +1259,10 @@ const child = ref<InstanceType<typeof ChildComp> | null>(null);
 
 ## 22. 参考资料
 
-- Vue 3 官方指南：https://cn.vuejs.org/guide/introduction.html
-- Vue 2 风格指南：https://v2.cn.vuejs.org/v2/style-guide/
-- Vue 3 迁移指南：https://v3-migration.vuejs.org/
-- Vue Router：https://router.vuejs.org/
-- Pinia：https://pinia.vuejs.org/
-- Vue 官方 AI Skills（vue / vue-best-practices / vue-router-best-practices）：https://github.com/vuejs-ai/skills
+- [Vue 3 官方指南](https://cn.vuejs.org/guide/introduction.html)
+- [Vue 2 风格指南](https://v2.cn.vuejs.org/v2/style-guide/)
+- [Vue 3 迁移指南](https://v3-migration.vuejs.org/)
+- [Vue Router](https://router.vuejs.org/)
+- [Pinia](https://pinia.vuejs.org/)
+- [Vue 官方 AI Skills（vue / vue-best-practices / vue-router-best-practices）](https://github.com/vuejs-ai/skills)
 - antfu 应用开发约定（Vue 组合式 / Vite / UnoCSS / VueUse）

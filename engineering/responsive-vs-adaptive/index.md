@@ -1036,21 +1036,16 @@ fitScreen();
 
 ### 8.1 决策树
 
-```
-                    ┌─ PC 端与移动端的「信息架构/功能」是否差异巨大？
-                    │
-        ┌───────────┴───────────┐
-        是                       否
-        │                        │
-  是否有极致性能要求？        → 响应式（RWD）
-  （首屏秒开、弱网）              │
-        │                   内容是否复杂需大量断点？
-   ┌────┴────┐              ┌───┴───┐
-   是         否            是       否
-   │          │             │        │
- 独立移动站   RESS/       响应式   纯弹性布局
- + 服务端     SSR 分流     + 容器查询  （Grid/Flex）
- 动态服务     （混合）                 零断点
+```mermaid
+flowchart TD
+    Q1{"PC 端与移动端的<br>信息架构 / 功能差异巨大？"}
+    Q1 -->|是| Q2{"是否有极致性能要求？<br>首屏秒开 / 弱网"}
+    Q2 -->|是| A["独立移动站<br>+ 服务端动态服务"]
+    Q2 -->|否| B["RESS / SSR 分流<br>（混合方案）"]
+
+    Q1 -->|否| Q3{"内容是否复杂<br>需大量断点？"}
+    Q3 -->|是| C["响应式 RWD<br>+ 容器查询"]
+    Q3 -->|否| D["纯弹性布局<br>Grid / Flex / 零断点"]
 ```
 
 ### 8.2 打分决策表
@@ -1704,16 +1699,16 @@ document.documentElement.style.fontSize = (w / 750) * 100 + "px";
 
 ## 13 参考资料
 
-[1. MDN — 响应式设计](https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Core/CSS_layout/Responsive_Design)
-[2. MDN — 媒体查询](https://developer.mozilla.org/zh-CN/docs/Web/CSS/Guides/Media_queries)
-[3. MDN — 响应式图片](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Guides/Responsive_images)
-[4. 徐龙博客 — 响应式网站与自适应网站的技术对比与选型建议](https://www.xu-long.com/responsive-vs-adaptive-website-technology-comparison-selection-guide/)
-[5. 掘金 — 响应式和自适应的区别](https://juejin.cn/post/6932649153268809736)
-[6. Pixso — 响应式设计与自适应网页设计](https://pixso.cn/designskills/responsive-design-and-adaptive-web-design/)
-[7. 博客园 — 说说响应式设计和自适应设计的区别](https://www.cnblogs.com/ai888/p/18569746)
-[8. 技术栈 — 前端适配方案深度解析:从响应式到自适应设计](https://jishuzhan.net/article/1932024834636165122)
-[9. 腾讯云开发者社区 — 技术百科](https://cloud.tencent.com/developer/techpedia/1876)
-[10. 腾讯 CoDesign — 全面解析｜自适应与响应式网页设计的区别与应用](https://codesign.qq.com/hc/article/responsive-web-design/)
-[11. 前端三剑客 — 布局 / 响应式布局](https://baimohui.github.io/前端三剑客/CSS/布局/响应式布局/)
-[12. 百度开发者中心 — 响应式网页设计:构建全设备兼容的现代 Web 方案](https://developer.baidu.com/article/detail.html?id=5637371)
-[13. TED 知识体系 — 响应式设计](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A1)
+- [1. MDN — 响应式设计](https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Core/CSS_layout/Responsive_Design)
+- [2. MDN — 媒体查询](https://developer.mozilla.org/zh-CN/docs/Web/CSS/Guides/Media_queries)
+- [3. MDN — 响应式图片](https://developer.mozilla.org/zh-CN/docs/Web/HTML/Guides/Responsive_images)
+- [4. 徐龙博客 — 响应式网站与自适应网站的技术对比与选型建议](https://www.xu-long.com/responsive-vs-adaptive-website-technology-comparison-selection-guide/)
+- [5. 掘金 — 响应式和自适应的区别](https://juejin.cn/post/6932649153268809736)
+- [6. Pixso — 响应式设计与自适应网页设计](https://pixso.cn/designskills/responsive-design-and-adaptive-web-design/)
+- [7. 博客园 — 说说响应式设计和自适应设计的区别](https://www.cnblogs.com/ai888/p/18569746)
+- [8. 技术栈 — 前端适配方案深度解析:从响应式到自适应设计](https://jishuzhan.net/article/1932024834636165122)
+- [9. 腾讯云开发者社区 — 技术百科](https://cloud.tencent.com/developer/techpedia/1876)
+- [10. 腾讯 CoDesign — 全面解析｜自适应与响应式网页设计的区别与应用](https://codesign.qq.com/hc/article/responsive-web-design/)
+- [11. 前端三剑客 — 布局 / 响应式布局](https://baimohui.github.io/前端三剑客/CSS/布局/响应式布局/)
+- [12. 百度开发者中心 — 响应式网页设计:构建全设备兼容的现代 Web 方案](https://developer.baidu.com/article/detail.html?id=5637371)
+- [13. TED 知识体系 — 响应式设计](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A1)

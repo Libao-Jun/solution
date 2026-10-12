@@ -5,8 +5,8 @@
 >
 > 参考资料：
 >
-> - TypeScript 官方文档：<https://www.typescriptlang.org/docs/>
-> - 阮一峰《TypeScript 教程》：<https://wangdoc.com/typescript/>
+> - [TypeScript 官方文档](https://www.typescriptlang.org/docs/)
+> - [阮一峰《TypeScript 教程》](https://wangdoc.com/typescript/)
 
 ---
 

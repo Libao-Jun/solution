@@ -1,6 +1,7 @@
 import { VoidZeroTheme, themeContextKey } from '@voidzero-dev/vitepress-theme'
 // withBase：品牌资源是写死的根路径，子路径部署下会被解析到域名根目录，需按 base 补全
 import { withBase, type Theme } from 'vitepress'
+import { nextTick } from 'vue'
 
 import Layout from './Layout.vue'
 import './styles.css'
@@ -19,41 +20,70 @@ async function getMermaid() {
   return mermaidMod
 }
 
-async function renderMermaid() {
+// 防止重叠渲染：MutationObserver 触发与 renderMermaid 自身修改 DOM 可能并发，
+// 用全局锁保证同一时刻只有一个渲染流程在执行。
+let rendering = false
+
+async function doRenderMermaid() {
   if (typeof document === 'undefined') return
-  // 只处理尚未渲染的块；源码从 data-src 精确还原（不再依赖 textContent）
-  const els = Array.from(
-    document.querySelectorAll<HTMLElement>('div.mermaid[data-src]:not([data-mermaid-processed])'),
-  )
-  if (!els.length) return
-  const mermaid = await getMermaid()
-  const dark = document.documentElement.classList.contains('dark')
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'loose',
-    theme: dark ? 'dark' : 'default',
-  })
-  for (const el of els) {
-    const raw = el.getAttribute('data-src')
-    if (!raw) continue
-    let src: string
-    try {
-      // data-src 是 JSON 字符串，可精确还原换行与中文
-      src = JSON.parse(raw)
-    } catch {
-      src = raw
-    }
-    const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    try {
-      const { svg } = await mermaid.render(id, src)
-      el.innerHTML = svg
-      el.setAttribute('data-mermaid-processed', 'true')
-    } catch (err) {
-      el.classList.add('mermaid-error')
-      el.textContent = `[mermaid 渲染失败] ${String(err)}`
-      console.error('[mermaid] render failed:', err)
-    }
+
+  // 防止重叠渲染：MutationObserver 触发与 renderMermaid 自身修改 DOM 可能并发。
+  if (rendering) return
+  rendering = true
+
+  // 先等 Vue 的当前渲染/水合 tick 完成，避免在 Vue 仍操作 DOM 时强行写入导致被覆盖。
+  try {
+    await nextTick()
+  } catch {
+    rendering = false
+    return
   }
+
+  try {
+    // 只处理尚未渲染的块；源码从 data-src 精确还原（不再依赖 textContent）
+    const els = Array.from(
+      document.querySelectorAll<HTMLElement>('div.mermaid[data-src]:not([data-mermaid-processed])'),
+    )
+    if (!els.length) return
+
+    const mermaid = await getMermaid()
+    const dark = document.documentElement.classList.contains('dark')
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'loose',
+      theme: dark ? 'dark' : 'default',
+    })
+
+    for (const el of els) {
+      const raw = el.getAttribute('data-src')
+      if (!raw) continue
+      let src: string
+      try {
+        // data-src 是 JSON 字符串，可精确还原换行与中文
+        src = JSON.parse(raw)
+      } catch {
+        src = raw
+      }
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      try {
+        const { svg } = await mermaid.render(id, src)
+        el.innerHTML = svg
+        el.setAttribute('data-mermaid-processed', 'true')
+      } catch (err) {
+        el.classList.add('mermaid-error')
+        el.textContent = `[mermaid 渲染失败] ${String(err)}`
+        console.error('[mermaid] render failed:', err)
+        // 失败也要标记，防止后续 MutationObserver 反复重试导致闪烁/死循环
+        el.setAttribute('data-mermaid-processed', 'error')
+      }
+    }
+  } finally {
+    rendering = false
+  }
+}
+
+function renderMermaid() {
+  void doRenderMermaid()
 }
 
 // 记录上一次主题，仅在「深色/浅色」真正切换时才重渲，避免无意义的渲染风暴

@@ -5,8 +5,8 @@
 >
 > 参考资料：
 >
-> - ECMA-262 规范：<https://ecma262.com/c/>
-> - 阮一峰《ECMAScript 6 入门》：<https://es6.ruanyifeng.com/>
+> - [ECMA-262 规范](https://ecma262.com/c/)
+> - [阮一峰《ECMAScript 6 入门》](https://es6.ruanyifeng.com/)
 
 ---
 
@@ -70,8 +70,8 @@ ECMAScript 新特性不是直接写进标准的，而是要经过 TC39 委员会
 
 下面这张表是**全指南最重要的索引**：先建立“哪年加了什么”的整体认知，后面再逐条深挖。
 
-| 版本       | 发布年 | 年度别称        | 当年最值得记住的新特性                                                                                                                                                    |
-| ---------- | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --- | -------------------------------------------------------------------------------------------------------------------- |
+| 版本       | 发布年 | 年度别称        | 当年最值得记住的新特性                                                                                    |
+| ---------- | ------ | --------------- | --------------------------------------------------------------------------------------------------------- |
 | **ES1**    | 1997   | —               | 初版                                                                                                                                                                      |
 | **ES3**    | 1999   | —               | 正则、`try/catch`                                                                                                                                                         |
 | **ES5**    | 2009   | ES5             | `strict mode`、`JSON`、`Array.forEach/map/filter`、`Object.defineProperty`                                                                                                |
@@ -82,7 +82,7 @@ ECMAScript 新特性不是直接写进标准的，而是要经过 TC39 委员会
 | **ES2018** | 2018   | ES9             | 异步迭代 `for await...of`、对象 rest/spread、`Promise.prototype.finally`、正则增强（命名捕获组/后行断言/dotAll/Unicode 属性）                                             |
 | **ES2019** | 2019   | ES10            | `Array.flat/flatMap`、`Object.fromEntries`、`trimStart/trimEnd`、可选 `catch` 绑定、稳定的 `Array.sort`、`Symbol.prototype.description`                                   |
 | **ES2020** | 2020   | ES11            | **可选链 `?.`**、**空值合并 `??`**、`BigInt`、`dynamic import()`、`globalThis`、`Promise.allSettled`、`String.matchAll`                                                   |
-| **ES2021** | 2021   | ES12            | 逻辑赋值 `&&=`/`                                                                                                                                                          |     | =`/`??=`、数字分隔符 `1_000`、`String.replaceAll`、`Promise.any`/`AggregateError`、`WeakRef`、`FinalizationRegistry` |
+| **ES2021** | 2021   | ES12            | 逻辑赋值 `&&=` / `\|\|=` / `??=`、数字分隔符 `1_000`、`String.replaceAll`、`Promise.any`/`AggregateError`、`WeakRef`、`FinalizationRegistry`                               |
 | **ES2022** | 2022   | ES13            | **类公有/私有字段 `#`**、静态初始化块、顶层 `await`、`Array.prototype.at`、`Object.hasOwn`、`Error.cause`、`RegExp` `/d` 匹配索引                                         |
 | **ES2023** | 2023   | ES14            | `Array.findLast/findLastIndex`、**不改变原数组的数组方法** `toSorted/toReversed/with/toSpliced`、`Array/TypedArray` 复制方法、`#!` hashbang                               |
 | **ES2024** | 2024   | ES15            | `Array.fromAsync`、`Object.groupBy/Map.groupBy`、`Promise.withResolvers`、`RegExp` `/v` 标志（unicodeSets）、**Set 集合运算方法**、**Iterator Helpers（迭代器辅助方法）** |

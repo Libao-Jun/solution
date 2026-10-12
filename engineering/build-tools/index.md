@@ -55,22 +55,14 @@
 
 理解下面这条流水线，你就理解了所有构建工具在做什么：
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│  源码 (TS/JSX/Vue/Sass/...)                                   │
-│        │                                                       │
-│  ① 解析 Resolve      找到 import "foo" 究竟指向哪个文件        │
-│        │                                                       │
-│  ② 加载 Load         读取文件原始内容（loader 的入口）         │
-│        │                                                       │
-│  ③ 转换 Transform    编译/转译（babel、esbuild、sass 等）      │
-│        │                                                       │
-│  ④ 打包 Bundle       按依赖图拼接成 chunk                     │
-│        │                                                       │
-│  ⑤ 优化 Optimize     Tree Shaking、压缩、分包、内联           │
-│        │                                                       │
-│  ⑥ 输出 Emit         写入磁盘：js / css / 图片 / html          │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    SRC["源码<br>TS / JSX / Vue / Sass / ..."] --> R["① 解析 Resolve<br>找到 import 指向哪个文件"]
+    R --> L["② 加载 Load<br>读取文件原始内容"]
+    L --> T["③ 转换 Transform<br>编译 / 转译（babel / esbuild / sass）"]
+    T --> B["④ 打包 Bundle<br>按依赖图拼接成 chunk"]
+    B --> O["⑤ 优化 Optimize<br>Tree Shaking / 压缩 / 分包 / 内联"]
+    O --> E["⑥ 输出 Emit<br>写入 dist：js / css / 图片 / html"]
 ```
 
 - **① 解析（Resolve）**：根据 `resolve.alias`、`extensions`、`modules` 等规则，把 `import './a'` 解析成绝对路径。
@@ -147,20 +139,25 @@ module.exports = { bar: 1 };
 
 **生态关系图**：
 
-```
-            ┌─────────────┐
-            │   应用开发   │
-   ┌────────┴────┬───────┴───────────┐
-   │ Webpack      │ Vite             │ Next.js → Turbopack
-   │ (JS, 全能)   │ (esbuild+Rollup) │
-   └─────────────┘ └─────────────────┘
-            ┌─────────────┐
-            │  库 / 底层   │
-   ┌────────┴────┬───────┴───────────┐
-   │ Rollup       │ esbuild          │ Rolldown(Rust)
-   │ (纯净 ESM)   │ (极快引擎)        │ (Vite 未来内核)
-   └─────────────┘ └─────────────────┘
-   Rspack: Webpack 配置的 Rust 提速版（兼容生态）
+```mermaid
+flowchart TD
+    subgraph APP["应用开发层"]
+        W["Webpack<br>JS / 全能"]
+        V["Vite<br>esbuild + Rollup"]
+        N["Next.js → Turbopack"]
+    end
+
+    subgraph LIB["库 / 底层层"]
+        R["Rollup<br>纯净 ESM"]
+        E["esbuild<br>极快引擎"]
+        RD["Rolldown<br>Rust / Vite 未来内核"]
+    end
+
+    RS["Rspack<br>Webpack 配置的 Rust 提速版"]
+
+    V --> R
+    V --> E
+    RD --> V
 ```
 
 ---

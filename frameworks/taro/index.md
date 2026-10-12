@@ -570,7 +570,7 @@ Taro专属Hooks：`useDidShow/useDidHide/useReady/usePullDownRefresh`，适配�
 
 ## 十五、官方学习资源汇总
 
-- 官方文档：https://docs.taro.zone/docs
+- [官方文档](https://docs.taro.zone/docs)
 - 新手教程：5分钟上手 Taro 开发小程序
 - 官方博客：Taro 团队最新特性、问题解决方案更新
 

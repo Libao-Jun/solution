@@ -115,16 +115,15 @@ Firefox ────► Gecko(渲染) + SpiderMonkey(JS)
 
 浏览器把代码变成像素要依次经过：
 
-```
-HTML ──► DOM Tree        CSS ──► CSSOM Tree
-            │                        │
-            └──────► Render Tree ────┘   (只含可见节点)
-                          │
-                     Layout (Reflow)   ← 计算几何：位置、尺寸
-                          │
-                      Paint            ← 绘制到图层（填充像素、颜色、文字）
-                          │
-                    Composite          ← 把各图层合成为最终画面送 GPU 上屏
+```mermaid
+flowchart TD
+    HTML["HTML"] --> DOM["DOM Tree"]
+    CSS["CSS"] --> CSSOM["CSSOM Tree"]
+    DOM --> R["Render Tree"]
+    CSSOM --> R
+    R --> L["Layout / Reflow<br>计算几何：位置、尺寸"]
+    L --> P["Paint<br>绘制到图层：像素、颜色、文字"]
+    P --> C["Composite<br>图层合成为最终画面送 GPU 上屏"]
 ```
 
 ### 2.2 渲染树（Render Tree）

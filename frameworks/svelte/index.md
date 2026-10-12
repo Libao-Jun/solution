@@ -4,9 +4,10 @@
 >
 > 参考文档：
 >
-> - Svelte 官方文档 <https://svelte.js.cn/docs> / <https://svelte.dev/docs>
-> - Svelte MCP `sveltejs/ai-tools` <https://github.com/sveltejs/ai-tools>
-> - Svelte 5 最佳实践技能 `ejirocodes/agent-skills` <https://github.com/ejirocodes/agent-skills>
+> - [Svelte 官方文档_svelte.dev](https://svelte.dev/docs)
+> - [Svelte 官方文档_svelte.js](https://svelte.js.cn/docs)
+> - [Svelte MCP sveltejs/ai-tools](https://github.com/sveltejs/ai-tools)
+> - [Svelte 5 最佳实践技能 ejirocodes/agent-skills](https://github.com/ejirocodes/agent-skills)
 
 ---
 

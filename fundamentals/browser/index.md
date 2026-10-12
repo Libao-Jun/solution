@@ -80,13 +80,26 @@
 - **WebKit**：Apple 的引擎，Safari 使用。由渲染引擎 **WebCore** + JS 引擎 **JavaScriptCore（JSC）** 组成。Blink 源自 WebKit 的 WebCore。
 - **Gecko**：Mozilla 的引擎，Firefox 使用，JS 引擎是 **SpiderMonkey**。
 
-```
-Chrome/Edge ─┐
-Opera ───────┼─► Chromium 外壳 ─► Blink(渲染) + V8(JS)
-国内双核壳 ──┘
-
-Safari ─────► WebKit(WebCore 渲染) + JavaScriptCore(JS)
-Firefox ────► Gecko(渲染) + SpiderMonkey(JS)
+```mermaid
+flowchart LR
+    subgraph S1["Chromium 系"]
+        direction LR
+        C1["Chrome / Edge"]
+        C2["Opera"]
+        C3["国内双核壳"]
+        C["Chromium 外壳"]
+        C1 --> C
+        C2 --> C
+        C3 --> C
+        C --> B["Blink（渲染）"]
+        C --> V["V8（JS）"]
+    end
+    S["Safari"]
+    W["WebKit<br>WebCore（渲染）+ JavaScriptCore（JS）"]
+    F["Firefox"]
+    G["Gecko（渲染）<br>+ SpiderMonkey（JS）"]
+    S --> W
+    F --> G
 ```
 
 > 一句话记忆：**Blink 管"画页面"，V8 管"跑 JS"；二者都在 Chromium 里，而 Chromium 是 Chrome/Edge 的内核。**
@@ -246,10 +259,15 @@ li {
 
 V8 把 JS 从源码变成可执行机器码，分几个阶段：
 
-```
-源码 → 解析器(Parser) → AST →
-  Ignition(解释器) 生成字节码(Bytecode) 并执行 →
-    热点代码被 TurboFan(优化编译器) 编译为高度优化的机器码
+```mermaid
+flowchart LR
+    A["源码"]
+    P["解析器<br>Parser"]
+    T["AST"]
+    I["Ignition 解释器<br>生成字节码（Bytecode）并执行"]
+    F["TurboFan 优化编译器<br>热点代码编译为高度优化的机器码"]
+    A --> P --> T --> I --> F
+    F -.->|"类型假设失效：反优化（Deoptimization）<br>机器码作废，回退解释器执行"| I
 ```
 
 - **Parser**：分两步——**Pre-parser**（快速跳读，先略过函数体确认语法）与 **Parser**（真正解析用到的作用域），避免一次性解析全部代码拖慢启动。

@@ -11,14 +11,23 @@ import { categories } from '../data/topics'
  *
  * ★ 内容约定：图上出现的每一个方块都必须对应仓库里**已有的一篇文档**，数据直接取自
  *   ../data/topics.ts 的 categories（标题与链接都不另写一份）。20 篇主题文档全部在图上：
- *   中心平台 6 篇（Web 基础）+ 左右导轨上 7 篇（框架 / 跨端）+ 下方一排 5 篇（工程化）
- *   + 学习路线 + 开源许可证 + 求职职场。
+ *   中心平台 6 篇（Web 基础）+ 左右导轨上 7 篇（框架 / 跨端）
+ *   + 下方「正面」一排 4 篇（工程化）+ 下方「侧面」一排 4 篇（H5 唤起 / 学习路线 / 开源许可证 / 求职职场）。
  * ★ 实现约定：纯 SVG 等距投影（不引入 Rive / 3D 库）。块体厚度用「同一圆角矩形向屏幕
  *   下方偏移 DEPTH 叠两层」实现——底层有色、顶层白色，露出的边自然成为侧面；比手算六个
  *   顶点稳妥，圆角处也不会出现接缝。
  * ★ 线网约定：**方块一律落在导轨（沿 ±x / ±y 的等距直线）上，一条线只画一次**。
  *   不要「先画一根长辅助线、再给每个方块画一根分支线」——那样同一方向会出现两条近乎
  *   平行的线，看起来就是多余的分支线。
+ * ★ 底部两组必须**分别对齐平台的「正面」与「侧面」，不要挤成一排**（曾经的做法是把 8 张
+ *   卡片全部沿屏幕水平方向排成一行，等于既不平行于正面也不平行于侧面，且相邻卡片只有
+ *   10px 间距，视觉上「挤在一堆」）：
+ *   - 「正面」= 顶面在 max y 的那条边（贴「20 篇主题文档」的那面），其台面内方向是局部 +x，
+ *     所以正面一排沿 **x 轴**排布、整体位于该边之外（局部 y > 台面边 + 厚度）；
+ *   - 「侧面」= 顶面在 max x 的那条边，其台面内方向是局部 +y，所以侧面一排沿 **y 轴**排布、
+ *     整体位于该边之外（局部 x > 台面边 + 厚度）。
+ *   两排由此分别贴着各自那一面、方向与该面一致，并在平台底角正下方汇合成 V，
+ *   与上方两组导轨的 Λ 形成上下呼应（上方导轨收进平台之下，下方两排汇合于平台之下）。
  */
 
 /* ---------------- 等距投影工具 ---------------- */
@@ -126,8 +135,8 @@ const tiles = platformDocs.map((doc, i) => {
 /* ---------------- 导轨 + 落在导轨上的方块 ---------------- */
 const SAT_W = 92
 const SAT_H = 50
-/** 入场时方块沿导轨滑入的距离（屏幕像素） */
-const SAT_DRIFT = 24
+/** 入场时方块沿导轨滑入的距离（屏幕像素）；上方方块与底部两排卡片共用同一值 */
+const RAIL_DRIFT = 24
 type RailDef = { axis: 'x' | 'y'; offset: number; to: number; cubes: { doc: Doc; at: number }[] }
 
 /**
@@ -176,11 +185,11 @@ const railDefs: RailDef[] = [
 ]
 
 /**
- * 导轨线（一条只画一次）。等距投影对轴向长度是保长的，所以屏幕长度 = |to - from|。
+ * 上方 4 条导轨线（一条只画一次）。等距投影对轴向长度是保长的，所以屏幕长度 = |to - from|。
  * ★ `from` 取该导轨上**最外侧方块的中心**：线正好收进方块底下，
  *   末端绝不会在方块之外多出一截断头线（这正是「末端多出了线条」的成因）。
  */
-const rails = railDefs.map((r, i) => {
+const satelliteRails = railDefs.map((r, i) => {
   const from = Math.min(...r.cubes.map((c) => c.at))
   const a = r.axis === 'x' ? onScreen(from, r.offset) : onScreen(r.offset, from)
   const b = r.axis === 'x' ? onScreen(r.to, r.offset) : onScreen(r.offset, r.to)
@@ -218,8 +227,8 @@ const satellites = railDefs.flatMap((r, railIndex) =>
        */
       drift:
         r.axis === 'x'
-          ? { x: -round(IX * SAT_DRIFT), y: -round(IY * SAT_DRIFT) }
-          : { x: round(IX * SAT_DRIFT), y: -round(IY * SAT_DRIFT) },
+          ? { x: -round(IX * RAIL_DRIFT), y: -round(IY * RAIL_DRIFT) }
+          : { x: round(IX * RAIL_DRIFT), y: -round(IY * RAIL_DRIFT) },
       base: isoMatrix(x, y, 12),
       face: isoMatrix(x, y),
       labelAt: textMatrix(cx, cy),
@@ -229,38 +238,86 @@ const satellites = railDefs.flatMap((r, railIndex) =>
   }),
 )
 
-/* ---------------- 底部一排卡片：沿屏幕水平方向（局部 (+Δ, -Δ)） ---------------- */
+/* ---------------- 底部两排：正面（沿 x 轴）与侧面（沿 y 轴） ---------------- */
 const CARD_W = 70
 const CARD_H = 38
-const CARD_STEP = 60
-/** 入场时卡片沿它到平台的连线滑出的距离（屏幕像素） */
-const CARD_DRIFT = 26
-const cards = bottomDocs.map((doc, i) => {
-  const x = 170 + i * CARD_STEP
-  const y = H + 245 - i * CARD_STEP
-  const cx = x + CARD_W / 2
-  const cy = y + CARD_H / 2
-  const a = PLATFORM_CENTER
-  const b = onScreen(cx, cy)
-  const len = Math.round(Math.hypot(b.x - a.x, b.y - a.y))
+/** 同一排相邻卡片的中心间距（局部单位；等距投影沿轴保长，所以也就是屏幕上的沿轨距离） */
+const CARD_PITCH = 96
+/** 两排最外侧卡片的局部起点（正面一排是 x，侧面一排是 y）：负值让外端伸到平台之外 */
+const ROW_FROM = -104
+/**
+ * 两排导轨的位置：都在各自那一面的台面边之外、并留出相同的净空（厚度 32 + 净空 38），
+ * 于是两排离平台的视觉距离一致。再往里会贴住平台的侧面厚度，再往外会与平台脱节。
+ */
+const ROW_CLEARANCE = 38
+const FRONT_ROW_Y = H + FACE_PAD + DEPTH + ROW_CLEARANCE
+const SIDE_ROW_X = W + FACE_PAD + DEPTH + ROW_CLEARANCE
+/**
+ * 两排导轨中心线的交点：两条导轨在此汇合，落在平台底角正下方——
+ * 上方 4 条导轨是「收进平台之下」，下方两条在此「汇合于平台之下」，上下因此对称。
+ */
+const ROW_VERTEX = { x: SIDE_ROW_X + CARD_W / 2, y: FRONT_ROW_Y + CARD_H / 2 }
+
+/**
+ * 前 4 篇（工程化）对齐**正面**：沿 x 轴排布，整体落在正面那条边之外；
+ * 后 4 篇（H5 唤起 / 学习路线 / 开源许可证 / 求职职场）对齐**侧面**：沿 y 轴排布，整体落在侧面那条边之外。
+ * 两排的 `rail` 指向下方那两条导轨线（下标接在上方 4 条之后）。
+ */
+const bottomRows = [
+  { axis: 'x' as const, docs: bottomDocs.slice(0, 4) },
+  { axis: 'y' as const, docs: bottomDocs.slice(4) },
+]
+const cards = bottomRows.flatMap((row, rowIndex) =>
+  row.docs.map((doc, i) => {
+    const along = ROW_FROM + i * CARD_PITCH
+    const x = row.axis === 'x' ? along : SIDE_ROW_X
+    const y = row.axis === 'x' ? FRONT_ROW_Y : along
+    return {
+      ...doc,
+      label: short(doc.text),
+      w: CARD_W,
+      h: CARD_H,
+      /** 所属导轨下标（接在上方 4 条之后）：悬停时高亮这一排的导轨 */
+      rail: railDefs.length + rowIndex,
+      /**
+       * 入场位移：**严格沿所在导轨**从外侧滑进来（与上方导轨方块同一套规则）。
+       * x 轴导轨的外侧在屏幕左上（(-IX, -IY)）；y 轴导轨的外侧在屏幕右上（(IX, -IY)）。
+       */
+      drift:
+        row.axis === 'x'
+          ? { x: -round(IX * RAIL_DRIFT), y: -round(IY * RAIL_DRIFT) }
+          : { x: round(IX * RAIL_DRIFT), y: -round(IY * RAIL_DRIFT) },
+      base: isoMatrix(x, y, 8),
+      face: isoMatrix(x, y),
+      labelAt: textMatrix(x + CARD_W / 2, y + CARD_H / 2),
+      delay: `${760 + (rowIndex * 4 + i) * 50}ms`,
+      floatDelay: `-${round(((rowIndex * 4 + i) * 0.6) % 7)}s`,
+    }
+  }),
+)
+
+/**
+ * 底部两条导轨线：分别沿 x / y 轴、各贴着对应那一面，`from` 取该排最外侧卡片的中心，
+ * `to` 取两排的汇合点（平台底角正下方）。与上方 4 条导轨共用同一套「从平台向外生长」的绘制动画。
+ */
+const bottomRails = bottomRows.map((row, i) => {
+  const from = ROW_FROM + (row.axis === 'x' ? CARD_W : CARD_H) / 2
+  const to = row.axis === 'x' ? ROW_VERTEX.x : ROW_VERTEX.y
+  const offset = row.axis === 'x' ? ROW_VERTEX.y : ROW_VERTEX.x
+  const a = row.axis === 'x' ? onScreen(from, offset) : onScreen(offset, from)
+  const b = row.axis === 'x' ? onScreen(to, offset) : onScreen(offset, to)
   return {
-    ...doc,
-    label: short(doc.text),
-    w: CARD_W,
-    h: CARD_H,
-    /** 卡片下标：悬停时高亮它到平台的那条连线用（连线在模板里按同样顺序渲染） */
-    index: i,
-    /** 入场位移：沿「平台 → 卡片」的连线，起点在靠平台一侧，卡片沿线飞出去 */
-    drift: outward(b, CARD_DRIFT),
-    base: isoMatrix(x, y, 8),
-    face: isoMatrix(x, y),
-    labelAt: textMatrix(cx, cy),
-    line: { x1: a.x, y1: a.y, x2: b.x, y2: b.y },
-    len,
-    delay: `${700 + i * 50}ms`,
-    floatDelay: `-${round((i * 0.6) % 7)}s`,
+    x1: a.x,
+    y1: a.y,
+    x2: b.x,
+    y2: b.y,
+    len: Math.abs(to - from),
+    delay: `${320 + i * 80}ms`,
   }
 })
+
+/** 导轨线合集：上方 4 条（框架 / 跨端）+ 下方 2 条（正面 / 侧面） */
+const rails = [...satelliteRails, ...bottomRails]
 
 /* ---------------- 平台装饰 ---------------- */
 /** 基底三个可见顶点垂下的装饰虚线（对应参考图里台面往下的虚线） */
@@ -316,17 +373,17 @@ onUnmounted(() => {
 /**
  * GSAP 增强（不回退上面那套 CSS 动效）：
  *
- * 1. 入场编排：GSAP 接管时给 svg 挂 `.is-motion`（样式里据此停用 CSS 的 iso-in / iso-draw），
+ * 1. 入场编排：GSAP 接管时给 svg 挂 `.is-motion`（样式里据此禁用 CSS 的 iso-in / iso-draw），
  *    改由**一条时间线**按物理层次编排：
  *    投影 → 平台升起 → 正面文字字距收拢 → 台面 6 格从平台中心长出 → 导轨从平台向外生长 →
- *    导轨方块沿轨滑入 → 底部连线画出 + 卡片飞出 → 装饰虚线浮现。
- *    「向外」的位移方向由数据侧算好（`drift`）：导轨上的方块**严格沿所在导轨**滑入、
- *    底部卡片沿「平台 → 卡片」的连线飞出、台面格子朝平台外沿长出来——
- *    进场方向与静态几何同源，不会把方块送离它该在的那条线上。
+ *    导轨方块与底部两排卡片沿轨滑入 → 装饰虚线浮现。
+ *    「向外」的位移方向由数据侧算好（`drift`）：导轨上的方块**严格沿所在导轨**滑入，
+ *    底部两排卡片与上方方块同一套规则（正面一排沿 x 轴、侧面一排沿 y 轴），
+ *    台面格子朝平台外沿长出来——进场方向与静态几何同源，不会把方块送离它该在的那条线上。
  *    CSS 入场仍保留为兜底：无 JS / 减少动态效果 / 进视口时 GSAP 还没就绪 三种情况都还能正常播。
  * 2. 常驻漂浮 / 台面虚线流动 / 投影呼吸继续走 CSS（iso-float / iso-drift / iso-shadow）——
  *    GSAP 一律不碰 `.float` 这一层：同一个元素上 CSS transform 会覆盖 SVG 的 transform 属性，两套必须分层。
- * 3. 交互：方块悬停缩放 + 同类方块变暗聚焦 + 所在导轨 / 连线高亮并「流动」。
+ * 3. 交互：方块悬停缩放 + 同类方块变暗聚焦 + 所在导轨高亮并「流动」。
  */
 useMotion(root, (tools, element) => {
   const { gsap } = tools
@@ -348,11 +405,11 @@ useMotion(root, (tools, element) => {
   const satEls = pick<SVGElement>('[data-iso="sat"]')
   const cardEls = pick<SVGElement>('[data-iso="card"]')
   const railEls = pick<SVGLineElement>('[data-iso="rail"]')
-  const lineEls = pick<SVGLineElement>('[data-iso="cardline"]')
   const dropEls = pick<SVGElement>('[data-iso="drops"]')
 
   const blocks = [...tileEls, ...satEls, ...cardEls]
-  const lines = [...railEls, ...lineEls]
+  /** 全部连线即导轨本身（底部两排各自的那条导轨也在 railEls 里，下标排在 4 条上方导轨之后） */
+  const lines = railEls
   const cleanups: Array<() => void> = []
 
   /* 缩放原点显式设在方块自身中心（GSAP 会把它烘进矩阵，位移量正好是中心 ×(1-scale)） */
@@ -372,19 +429,13 @@ useMotion(root, (tools, element) => {
   /** 导轨 / 连线的流动虚线动画（悬停时创建，离开时销毁） */
   let flow: gsap.core.Tween | null = null
 
-  /** 方块 → 它所在的那条导轨 / 连线 */
+  /** 方块 → 它所在的那条导轨 */
   const relatedLine = (el: Element) => {
-    const { rail, line } = (el as HTMLElement).dataset
-    if (rail !== undefined) {
-      return railEls[Number(rail)] ?? null
-    }
-    if (line !== undefined) {
-      return lineEls[Number(line)] ?? null
-    }
-    return null
+    const { rail } = (el as HTMLElement).dataset
+    return rail === undefined ? null : (railEls[Number(rail)] ?? null)
   }
 
-  /** 悬停聚焦：本方放大、同类变暗、关联线高亮并向平台方向流动；传 null 复位 */
+  /** 悬停聚焦：本方放大、同类变暗、所在导轨高亮并「流动」；传 null 复位 */
   const setFocus = (target: Element | null) => {
     if (target) {
       scaleTo(target, 1.07)
@@ -469,11 +520,6 @@ useMotion(root, (tools, element) => {
       // dashoffset 从 -len 到 0：从平台那头（P2）向外生长
       gsap.set(line, { strokeDasharray: len, strokeDashoffset: -len })
     })
-    lineEls.forEach((line) => {
-      const len = line.getTotalLength()
-      // 从平台那头（P1）向卡片生长
-      gsap.set(line, { strokeDasharray: len, strokeDashoffset: len })
-    })
 
     const timeline = gsap.timeline({
       defaults: { ease: 'power3.out' },
@@ -496,14 +542,9 @@ useMotion(root, (tools, element) => {
       0.95,
     )
     timeline.to(
-      lineEls,
-      { strokeDashoffset: 0, duration: 0.6, stagger: 0.05, ease: 'power2.inOut' },
-      1.1,
-    )
-    timeline.to(
       cardEls,
       { autoAlpha: 1, scale: 1, x: 0, y: 0, duration: 0.55, stagger: 0.05, ease: 'back.out(1.4)' },
-      1.3,
+      1.2,
     )
     timeline.to(dropEls, { autoAlpha: 1, duration: 0.5 }, 1.45)
   }
@@ -541,7 +582,7 @@ useMotion(root, (tools, element) => {
       <p data-reveal class="text-sm font-mono text-[var(--color-brand)]">技术栈覆盖</p>
       <h3 data-reveal class="text-balance">图上每一块，都是仓库里的一篇文档</h3>
       <p data-reveal class="max-w-2xl text-pretty">
-        中心平台是 Web 基础，四周是框架与跨端，下方一排是工程化、学习路线与职业成长。点任意方块直接进入对应文档。
+        中心平台是 Web 基础，左上与右上是框架与跨端，下方贴着平台正面的一排是工程化、贴着侧面的一排是学习路线与职业成长。点任意方块直接进入对应文档。
       </p>
     </div>
 
@@ -567,7 +608,7 @@ useMotion(root, (tools, element) => {
           </filter>
         </defs>
 
-        <!-- 1. 导轨（每条只画一次，方块落在导轨上） -->
+        <!-- 1. 导轨（每条只画一次，方块落在导轨上；上方 4 条 + 底部正面/侧面各 1 条） -->
         <g class="rail-group" stroke="#E4E2EC" stroke-width="1" stroke-linecap="round">
           <line
             v-for="(rail, i) in rails"
@@ -582,19 +623,7 @@ useMotion(root, (tools, element) => {
           />
         </g>
 
-        <!-- 2. 底部卡片到平台的连线 -->
-        <g stroke="#E4E2EC" stroke-width="1" stroke-linecap="round">
-          <line
-            v-for="(card, i) in cards"
-            :key="`card-line-${i}`"
-            data-iso="cardline"
-            class="rail"
-            :style="{ '--len': card.len, '--d': card.delay }"
-            v-bind="card.line"
-          />
-        </g>
-
-        <!-- 3. 地面投影 -->
+        <!-- 2. 地面投影 -->
         <ellipse
           data-iso="shadow"
           class="shadow"
@@ -607,7 +636,7 @@ useMotion(root, (tools, element) => {
           filter="url(#stack-blur)"
         />
 
-        <!-- 4. 中心平台 -->
+        <!-- 3. 中心平台 -->
         <g data-iso="platform" class="reveal" :style="{ '--d': '0ms' }">
           <g class="float" :style="{ '--f': '-2.4s' }">
             <!-- 底层（彩色）= 侧面 -->
@@ -723,7 +752,7 @@ useMotion(root, (tools, element) => {
           </a>
         </g>
 
-        <!-- 5. 平台底边往下的装饰虚线 -->
+        <!-- 4. 平台底边往下的装饰虚线 -->
         <g
           data-iso="drops"
           stroke="#CCC8DA"
@@ -742,7 +771,7 @@ useMotion(root, (tools, element) => {
           />
         </g>
 
-        <!-- 6. 导轨上的方块 -->
+        <!-- 5. 导轨上的方块（上方 4 条导轨上的框架 / 跨端） -->
         <a
           v-for="sat in satellites"
           :key="sat.link"
@@ -790,12 +819,12 @@ useMotion(root, (tools, element) => {
           </g>
         </a>
 
-        <!-- 7. 底部一排卡片 -->
+        <!-- 6. 底部两组卡片：前 4 篇沿正面（x 轴）排布、后 4 篇沿侧面（y 轴）排布 -->
         <a
           v-for="card in cards"
           :key="card.link"
           data-iso="card"
-          :data-line="card.index"
+          :data-rail="card.rail"
           :href="withBase(card.link)"
           class="iso-tile reveal"
           :style="{ '--d': card.delay }"

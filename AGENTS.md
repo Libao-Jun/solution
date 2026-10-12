@@ -86,6 +86,7 @@
 | `.vitepress/theme/index.ts`               | `themeContextKey` 覆盖 `logoDark/logoLight/footerBg/monoIcon`                                                       | 删掉覆盖导致品牌资源失效                          |
 | `.vitepress/theme/Layout.vue`             | 首页运行时同步 `data-theme="light"`，避免系统深色偏好污染首屏                                                       | 移除该同步逻辑                                    |
 | 首页网格（`Home.vue` / `data/topics.ts`） | 带边框网格单元格数**整除列数**（3/4/2），多条目列表放格子内做单列 `divide-y`，横向网格补 `divide-x-0 <bp>:divide-x` | 直接给会换行的网格套 `divide-x/y`，导致末行缺边框 |
+| 等距图底部两组卡片（`StackIsometric.vue`） | 正面前 4 篇沿 **x 轴**（对齐正面那条边）、侧面后 4 篇沿 **y 轴**（对齐侧面那条边），各自落在对应台面边之外并留同一净空；两排导轨在平台底角正下方汇合，与上方 Λ 对称 | 把 8 张卡片沿屏幕水平方向排成一行（既不平行正面也不平行侧面，且相邻只有 10px 间距「挤在一堆」）；或把方块的交接线当成卡片间距（y 轴那一排必须按卡片高度算间距） |
 | 首页动效（`animations/motion.ts` + 各组件的 `useMotion()`） | 入场起点用 `gsap.set()` 在 JS 侧生成、终值用 `gsap.to()` 显式写死（**不用 `gsap.from()`**：它的终值靠回读元素当前值，会被别的动画/CSS 过渡记错）；命中 `prefers-reduced-motion` 时一个动画都不建；GSAP/ScrollTrigger 只能动态 `import()`；每个用 `useMotion()` 的根节点必须带 `data-motion-scope` | 用 CSS 先隐藏再由 JS 显形（JS/GSAP 失败 = 整块内容不可见）；改用 `from()` 导致元素停在中途状态（实测 Hero CTA 停在 `opacity: 0`）；去掉 scope 判定导致同一元素被建两份动画互相抢 opacity |
 | `.codebuddy/skills/<name>`                | 指向 `.agents/skills/<name>` 的 Junction                                                                            | 改成复制两份内容导致源漂移                        |
 | `.vitepress/config.mts` `base`            | 按 `process.env.CI` 切换：CI 用 `/solution/`（GitHub Pages 子路径），本地 dev/preview 用 `/`                        | 写死 `/` 导致 Pages 上静态资源全 404              |
@@ -117,17 +118,25 @@
 >   导轨外端**不写死偏移量**，由 `Math.min(...cubes.map(c => c.at))` 推导，取该导轨上最外侧方块的**中心**：
 >   手写偏移极易多伸出一截，在方块之外留下一条断头线（就是「末端多出了线条」），
 >   或画到 `viewBox` 外被 `overflow: hidden` 齐平切掉（「超出容器宽度」，曾把 `from` 写成 -900，外框宽出 402px / 291px）。
->   实测口径：每条导轨端点 → 最近方块中心距离应为 **0px**（当前 4 条均为 0）。
-> - **动画（两层，别混）**：① **入场由 GSAP 一条时间线编排**（`StackIsometric.vue` 的 `useMotion`）：投影 → 平台升起 → 正面文字字距收拢 → 台面 6 格 → 导轨从平台向外「生长」→ 导轨方块沿轨滑入 → 底部连线画出 + 卡片飞出 → 装饰虚线浮现；进场方向由数据侧 `drift` 给出（**导轨上的方块严格沿所在导轨**、卡片沿它到平台的连线），不要用 `svgOrigin` 之类把缩放原点挪到平台中心——那会粘在元素上、连带改掉后续悬停缩放的原点。SVG 上的 `.is-motion` 会停用 CSS 的 `iso-in` / `iso-draw`，**必须停**：这两条 animation 是 `fill-mode: both`，动画终值以「动画优先级」压掉内联样式（实测会让悬停变暗、虚线流动全部失效）。
+>   实测口径：上方 4 条导轨「端点 → 最近方块中心」应为 **0px**（当前 4 条均为 0）；底部 2 条导轨的 `from` 同样取最外侧卡片中心（0px），
+>   `to` 则是**两排导轨中心线的交点**（平台底角正下方，有意伸出到卡片之外，与上方导轨「收进平台之下」对应）。
+> - **底部两组卡片：必须分别对齐「正面」与「侧面」，不要挤成一排**（改动前必读，曾因把 8 张卡片沿屏幕水平方向排成一行被返工）：
+>   平台的「正面」= 顶面在 `max y` 的那条边（贴「20 篇主题文档」标签的那面），台面内方向是局部 **+x**，所以正面那一排沿 **x 轴**排布、
+>   整体落在该边之外（局部 y ≥ 台面边 + 厚度 32 + 净空）；「侧面」= 顶面在 `max x` 的那条边，台面内方向是局部 **+y**，
+>   所以侧面那一排沿 **y 轴**排布、整体落在该边之外（局部 x ≥ 台面边 + 厚度 32 + 净空）。两排各 4 张卡片、等距投影沿轴保长，
+>   因此「沿轨间距 = 屏幕间距」；两排的净空取同一值（`ROW_CLEARANCE`），离平台的视觉距离才一致。
+>   由此上下形成 **Λ / V 对称**（上方 4 条导轨向上张开、底部 2 条导轨汇合在平台底角正下方）。
+>   ⚠️ 卡片宽度方向是局部 x（文字用 `textMatrix` 沿 x 排），所以 y 轴那一排的间距必须按卡片**高度**（38）算，不要按宽度算，否则会互相压住。
+> - **动画（两层，别混）**：① **入场由 GSAP 一条时间线编排**（`StackIsometric.vue` 的 `useMotion`）：投影 → 平台升起 → 正面文字字距收拢 → 台面 6 格 → 导轨从平台向外「生长」→ 导轨方块沿轨滑入 → 底部两排卡片沿各自导轨滑入 → 装饰虚线浮现；进场方向由数据侧 `drift` 给出（**所有方块与卡片都严格沿所在导轨**：底部两排与上方方块同一套规则，不再有「平台中心 → 卡片」的放射连线），不要用 `svgOrigin` 之类把缩放原点挪到平台中心——那会粘在元素上、连带改掉后续悬停缩放的原点。SVG 上的 `.is-motion` 会停用 CSS 的 `iso-in` / `iso-draw`，**必须停**：这两条 animation 是 `fill-mode: both`，动画终值以「动画优先级」压掉内联样式（实测会让悬停变暗、虚线流动全部失效）。
 >   ② **常驻循环仍走 CSS**：`iso-float`（漂浮）/ `iso-drift`（台面虚线流动）/ `iso-shadow`（投影呼吸），GSAP 一律不碰 `.float` 这一层——同一个元素上 CSS `transform` 会覆盖 SVG 的 `transform` 属性，两套必须分层。CSS 入场保留为兜底（无 JS / GSAP 加载失败 / `prefers-reduced-motion`）。
-> - **悬停交互**：以方块自身中心缩放 1.07、同类方块变暗到 0.42、所在导轨 / 连线高亮成品牌色并跑一条流动虚线（虚线周期 10+6=16，offset 每轮走 -16 才不跳变）；交互在入场时间线 `onComplete` 后才绑定，避免与入场 tween 抢同一批 `scale` / `opacity`。
+> - **悬停交互**：以方块自身中心缩放 1.07、同类方块变暗到 0.42、**所在导轨**高亮成品牌色并跑一条流动虚线（虚线周期 10+6=16，offset 每轮走 -16 才不跳变）；底部两排卡片各自绑到它那一排的导轨（`data-rail` 排在 4 条上方导轨之后）；交互在入场时间线 `onComplete` 后才绑定，避免与入场 tween 抢同一批 `scale` / `opacity`。
 >   ★ 缩放必须写 `gsap.to(el, { scale })`，**不要用 `gsap.quickTo(el, 'scale')`**：SVG 的 scale 在 CSSPlugin 里被拆成 scaleX / scaleY，`quickTo` 的 `resetTo('scale')` 找不到同名 propTween 会**静默不生效**（实测矩阵恒为 identity；HTML 元素的 `quickTo('x' / 'y')` 正常，Hero CTA 磁吸就是用它）。
->   另：`StackIsometric.vue` 里元素列表一律用 `*Els` 后缀（`tileEls` / `railEls` / `lineEls`…），别和同名的数据数组（`tiles` / `rails` / `cards` / `satellites`）撞名——撞名会让 `tiles[i].drift` 读到 SVG 元素，整条入场时间线抛错。
+>   另：`StackIsometric.vue` 里元素列表一律用 `*Els` 后缀（`tileEls` / `satEls` / `cardEls` / `railEls`…），别和同名的数据数组（`tiles` / `rails` / `cards` / `satellites`）撞名——撞名会让 `tiles[i].drift` 读到 SVG 元素，整条入场时间线抛错。
 > - **自适应与紧凑度**：固定 `viewBox`（`min-w-[44rem]` + 外层 `overflow-x-auto`），**所有几何都要落在
 >   `viewBox` 内**：方块中心屏幕 y = 250 + 0.5·(x + y)，太靠外会被上沿裁掉（Vue / 小程序 曾被顶出画布）；
 >   导轨只比最外侧方块多伸约 65 单位。想更紧凑就**整体缩小方块 + 拉近与平台的距离**（同一导轨上相邻方块
 >   中心间距别小于约 105，方块长对角线 = 0.866·(SAT_W+SAT_H) ≈ 123，再近会互相压住），不要去压边距。
->   改完实测「图形外框 vs 画布盒」：当前左右余量 214px / 150px、上下 28px / 12px、图形占宽 73%，
+>   改完实测「图形外框 vs 画布盒」：当前左右余量 220px / 219px、上下 40px / 23px、图形占宽 66%，
 >   且 `scrollWidth === clientWidth`（无横向溢出）。
 
 > ⚠️ **网格约定：边框与外框连续性（改动首页前必读）**

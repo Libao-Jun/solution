@@ -390,3 +390,15 @@ header img[alt='Solution'],
   color: #e5484d;
   font-family: var(--vp-font-family-mono);
 }
+
+/*
+ * ★ 修复 mermaid 节点中文多行文本被截断 ★
+ * mermaid 对含 <br> 的 HTML 标签计算高度时，中文行高容易溢出节点边框。
+ * 打开 foreignObject/label 的 overflow 兜底，保证即使计算有偏差内容也可见。
+ * 节点主体尺寸由 theme/index.ts 的 flowchart.padding 全局控制，不在这里额外加行高/padding，
+ * 避免 mermaid 测量阶段与渲染阶段的尺寸不一致。
+ */
+.mermaid .node foreignObject,
+.mermaid .node .label-container {
+  overflow: visible;
+}

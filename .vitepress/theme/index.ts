@@ -52,6 +52,15 @@ async function doRenderMermaid() {
       startOnLoad: false,
       securityLevel: 'loose',
       theme: dark ? 'dark' : 'default',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 28,
+      },
+      sequence: {
+        useMaxWidth: true,
+      },
     })
 
     for (const el of els) {
@@ -68,6 +77,7 @@ async function doRenderMermaid() {
       try {
         const { svg } = await mermaid.render(id, src)
         el.innerHTML = svg
+        fixMermaidNodeHeights(el.querySelector('svg'))
         el.setAttribute('data-mermaid-processed', 'true')
       } catch (err) {
         el.classList.add('mermaid-error')
@@ -84,6 +94,105 @@ async function doRenderMermaid() {
 
 function renderMermaid() {
   void doRenderMermaid()
+}
+
+/**
+ * 修复 mermaid 中文 HTML 标签高度不足导致文本被截断的问题。
+ * mermaid 在隐藏元素里测量文本高度时，中文行高/字体会导致实际渲染高度比测量值大。
+ * 这里在渲染后遍历所有 foreignObject（节点 + 边/子图标签），根据 div.scrollHeight
+ * 动态增加 foreignObject 与背景形状的高度，并同步上移 y 坐标保持居中；只扩大不缩小。
+ */
+function fixMermaidNodeHeights(svg: SVGSVGElement | null) {
+  if (!svg) return
+
+  const processed = new Set<SVGForeignObjectElement>()
+
+  const fixForeignObject = (fo: SVGForeignObjectElement) => {
+    if (processed.has(fo)) return
+    processed.add(fo)
+
+    const div = fo.querySelector<HTMLDivElement>('div')
+    if (!div) return
+
+    const foH = parseFloat(fo.getAttribute('height') || '0')
+    const neededH = div.scrollHeight
+    if (!foH || neededH <= foH) return
+
+    const delta = neededH - foH
+    const half = delta / 2
+
+    // 同步放大 foreignObject，并上移保持居中
+    fo.setAttribute('height', String(neededH))
+    const foY = parseFloat(fo.getAttribute('y') || '0')
+    fo.setAttribute('y', String(foY - half))
+
+    // 在父级或节点内寻找背景形状并同步放大
+    const parent = fo.parentElement
+    const node = fo.closest<SVGGElement>('.node')
+    const shape =
+      node?.querySelector<SVGRectElement>(':scope > rect') ??
+      node?.querySelector<SVGPolygonElement>(':scope > polygon') ??
+      node?.querySelector<SVGCircleElement>(':scope > circle') ??
+      parent?.querySelector<SVGRectElement>('rect') ??
+      parent?.querySelector<SVGPolygonElement>('polygon') ??
+      parent?.querySelector<SVGCircleElement>('circle')
+
+    if (!shape) return
+
+    if (shape.tagName === 'rect') {
+      const rect = shape as SVGRectElement
+      const rectH = parseFloat(rect.getAttribute('height') || '0')
+      const rectY = parseFloat(rect.getAttribute('y') || '0')
+      rect.setAttribute('height', String(rectH + delta))
+      rect.setAttribute('y', String(rectY - half))
+    } else if (shape.tagName === 'circle') {
+      const circle = shape as SVGCircleElement
+      const r = parseFloat(circle.getAttribute('r') || '0')
+      circle.setAttribute('r', String(r + half))
+    } else if (shape.tagName === 'polygon') {
+      // 菱形/多边形：放大 points 的纵向范围，保持中心不变
+      const polygon = shape as SVGPolygonElement
+      const pointsAttr = polygon.getAttribute('points')
+      if (!pointsAttr) return
+      const points = pointsAttr.split(' ').map((p) => p.split(',').map(Number))
+      if (points.length < 4) return
+      const ys = points.map((p) => p[1])
+      const minY = Math.min(...ys)
+      const maxY = Math.max(...ys)
+      const centerY = (minY + maxY) / 2
+      const newHalf = (maxY - minY) / 2 + half
+      const newPoints = points
+        .map((p) => {
+          const y = p[1] < centerY ? centerY - newHalf : centerY + newHalf
+          return `${p[0]},${y}`
+        })
+        .join(' ')
+      polygon.setAttribute('points', newPoints)
+    }
+  }
+
+  // 先处理节点，再处理边/子图标签
+  svg.querySelectorAll<SVGGElement>('.node').forEach((node) => {
+    const fo = node.querySelector<SVGForeignObjectElement>('foreignObject')
+    if (fo) fixForeignObject(fo)
+  })
+  svg.querySelectorAll<SVGForeignObjectElement>('foreignObject').forEach((fo) => {
+    fixForeignObject(fo)
+  })
+
+  // 节点放大后可能超出原 viewBox，按需扩展 viewBox 保证整图可见
+  try {
+    const bbox = svg.getBBox()
+    const vb = svg.viewBox.baseVal
+    const padding = 8
+    const minX = Math.min(vb.x, bbox.x - padding)
+    const minY = Math.min(vb.y, bbox.y - padding)
+    const maxX = Math.max(vb.x + vb.width, bbox.x + bbox.width + padding)
+    const maxY = Math.max(vb.y + vb.height, bbox.y + bbox.height + padding)
+    svg.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
+  } catch {
+    // SVG 在特殊状态下 getBBox 可能抛错，忽略即可
+  }
 }
 
 // 记录上一次主题，仅在「深色/浅色」真正切换时才重渲，避免无意义的渲染风暴

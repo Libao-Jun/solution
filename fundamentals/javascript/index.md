@@ -591,7 +591,7 @@ class Dog extends Animal {
 - [**现代 JavaScript 教程**](https://tutorial.javascript.ac.cn/) —— 体系化、由浅入深，适合系统学习。
 - [**ECMAScript 规范（英文）**](https://tc39.es/ecma262/) —— 追本溯源看精确语义。
 - [**TypeScript 官方文档**](https://www.typescriptlang.org/docs/) —— 类型工程化。
-- [**进阶书单**：《JavaScript 高级程序设计（红宝书）》《你不知道的 JavaScript（上/中/下）》《JavaScript 设计模式与开发实践》《Web 性能权威指南》《高性能 JavaScript》。
+- **进阶书单**：《JavaScript 高级程序设计（红宝书）》《你不知道的 JavaScript（上/中/下）》《JavaScript 设计模式与开发实践》《Web 性能权威指南》《高性能 JavaScript》。
 - **引擎与原理**：V8 官方博客（v8.dev）、web.dev / web.dev/blog（Core Web Vitals、渲染优化）、React/Vue 官方文档的「高级指引 / 渲染机制」章节。
 - **实践**：在浏览器 DevTools Console 逐条验证本指南中的代码片段；用 Performance / Memory / Lighthouse 面板实地测量，胜过只读不练。
 

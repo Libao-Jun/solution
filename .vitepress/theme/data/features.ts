@@ -74,7 +74,7 @@ export const featurePanels: FeaturePanel[] = [
         link: '/fundamentals/front-end-performance/',
       },
       {
-        text: 'Browser Storage 浏览器存储指南',
+        text: '浏览器存储指南',
         detail: 'Cookie / Web Storage / IndexedDB / Cache 的选型与封装',
         link: '/fundamentals/browser-storage/',
       },

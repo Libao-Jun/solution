@@ -428,7 +428,7 @@ console.log("4"); // 同步
 
 ## 五、存储与状态管理
 
-> 本章给出各存储机制的**结论性对比与坑点**；可直接落地的封装实现、选型决策树、配额与持久化、离线协作、性能优化与最佳实践，见 **[Browser Storage 指南](/fundamentals/browser-storage/)**。
+> 本章给出各存储机制的**结论性对比与坑点**；可直接落地的封装实现、选型决策树、配额与持久化、离线协作、性能优化与最佳实践，见 **[浏览器存储指南](/fundamentals/browser-storage/)**。
 
 ### 5.1 Cookie
 
@@ -1589,7 +1589,7 @@ observer.disconnect();
 5. **宏任务与微任务执行顺序？** → 一个宏任务 → 清空所有微任务 → 渲染 → 下一宏任务（3.3）。
 6. **V8 如何提升 JS 性能？** → 隐藏类 + 内联缓存 + 解释器/优化编译器双段 JIT（3.1/3.2）。
 7. **强缓存 vs 协商缓存？** → `max-age`/200 from cache vs `ETag`/304（4.2，详见 http.md 5.1）。
-8. **Cookie / localStorage / IndexedDB 区别？** → 见 5.1/5.2/5.3 表格；封装实现、选型与性能优化见 [Browser Storage 指南](/fundamentals/browser-storage/)。
+8. **Cookie / localStorage / IndexedDB 区别？** → 见 5.1/5.2/5.3 表格；封装实现、选型与性能优化见 [浏览器存储指南](/fundamentals/browser-storage/)。
 9. **同源策略与跨域方案？** → 见 6.1。
 10. **XSS / CSRF / 点击劫持如何防御？** → HttpOnly + CSP / SameSite + Token / X-Frame-Options（6.2/6.3）。
 11. **`DOMContentLoaded` 与 `load` 区别？为什么 DCL 会被样式拖住？** → DOM 就绪 vs 资源就绪；样式后的脚本要等样式 → DCL 间接等待（9.1/9.2）。

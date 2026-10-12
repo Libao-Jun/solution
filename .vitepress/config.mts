@@ -20,7 +20,7 @@ const sidebar = [
       { text: 'ECMAScript 6 知识指南', link: '/fundamentals/ecmascript-6/' },
       { text: 'TypeScript 入门到精通指南', link: '/fundamentals/typescript/' },
       { text: '前端性能优化知识手册', link: '/fundamentals/front-end-performance/' },
-      { text: 'Browser Storage', link: '/fundamentals/browser-storage/' },
+      { text: '浏览器存储', link: '/fundamentals/browser-storage/' },
     ],
   },
   {
@@ -273,7 +273,7 @@ export default extendConfig(
               { text: 'JavaScript', link: withBase('/fundamentals/javascript/') },
               { text: 'TypeScript', link: withBase('/fundamentals/typescript/') },
               { text: '前端性能', link: withBase('/fundamentals/front-end-performance/') },
-              { text: 'Browser Storage', link: withBase('/fundamentals/browser-storage/') },
+              { text: '浏览器存储', link: withBase('/fundamentals/browser-storage/') },
             ],
           },
           {

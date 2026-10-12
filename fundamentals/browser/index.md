@@ -5,8 +5,15 @@
 > - [MDN Web Docs — 浏览器相关](https://developer.mozilla.org/zh-CN/docs/Web)
 > - [MDN — 浏览器工作原理（Inside look at modern web browser）](https://developer.mozilla.org/zh-CN/docs/Web/Performance/How_browsers_work)
 > - [web.dev — 渲染性能/Web Vitals](https://web.dev/)
+> - [现代 JavaScript 教程 — 页面生命周期：DOMContentLoaded，load，beforeunload，unload](https://zh.javascript.info/onload-ondomcontentloaded)
+> - [现代 JavaScript 教程 — 加载文档和其他资源（脚本 async/defer、资源 onload/onerror）](https://zh.javascript.info/loading)
+> - [现代 JavaScript 教程 — Document（浏览器环境、DOM 树、遍历、搜索、节点属性、修改文档、样式与类、尺寸滚动、坐标）](https://zh.javascript.info/document)
+> - [现代 JavaScript 教程 — 事件简介（冒泡与捕获、事件委托、浏览器默认行为、自定义事件）](https://zh.javascript.info/events)
+> - [现代 JavaScript 教程 — UI 事件（鼠标、移动鼠标、拖放、指针事件、键盘、滚动）](https://zh.javascript.info/event-details)
+> - [现代 JavaScript 教程 — 表单，控件（表单属性与方法、focus/blur、change/input、submit）](https://zh.javascript.info/forms-controls)
+> - [现代 JavaScript 教程 — 杂项（MutationObserver、Selection 和 Range、事件循环）](https://zh.javascript.info/ui-misc)
 >
-> 面向角色：中高级前端工程师。本文不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**。与 `../http/http.md`（HTTP 协议层）互补：本文聚焦**浏览器内部**——架构、渲染、JS 引擎、缓存/存储、安全、性能调试。
+> 面向角色：中高级前端工程师。本文不仅罗列规范，更侧重**浏览器实际行为**、**常见坑点**与**调试手段**。与 `../http/http.md`（HTTP 协议层）互补：本文聚焦**浏览器内部**——架构、渲染、JS 引擎、缓存/存储、安全、性能调试。第九～十二章补上浏览器暴露给脚本的一侧：**页面生命周期与资源加载、DOM 模型与文档操作、DOM 事件模型、UI 事件与表单控件**。
 
 ---
 
@@ -20,6 +27,10 @@
 6. [安全机制](#六、安全机制)
 7. [性能与调试](#七、性能与调试)
 8. [兼容性与 Web 平台能力](#八、兼容性与-web-平台能力)
+9. [页面生命周期与脚本加载](#九、页面生命周期与脚本加载)
+10. [DOM 模型与文档操作](#十、dom-模型与文档操作)
+11. [DOM 事件模型](#十一、dom-事件模型)
+12. [UI 事件与表单控件](#十二、ui-事件与表单控件)
 
 ---
 
@@ -216,6 +227,8 @@ li {
 <script async src="analytics.js"></script>
 ```
 
+> `defer` / `async` 的完整执行时机对比、动态插入脚本的顺序控制，以及"页面先出、脚本后到"时的用户体验处理，见 **9.5**。
+
 ### 2.7 关键渲染路径优化清单
 
 1. **HTML**：减少 DOM 节点数与嵌套深度；服务端渲染（SSR）直接给首屏 HTML，省去客户端建树。
@@ -289,6 +302,12 @@ Promise.resolve().then(() => console.log("3")); // 微任务
 console.log("4"); // 同步
 // 输出顺序：1 → 4 → 3 → 2
 ```
+
+**调度细节补充**：
+
+- **`queueMicrotask(fn)`**：把 `fn` 排进**微任务**队列——在当前同步代码之后、**渲染与新事件之前**执行。关键点：**微任务之间不会被插入渲染或事件处理**，所以微任务链里的"环境"是一致的（鼠标坐标没变、没有新的网络数据）。想"异步但保持状态一致"用它，而不是 `setTimeout`。
+- **嵌套 `setTimeout` 的最小延迟约 4ms**：HTML 规范规定定时器嵌套超过 5 层后延迟被钳制到 ≥4ms。所以用密集的 `setTimeout(…, 0)` 做任务切片（见 7.6）会明显变慢；让出主线程优先用 `scheduler.yield()` 或 `MessageChannel`。
+- **每个宏任务之后都会清空微任务队列**，包括微任务中新产生的微任务；清空完才渲染。因此"同步代码 + 所有微任务"是一个不可分割的渲染单元——这也是长任务卡顿的根源（见 7.6）。
 
 ### 3.4 调用栈、渲染时机与 requestAnimationFrame
 
@@ -687,6 +706,860 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
 ---
 
+## 九、页面生命周期与脚本加载
+
+> 第一、二章讲"浏览器怎么把页面画出来"，本章讲**页面从解析到卸载暴露给 JS 的钩子**，以及**脚本与资源加载的时机和坑**。
+
+### 9.1 四个生命周期事件
+
+| 事件               | 触发时机                                            | 典型用途                             | 注意                                                     |
+| ------------------ | --------------------------------------------------- | ------------------------------------ | -------------------------------------------------------- |
+| `DOMContentLoaded` | HTML 解析完、DOM 树构建完成（图片、样式可能还没好） | 绑定事件、初始化组件、读取 DOM 结构  | 挂在 `document` 上，**只能用 `addEventListener` 捕获**   |
+| `load`             | 所有资源（图片、样式、iframe、字体）都加载完        | 需要真实图片尺寸、做完整加载埋点     | 挂在 `window` 上；业务里通常不必等这么久                 |
+| `beforeunload`     | 用户即将离开（关闭 / 跳转 / 刷新）                  | 提示"有未保存内容"                   | 不能自定义提示文案；`event.preventDefault()` **无效**    |
+| `unload`           | 用户已经离开                                        | 收尾（关弹窗）；发统计用 `sendBeacon` | 不可靠：bfcache、移动端、被系统杀掉的标签页常不触发      |
+
+> **坑**：`DOMContentLoaded` 时图片尺寸是 `0`（`img.offsetWidth === 0`）。要拿真实尺寸必须等 `load`，或监听该 `img.onload`。
+
+### 9.2 DOMContentLoaded 会被什么阻塞
+
+原理很简单：`<script>` 可能改 DOM（甚至 `document.write`），所以浏览器必须先执行它才能继续建树，因此 `DOMContentLoaded` **一定晚于所有同步脚本**。
+
+但有两类脚本**不会**阻塞它：
+
+1. 带 `async` 属性的脚本；
+2. 用 `document.createElement('script')` 动态插入的脚本。
+
+**样式不直接影响 DOM，但会"绕一圈"影响 DCL**：外部样式表本身不阻塞 DOM 构建，但如果**样式后面还有一个脚本**，那个脚本必须等样式加载完才执行（脚本可能读 `getComputedStyle`、坐标），于是 `DOMContentLoaded` 也间接被样式拖住。
+
+```html
+<link rel="stylesheet" href="style.css" />
+<script>
+  // 必须等 style.css 加载完，才轮到这个脚本执行
+  console.log(getComputedStyle(document.body).marginTop);
+</script>
+```
+
+> 附带影响：Firefox / Chrome / Opera 会在 `DOMContentLoaded` 时做**表单自动填充**。如果 DCL 被慢脚本推迟，用户名密码的自动填充也会明显延后。
+
+### 9.3 document.readyState 与幂等初始化
+
+`document.readyState` 有三个值：
+
+| 值            | 含义                               | 对应事件                                        |
+| ------------- | ---------------------------------- | ----------------------------------------------- |
+| `loading`     | 文档正在加载                       | —                                               |
+| `interactive` | 文档解析完毕（**早于 DCL 一瞬**）  | `DOMContentLoaded`                              |
+| `complete`    | 文档与所有资源都加载完（**早于 `window.onload` 一瞬**） | `load` |
+
+典型事件流（含 `<iframe>` 与 `<img>`）：
+
+```text
+[1] initial readyState:loading
+[2] readyState:interactive
+[2] DOMContentLoaded
+[3] iframe onload
+[4] img onload
+[4] readyState:complete
+[4] window onload
+```
+
+**"DOM 好了就执行，否则挂事件"的幂等写法**（第三方脚本、被 `async` 引入的初始化代码必备）：
+
+```js
+function init() {
+  /* 依赖 DOM 的逻辑 */
+}
+
+if (document.readyState === "loading") {
+  // 还在加载，等事件
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  // 已经 interactive/complete，直接跑
+  init();
+}
+```
+
+> `readystatechange` 事件可以跟踪状态迁移，但属于历史遗留机制，现代代码用上面这段就够了。
+
+### 9.4 beforeunload / unload 与 sendBeacon
+
+```js
+// 1) 离开确认：不能自定义文案，只能设置 returnValue
+window.addEventListener("beforeunload", (event) => {
+  if (hasUnsavedChanges) {
+    event.preventDefault(); // 多数浏览器会忽略
+    event.returnValue = "有未保存的内容，确定离开吗？"; // 起作用的是这一行
+  }
+});
+
+// 2) 离开时上报：用 sendBeacon，浏览器会在后台发完，不阻塞跳转
+window.addEventListener("unload", () => {
+  navigator.sendBeacon("/analytics", JSON.stringify(analyticsData));
+});
+```
+
+- **`beforeunload` 的两个坑**：① `event.preventDefault()` 在多数浏览器被忽略，要设 `event.returnValue`（或 `return` 一个非空字符串）；② **提示文案不可自定义**（历史上有站长用它显示欺骗性文案，规范已禁止）。
+- **别在 `unload` 里做重活**：弹窗、同步 XHR 都会拖慢或中断导航，且 bfcache 下 `unload` 可能根本不执行。
+- **`navigator.sendBeacon(url, data)`**：以 POST 发送、上限 **64KB**、不阻塞页面卸载、拿不到响应（埋点正好不需要）。通用请求要走"页面卸载后仍发出"，用 `fetch(url, { keepalive: true })`。
+
+### 9.5 defer 与 async：到底什么时候执行
+
+| 维度                | 普通 `<script>`               | `defer`                                                    | `async`                                          |
+| ------------------- | ----------------------------- | ---------------------------------------------------------- | ------------------------------------------------ |
+| 是否阻塞 HTML 解析  | **是**（下载 + 执行都阻塞）   | 否（后台下载）                                             | 否（后台下载）                                   |
+| 执行时机            | 下载完立即执行                | **DOM 解析完之后、`DOMContentLoaded` 之前**                | **下载完立即执行**，与 DOM/DCL 互不等待          |
+| 执行顺序            | 文档顺序                      | **文档顺序**（即使小文件先下载完也要等前面的）             | **加载优先**（谁先下载完谁先跑）                 |
+| 与 `DOMContentLoaded` | 阻塞它                      | 在它**之前**执行完                                         | **不相关**，可能早于也可能晚于 DCL               |
+| 适用                | 极少数必须同步执行的老脚本    | 需要 DOM、且有依赖顺序的业务代码（库 + 依赖它的代码）      | 完全独立的第三方脚本（统计、广告、埋点）         |
+
+```html
+<!-- 保序、等 DOM：业务主包 -->
+<script defer src="lodash.js"></script>
+<script defer src="app.js"></script>
+
+<!-- 独立、不保序：埋点 -->
+<script async src="analytics.js"></script>
+```
+
+**动态插入的脚本默认是 async 的**——想让它保序，显式关掉：
+
+```js
+function loadScript(src) {
+  const script = document.createElement("script");
+  script.src = src;
+  script.async = false; // 关键：改为文档顺序执行，等价于 defer 语义
+  document.body.append(script);
+}
+
+loadScript("/long.js"); // 一定先执行
+loadScript("/small.js"); // 一定后执行
+```
+
+> **两个常识**：① `defer` / `async` **只对带 `src` 的外部脚本生效**，内联脚本写了也无效；② 用了它们意味着"用户先看到页面、脚本后到位"，此时按钮/组件可能还没初始化——**必须加 loading 提示并禁用不可用按钮**。
+
+### 9.6 资源加载事件：onload / onerror
+
+凡是带外部 `src` 的资源（`<script>`、`<img>`、`<link>`、`<iframe>`）都有 `load` / `error` 事件：
+
+```js
+const script = document.createElement("script");
+script.src = "https://cdn.example.com/lodash.js";
+
+script.onload = () => {
+  console.log("加载并执行完毕，可以调用其中的函数了");
+};
+script.onerror = () => {
+  console.error("加载失败"); // 拿不到 404 还是 500，只知道失败
+};
+
+document.head.append(script);
+```
+
+坑点清单：
+
+- **`onerror` 没有 HTTP 细节**：只知道失败，拿不到状态码。想区分 404/500 得自己发 `fetch` 探测。
+- **`onload` 只代表"加载并执行完"**：脚本内部抛错照样触发 `onload`，运行时错误要交给 `window.onerror`（见下）。
+- **`<img>` 是先设 `src` 才开始加载**，其他资源大多是插入文档后才开始。
+- **`<iframe>` 是历史例外**：无论成功还是 404，`iframe.onload` 都会触发。
+- 动态创建 `<img>` 并设 `src` 是经典的**图片预加载**手法（进缓存后，真正插入 DOM 时立即显示）。
+
+### 9.7 跨域脚本只报 "Script error." 及其解法
+
+跨源策略同样作用于脚本错误：从别的域加载的脚本内部报错时，浏览器**故意隐藏一切细节**，全局 `window.onerror` 只会收到：
+
+```text
+Script error. , 0:0
+```
+
+拿不到 message、url、行列号，更没有堆栈——前端监控看到满屏 `Script error.` 就是这个原因。
+
+**解法**：给 `<script>` 加 `crossorigin` 属性，**并且**资源服务器返回 CORS 头。三档权限：
+
+| `crossorigin` 值         | 是否发送 Cookie / 凭据     | 服务端需要                                                         |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------ |
+| 无（默认）               | 不发送                     | —（跨源访问被禁止，错误细节全隐藏）                                |
+| `crossorigin="anonymous"` | 不发送                    | `Access-Control-Allow-Origin: *` 或具体源                          |
+| `crossorigin="use-credentials"` | **发送** Cookie / 凭据 | `Access-Control-Allow-Origin: <具体源>` + `Access-Control-Allow-Credentials: true`（不能用 `*`） |
+
+```html
+<!-- 监控要拿到完整堆栈：CDN 必须同时配好 CORS 头 -->
+<script
+  src="https://cdn.example.com/app.js"
+  crossorigin="anonymous"
+></script>
+```
+
+```js
+// 全局兜底：捕获未被处理的运行时错误
+window.addEventListener("error", (event) => {
+  report({ message: event.message, file: event.filename, line: event.lineno, col: event.colno, stack: event.error?.stack });
+});
+
+// Promise 未处理拒绝（window.onerror 管不到）
+window.addEventListener("unhandledrejection", (event) => {
+  report({ reason: event.reason });
+});
+```
+
+> 静态资源用了指纹文件名（见 4.2）并配 `immutable` 长缓存时，别忘记 CDN 的 CORS 头要**随资源响应**返回，否则加了 `crossorigin` 也照样是 `Script error.`。
+
+---
+
+## 十、DOM 模型与文档操作
+
+### 10.1 浏览器环境：window、DOM、BOM、CSSOM
+
+| 概念                         | 是什么                                                                            | 规范                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| **`window`**                 | 根对象，身兼两职：① JS 的**全局对象**；② 代表"浏览器窗口"（`innerHeight` 等）    | HTML 规范                                              |
+| **DOM（文档对象模型）**      | 把页面内容表示为可读写**对象**，`document` 是主入口                              | <https://dom.spec.whatwg.org>                          |
+| **BOM（浏览器对象模型）**    | 文档之外由浏览器提供的一切：`navigator`、`location`、`history`、`screen`、`alert/setTimeout` | HTML 规范（"广义 HTML"）                    |
+| **CSSOM**                    | 把样式表与 CSS 规则表示为对象，供 JS 读写（平时很少直接用）                       | <https://www.w3.org/TR/cssom-1/>                       |
+
+> 排错技巧：查某个 API 的行为，搜 `MDN <term>` 看用法；要确认"到底该怎么实现"则搜 `WHATWG <term>` 看规范原文。
+
+### 10.2 DOM 树与节点类型
+
+- HTML 里**所有东西都会进 DOM**：标签 → **元素节点**；文字（含空格与换行）→ **文本节点**（`#text`）；注释 → `#comment`；`<!DOCTYPE>` 也是一个节点。
+- 常用的是 4 类：`document`（入口）、元素节点、文本节点、注释节点。`nodeType` 是最快的判别方式：**元素 = 1，文本 = 3，document = 9**（另有 `instanceof HTMLElement` 等基于类的判断）。
+- **浏览器会自动修正非法 HTML**，导致 DOM 与你写的源码不一致：
+  - 哪怕源文件只有 `Hello` 一个词，DOM 里也会有 `<html>` / `<head>` / `<body>`；
+  - **`<table>` 永远有 `<tbody>`**，即使源码里没写（用 `table.rows` 取行时不会被坑，用 `children` 就会意外拿到 `tbody`）；
+  - `</body>` 之后的内容会被搬回 `<body>` 内；`<head>` 之前的空白被忽略。
+- `<script>` 执行时**只能看见它之前已解析的 DOM**——`document.body` 在 `<head>` 里的脚本中是 `null`。
+
+### 10.3 遍历：两套导航属性
+
+| 作用域               | 属性                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| **所有节点**         | `parentNode`、`childNodes`、`firstChild`、`lastChild`、`previousSibling`、`nextSibling`   |
+| **仅元素节点**       | `parentElement`、`children`、`firstElementChild`、`lastElementChild`、`previousElementSibling`、`nextElementSibling` |
+
+- 表格有专属快捷方式：`table.rows` / `table.tBodies` / `tr.cells` / `td.cellIndex` / `tr.rowIndex`。
+- `document.documentElement.parentElement === null`（父节点是 `document`，不是元素），而 `parentNode === document`。
+
+**DOM 集合的三个特性**（极易踩坑）：
+
+```js
+const nodes = document.body.childNodes;
+
+nodes.length; // 数量
+for (const n of nodes) { /* ✅ 集合是可迭代的 */ }
+nodes.filter(/* ... */); // ❌ 不是数组，没有数组方法，要用 Array.from(nodes)
+for (const k in nodes) { /* ❌ 别用 for..in，会枚举出 length/item/values 等额外属性 */ }
+
+// ⚠️ 绝大多数 DOM 集合是 **live（实时）** 的：DOM 变了它跟着变
+const divs = document.getElementsByTagName("div");
+// 之后再插入一个 <div>，divs.length 会自动 +1
+```
+
+> 集合还是**只读**的：不能 `childNodes[i] = x`，改结构要用 10.7 的插入/移除方法。
+
+### 10.4 查询元素
+
+| 方法                              | 依据         | 元素上可调用 | 实时集合 | 备注                                       |
+| --------------------------------- | ------------ | ------------ | -------- | ------------------------------------------ |
+| `querySelector(css)`              | CSS 选择器   | ✅           | —        | 只取第一个，最快最常用                     |
+| `querySelectorAll(css)`           | CSS 选择器   | ✅           | **静态** | 返回那一刻的快照                           |
+| `getElementById(id)`              | `id`         | ❌（仅 document） | —   | `id` 必须唯一，重复时行为不可预测          |
+| `getElementsByName(name)`         | `name`       | ❌           | ✅       | 少用                                       |
+| `getElementsByTagName(tag)`       | 标签 / `*`   | ✅           | ✅       | 历史遗留                                   |
+| `getElementsByClassName(class)`   | class        | ✅           | ✅       | 历史遗留                                   |
+
+配套三个判定方法：
+
+```js
+elem.matches(".card.active"); // 自身是否匹配选择器（用于过滤，不搜索）
+elem.closest("td"); // 从自身向上找最近的匹配祖先（事件委托核心）
+table.contains(target); // target 是否在 table 内（含自身）
+```
+
+> **live vs static 是高频坑**：`querySelectorAll` 拿到的是快照，之后新增的元素不会出现在里面；`getElementsBy*` 拿到的是活引用，在循环中一边遍历一边增删会"跳过元素"。要遍历并删除，用 `while (elem.firstChild) elem.firstChild.remove()`。
+
+### 10.5 节点属性：读什么、写什么
+
+| 属性                 | 作用                                           | 要点                                                                                 |
+| -------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `nodeType`           | 节点类型数值                                   | 元素 1 / 文本 3 / document 9；只读                                                   |
+| `nodeName` / `tagName` | 标签名                                       | **HTML 模式下恒为大写**（`BODY`）；`tagName` 仅元素有，非元素用 `nodeName`（`#comment`） |
+| `innerHTML`          | 元素内的 HTML 字符串                           | 可写；写入的 `<script>` **不会执行**                                                  |
+| `outerHTML`          | 含自身的完整 HTML                              | **写它不改变量本身**，而是在 DOM 中把该元素替换掉                                     |
+| `textContent`        | 元素内的纯文本（去掉所有标签）                 | **安全插入用户输入的首选**（防 XSS，见 6.2）                                          |
+| `nodeValue` / `data` | 文本节点 / 注释节点的内容                      | `innerHTML` 只对元素有效，文本节点用这两个                                            |
+| `hidden`             | 等价于 `style="display:none"`                  | 语义更清晰                                                                            |
+
+```js
+// ❌ innerHTML += 不是"追加"，是「整体重写」
+chat.innerHTML += "<div>hi<img src='a.png'></div>"; // 已有图片会被重新加载、选中态丢失、输入框内容被清空
+// ✅ 追加用 append / insertAdjacentHTML
+chat.insertAdjacentHTML("beforeend", "<div>hi</div>");
+```
+
+```js
+// ❌ outerHTML 赋值的陷阱
+const div = document.querySelector("div");
+div.outerHTML = "<p>new</p>";
+console.log(div.outerHTML); // 还是旧的 <div>...</div>！div 已被移出文档，变量指向的仍是旧节点
+```
+
+```js
+// ✅ 用户输入一律按文本插入
+elem1.innerHTML = userInput; // 危险：input 里的 <img onerror=...> 会执行
+elem2.textContent = userInput; // 安全：原样显示为文本
+```
+
+### 10.6 特性（attribute）与属性（property）
+
+一句话：**特性写在 HTML 里，属性活在 DOM 对象里**。标准特性会自动映射成同名属性，但映射**不是一一对应**。
+
+| 对比       | 属性（property）        | 特性（attribute）        |
+| ---------- | ----------------------- | ------------------------ |
+| 值的类型   | 任意（布尔、对象、数字）| **永远是字符串**         |
+| 名字大小写 | **敏感**（`nodeType`）  | 不敏感（`ID` 同 `id`）   |
+| 访问方式   | `elem.id`               | `getAttribute/setAttribute/removeAttribute/hasAttribute`、`elem.attributes` |
+
+**同步规则与例外**：
+
+```js
+input.setAttribute("id", "x");
+input.id; // "x" —— 特性 ⇒ 属性，同步
+
+input.id = "y";
+input.getAttribute("id"); // "y" —— 属性 ⇒ 特性，同步
+
+// ❌ 例外 1：value 只单向同步（特性 ⇒ 属性）
+input.setAttribute("value", "text");
+input.value = "typed";
+input.getAttribute("value"); // "text" —— 还是 HTML 里的原值（可用于"恢复初始值"）
+
+// ❌ 例外 2：类型不同
+a.getAttribute("href"); // "#hello"（HTML 里写的原样）
+a.href; // "https://site.com/page#hello"（永远是**绝对 URL**）
+input.getAttribute("checked"); // ""（字符串）
+input.checked; // true（布尔）
+div.getAttribute("style"); // "color:red"（字符串）
+div.style; // CSSStyleDeclaration 对象
+```
+
+**自定义数据一律用 `data-*`（走 `dataset` 读写）**，不要用自定义特性名（可能与未来的标准特性撞车）：
+
+```html
+<div id="order" data-order-state="new"></div>
+```
+
+```js
+order.dataset.orderState; // "new"（多词特性自动转驼峰）
+order.dataset.orderState = "pending"; // 写入后，CSS 的 [data-order-state="pending"] 立即生效
+```
+
+> 只在两种情况下必须用特性 API：① 读非标准特性；② 要读 **HTML 里写的原值**（如相对路径的 `href`）。
+
+### 10.7 修改文档
+
+现代插入 API（参数可以是节点或字符串，**字符串一律按"文本"插入**，天然防注入）：
+
+| 方法                    | 插入位置           |
+| ----------------------- | ------------------ |
+| `node.append(...)`      | `node` **内部末尾** |
+| `node.prepend(...)`     | `node` **内部开头** |
+| `node.before(...)`      | `node` **前面**     |
+| `node.after(...)`       | `node` **后面**     |
+| `node.replaceWith(...)` | 替换 `node`         |
+| `node.remove()`         | 移除 `node`         |
+
+```js
+// 要按 HTML 插入，用 insertAdjacentHTML
+one.insertAdjacentHTML("afterend", "<li>2</li><li>3</li>");
+// where: "beforebegin" | "afterbegin" | "beforeend" | "afterend"
+```
+
+其他要点：
+
+- **移动节点不需要先 `remove()`**：所有插入方法都会自动把节点从旧位置摘走（表格排序就靠 `tbody.append(...sortedRows)` 一次搞定）。
+- `elem.cloneNode(true)` 深克隆（含后代），`false` 只克隆自身。
+- `DocumentFragment` 适合一次性塞入一批节点（只触发一次重排），不过现在更常见的是 `append(...nodeArray)`。
+- 老式 `appendChild` / `insertBefore` / `removeChild` / `replaceChild` 只在维护旧代码时会遇到。
+- **`document.write(html)` 只在页面加载期间安全**；加载完成后调用会**清空整个文档**。别在新代码里用。
+
+### 10.8 样式与类
+
+```js
+// 类：优先 classList（单个操作），整串替换才用 className
+elem.classList.add("active");
+elem.classList.remove("active");
+elem.classList.toggle("active"); // 有则删、无则加
+elem.classList.contains("active"); // 布尔
+
+// 样式：驼峰命名，且**必须带单位**
+elem.style.backgroundColor = "red"; // background-color
+elem.style.zIndex = "10"; // z-index
+elem.style.margin = "20px"; // ❌ 写 20（数字）会被忽略
+elem.style.display = ""; // 移除该内联样式（不是 delete）
+elem.style.removeProperty("display"); // 等价写法
+elem.style.cssText = "color:red; width:100px"; // 整体**替换**（不是追加）
+```
+
+**读取最终生效的样式用 `getComputedStyle`**（`elem.style` 只能读到内联 `style` 属性，看不到 CSS 类）：
+
+```js
+const cs = getComputedStyle(elem, "::before"); // 第二个参数可选，读伪元素
+cs.marginTop; // "5px"（解析值 resolved：相对单位已换算成绝对单位）
+```
+
+坑点：
+
+- **必须传完整属性名**：`getComputedStyle(elem).padding` 没有标准行为，要写 `paddingLeft` / `paddingTop`。
+- **`:visited` 的样式被刻意隐藏**——否则任意页面都能探测用户的浏览历史（隐私泄漏）。
+- **读元素尺寸不要用 `getComputedStyle().width`**：它可能返回 `"auto"`（内联元素）、受 `box-sizing` 影响、且各浏览器对"是否扣掉滚动条"不一致。要尺寸请用 10.9 的几何属性。
+
+### 10.9 元素几何：尺寸与滚动
+
+以 `width:300px; height:200px; border:25px; padding:20px; overflow:auto` 的盒子为例：
+
+| 属性                       | 含义                                                 | 示例值        |
+| -------------------------- | ---------------------------------------------------- | ------------- |
+| `offsetWidth` / `offsetHeight` | **外框**尺寸（含 border、padding、滚动条）        | `390` / `290` |
+| `clientWidth` / `clientHeight` | 边框**内**区域（含 padding，**不含滚动条**）      | `324` / `240` |
+| `scrollWidth` / `scrollHeight` | 内容**完整**尺寸，含滚出去看不见的部分           | `324` / `723` |
+| `scrollLeft` / `scrollTop` | 已滚动出去的距离（**可写**，写了就滚动）             | —             |
+| `clientLeft` / `clientTop` | 外角到内角的距离，通常 = 左/上 border 宽（RTL 下还含滚动条） | `25` / `25`   |
+| `offsetParent` / `offsetLeft` / `offsetTop` | 相对最近的**定位祖先**的偏移                 | —             |
+
+```js
+// 滚动到底部（"已加载完"判定）
+const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight <= 1;
+
+// 元素是否隐藏（display:none 或不在文档中时，所有几何属性为 0 / null）
+function isHidden(elem) {
+  return !elem.offsetWidth && !elem.offsetHeight;
+}
+```
+
+> **坑**：元素 `display:none`、或还没插入文档时，`offsetWidth/offsetHeight` 全是 `0`——所以"先插入文档，再量尺寸"；`<img>` 若未声明 `width/height`，在加载完成前 `offsetWidth` 也是 `0`。
+
+### 10.10 坐标：两套坐标系
+
+| 坐标系       | 原点             | 事件属性          | 等价 CSS        | 获取方式                                    |
+| ------------ | ---------------- | ----------------- | --------------- | ------------------------------------------- |
+| **窗口坐标** | 窗口左上角       | `clientX/clientY` | `position:fixed` | `elem.getBoundingClientRect()`              |
+| **文档坐标** | 文档左上角       | `pageX/pageY`     | `position:absolute` | `getBoundingClientRect()` **+ 当前滚动量** |
+
+```js
+const box = elem.getBoundingClientRect();
+// { x, y, width, height, top, right, bottom, left }，都是**窗口坐标**
+// 可能是小数（如 10.5），也可能为负（元素滚出视口上方时 top < 0）
+
+// 文档坐标 = 窗口坐标 + 滚动量
+function getCoords(elem) {
+  const b = elem.getBoundingClientRect();
+  return {
+    top: b.top + window.pageYOffset,
+    left: b.left + window.pageXOffset,
+    bottom: b.bottom + window.pageYOffset,
+    right: b.right + window.pageXOffset,
+  };
+}
+```
+
+```js
+// 命中测试：窗口坐标 (x, y) 处最内层的元素（视口外返回 null！）
+const el = document.elementFromPoint(x, y);
+if (el) el.style.background = "red"; // 不做 null 判断会 TypeError
+```
+
+> 定位浮层时：用**窗口坐标 + `position:fixed`**（跟随视口，但页面滚动时会脱离锚点）；要"跟着元素走"则用**文档坐标 + `position:absolute`**。
+
+---
+
+## 十一、DOM 事件模型
+
+### 11.1 三种注册方式
+
+| 方式                | 写法                                    | 能否注册多个 | 何时用                                     |
+| ------------------- | --------------------------------------- | ------------ | ------------------------------------------ |
+| HTML 特性           | `onclick="fn()"`                        | ❌           | 几乎不用（逻辑散在 HTML 里，难以维护）     |
+| DOM 属性            | `elem.onclick = fn`                     | ❌（会覆盖） | 简单场景；移除用 `elem.onclick = null`     |
+| `addEventListener`  | `elem.addEventListener(type, fn, opts)` | ✅           | **默认选择**，唯一支持捕获/passive/once   |
+
+```js
+// 第三个参数可以是对象
+elem.addEventListener("click", handler, {
+  once: true, // 触发一次后自动移除
+  capture: true, // 在捕获阶段处理（也可简写为传 true）
+  passive: true, // 承诺不调用 preventDefault()（滚动性能，见 11.5）
+});
+
+// ❌ 移除必须传同一个函数引用
+elem.addEventListener("click", () => alert(1));
+elem.removeEventListener("click", () => alert(1)); // 无效！两个不同的函数对象
+
+// ✅
+function handler() { alert(1); }
+elem.addEventListener("click", handler);
+elem.removeEventListener("click", handler);
+```
+
+其他要点：
+
+- 少数事件**只能**用 `addEventListener`，例如 `DOMContentLoaded`、`transitionend`（`document.onDOMContentLoaded = …` 永远不会执行）。
+- DOM 属性**大小写敏感**（`elem.onclick`，不是 `elem.ONCLICK`）；不要用 `setAttribute('onclick', fn)`（函数会被转成字符串，失效）。
+- 也可以传**对象**作处理器，事件发生时调用其 `handleEvent` 方法（适合用类组织多事件逻辑）。
+- 处理器里的 `this` === `event.currentTarget`（箭头函数除外，那时用 `event.currentTarget`）。
+
+### 11.2 事件对象
+
+浏览器在事件发生时创建 `event` 对象作为第一个参数传入。常用属性：
+
+| 属性                     | 含义                                                       |
+| ------------------------ | ---------------------------------------------------------- |
+| `event.type`             | 事件类型，如 `"click"`                                     |
+| `event.target`           | **真正发生事件的最深层元素**（冒泡全程不变）                |
+| `event.currentTarget` / `this` | 当前正在执行处理器所绑定的元素                        |
+| `event.eventPhase`       | 阶段：捕获 1 / 目标 2 / 冒泡 3                             |
+| `event.defaultPrevented` | 默认行为是否已被某个处理器阻止                             |
+| `event.isTrusted`        | `true` = 真实用户操作；`false` = 脚本 `dispatchEvent` 产生 |
+| `event.detail`           | 自定义事件携带的数据（`CustomEvent`）                      |
+
+### 11.3 冒泡与捕获：三阶段
+
+标准把一次事件传播分成 3 个阶段：**捕获（自上而下）→ 目标 → 冒泡（自下而上）**。用 `on<event>` 或两参数 `addEventListener` 注册的处理器**只在后两个阶段跑**；要用捕获阶段必须显式 `{ capture: true }`。
+
+```js
+// 给每个元素同时挂捕获和冒泡
+for (const el of document.querySelectorAll("*")) {
+  el.addEventListener("click", (e) => console.log("捕获:", el.tagName), true);
+  el.addEventListener("click", (e) => console.log("冒泡:", el.tagName));
+}
+// 点击 <p>：HTML → BODY → FORM → DIV（捕获）→ P（目标，两个都触发）→ DIV → FORM → BODY → HTML（冒泡）
+```
+
+- **`stopPropagation()`**：停止向上传播，但**当前元素上的其他处理器照常执行**。
+- **`stopImmediatePropagation()`**：连当前元素上剩余的处理器也一起掐掉。
+- **尽量别阻止冒泡**。典型反例：菜单为"自己处理点击"而 `stopPropagation`，后来全局埋点 `document.addEventListener('click')` 就在那片区域成了**死区**。需要"已处理"的信号时用 `event.defaultPrevented`（见 11.5）。
+- **不是所有事件都冒泡**：`focus` / `blur` 不冒泡（见 12.6），`mouseenter` / `mouseleave` 也不冒泡（见 12.2）——这些都是"不能用事件委托"的信号。
+- `removeEventListener` 时**阶段要一致**：用 `true` 加的，也要用 `true` 移除。
+
+### 11.4 事件委托
+
+**做法**：不为 N 个子元素各挂一个处理器，而是在**共同祖先**上挂一个，靠 `event.target` 判断来源。
+
+```js
+table.onclick = function (event) {
+  const td = event.target.closest("td"); // ① 从实际点击处向上找
+  if (!td) return; // ② 点在了 td 之外
+  if (!table.contains(td)) return; // ③ 嵌套表格的 td，不属于本表
+  highlight(td); // ④
+};
+```
+
+**"行为模式"**（用 `data-*` 声明式扩展 HTML，无需为每个元素写 JS）：
+
+```html
+<button data-action="save">保存</button>
+<button data-toggle-id="subscribe-mail">显示订阅表单</button>
+```
+
+```js
+document.addEventListener("click", (event) => {
+  const { action, toggleId } = event.target.dataset;
+  if (action) menu[action](); // 语义化分派
+  if (toggleId) {
+    const el = document.getElementById(toggleId);
+    el.hidden = !el.hidden;
+  }
+});
+```
+
+| 优点                                                          | 局限                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 初始化简单、省内存（一个处理器顶一万个）                      | **事件必须冒泡**（`focus`、`mouseenter` 等不行）                                |
+| 增删子元素无需增删监听器，配合 `innerHTML` 批量渲染尤其合适   | 底层若调用了 `stopPropagation()` 委托就失效                                     |
+| 代码量小、结构灵活                                            | 容器级处理器对**容器内一切**事件都响应，极端高频场景有一点额外 CPU 开销（通常可忽略） |
+
+> 在 `document` 上挂处理器**必须**用 `addEventListener`——`document.onclick = …` 会覆盖别人的处理器。
+
+### 11.5 浏览器默认行为
+
+```js
+// 方式一（推荐）：preventDefault()
+link.addEventListener("click", (e) => e.preventDefault());
+
+// 方式二：仅对 on<event> 赋值的处理器有效
+link.onclick = () => false;
+```
+
+> **坑**：从 `on<event>` 里 `return false` 只在**直接赋值**的场景生效。`onclick="handler()"` 这种 HTML 写法里，`handler` 的返回值会被包一层函数丢弃，必须写成 `onclick="return handler()"`。
+
+**`passive: true`**：向浏览器承诺"不会 `preventDefault()`"。滚动类事件（`touchstart` / `touchmove` / `wheel`）默认行为就是滚动，浏览器原本必须**等所有处理器跑完**才能确定要不要滚；声明 `passive` 后浏览器立即滚动，消除卡顿。Chrome/Firefox 对 `touchstart`/`touchmove` **默认就是 passive**（此时调用 `preventDefault()` 会报控制台警告）。
+
+**用 `defaultPrevented` 代替 `stopPropagation`**（嵌套右键菜单的经典解法）：
+
+```js
+button.addEventListener("contextmenu", (event) => {
+  event.preventDefault(); // 已接管
+  showButtonMenu();
+});
+
+document.addEventListener("contextmenu", (event) => {
+  if (event.defaultPrevented) return; // 已被下层处理，不再弹全局菜单
+  event.preventDefault();
+  showDocMenu();
+});
+```
+
+**后续事件**：有些默认行为会"连锁触发"。例如 `<input>` 上的 `mousedown` 会带来焦点与 `focus`——阻止 `mousedown` 就无法用鼠标聚焦（但 Tab 键仍可聚焦）。
+
+> 提醒：技术上可以让 `<a>` 当按钮、`<button>` 当链接，但**别破坏语义**——否则损失右键"在新窗口打开"、SEO 与可访问性。
+
+### 11.6 自定义事件
+
+```js
+// 1) 通用事件
+const ev = new Event("hello", { bubbles: true, cancelable: true });
+elem.dispatchEvent(ev);
+
+// 2) 自定义事件（带数据）——用 CustomEvent 的 detail
+elem.addEventListener("hide", (e) => console.log(e.detail.reason));
+const ok = elem.dispatchEvent(new CustomEvent("hide", { detail: { reason: "esc" }, cancelable: true }));
+if (!ok) console.log("被某个处理器 preventDefault 取消了");
+```
+
+要点：
+
+- 默认 `bubbles: false` —— **不冒泡就无法被事件委托捕获**，这是自定义事件最常见的"监听不到"原因。
+- 自定义事件必须用 `addEventListener`（`document.onhello` 不存在）。
+- 要让 `preventDefault()` 生效，构造时必须带 `cancelable: true`；`dispatchEvent()` 的返回值即"是否被取消"。
+- `event.isTrusted` 用来区分真实用户事件（`true`）与脚本派发（`false`）；自动化测试里"用脚本点按钮"是少数合理的内建事件派发场景。
+- **`dispatchEvent` 是同步的**：在 A 事件处理器里派发 B 事件，B 会**立刻**处理完再回到 A（输出 `1 → nested → 2`）。想解耦就把它包进 `setTimeout(…, 0)`（`1 → 2 → nested`）。
+
+---
+
+## 十二、UI 事件与表单控件
+
+### 12.1 鼠标事件
+
+**事件顺序固定**：`mousedown` → `mouseup` → `click`（同一元素上）；快速双击再触发 `dblclick`。
+
+| 属性                                          | 含义                                                       |
+| --------------------------------------------- | ---------------------------------------------------------- |
+| `event.button`                                | 按键编号：左 0 / 中 1 / 右 2 / X1(后退) 3 / X2(前进) 4（`event.which` 已废弃，别用） |
+| `event.buttons`                               | 位掩码，表示**当前按住的**所有键（拖拽场景）               |
+| `shiftKey` / `altKey` / `ctrlKey` / `metaKey` | 组合键是否按下（Mac 的 Cmd = `metaKey`）                   |
+| `clientX/Y`                                   | 窗口坐标                                                   |
+| `pageX/Y`                                     | 文档坐标                                                   |
+| `screenX/Y`                                   | 屏幕坐标                                                   |
+
+```js
+// 跨平台组合键：Mac 用 Cmd，Windows/Linux 用 Ctrl
+button.onclick = (event) => {
+  if (event.metaKey || event.ctrlKey) selectToggle(event.target);
+};
+```
+
+> 两个常见需求：① **阻止双击/拖拽选中文本** → 在 `mousedown` 上 `preventDefault()`（或用 CSS `user-select: none`）；② **禁止复制** → 监听 `copy` 并 `preventDefault()`（只能防君子，源码照样能看到）。
+
+### 12.2 mouseover/out 与 mouseenter/leave
+
+| 事件                        | 移到子元素时 | 是否冒泡 | 能否事件委托 |
+| --------------------------- | ------------ | -------- | ------------ |
+| `mouseover` / `mouseout`    | **会触发**   | ✅       | ✅           |
+| `mouseenter` / `mouseleave` | 不触发       | ❌       | ❌           |
+
+- 浏览器认为**同一时刻鼠标只在一个元素上**（最深的那个），所以从父移到子，父会先收到 `mouseout` 再收到冒泡上来的 `mouseover`。不想被干扰就用 `mouseenter/leave`，或用 `relatedTarget` 过滤。
+- **`event.relatedTarget`**：`mouseover` 时是"来自哪个元素"，`mouseout` 时是"去了哪个元素"。**可能为 `null`**（鼠标从窗口外进来/离开窗口），直接读 `.tagName` 会报错。
+- **鼠标移动太快会跳过中间元素**（浏览器按帧采样，这是有意的性能优化）。但可以确信：只要触发过 `mouseover`，离开时一定会有对应的 `mouseout`。
+- `mouseenter/leave` **不冒泡**，因此无法用它们做"表格单元格悬停"的委托——那类需求只能用 `mouseover/out` + `closest` + `relatedTarget` 判断。
+- `mousemove` 触发极其频繁，务必**节流 / `requestAnimationFrame` 合并**，不要在处理器里做重活。
+
+### 12.3 键盘事件
+
+只有两个事件值得用：`keydown`（按下，长按会**自动重复**，`event.repeat === true`）与 `keyup`。`keypress` 与 `keyCode` / `which` 已废弃。
+
+| 属性         | 含义                                                       | 例子                          |
+| ------------ | ---------------------------------------------------------- | ----------------------------- |
+| `event.key`  | **字符**（受语言、Shift 影响）                             | `z` / `Z` / `Shift` / `Enter` |
+| `event.code` | **物理按键位置**（与语言、大小写无关）                     | `KeyZ` / `ShiftLeft` / `Enter` |
+
+```js
+// 撤销热键：即使切换输入法/语言也稳定 —— 用 code
+document.addEventListener("keydown", (event) => {
+  if (event.code === "KeyZ" && (event.ctrlKey || event.metaKey)) undo();
+});
+```
+
+选择依据：**与字符/布局有关的判断用 `key`；热键（要求跨语言稳定）用 `code`**。注意 `code` 在 QWERTY 与 QWERTZ 等布局下，同一个物理键可能对应不同字母（德式布局按 Y 得到 `KeyZ`）。
+
+> **别用键盘事件做输入校验**：输入还可能来自粘贴、语音输入、输入法（IME 下 `key` 可能是 `"Unidentified"`、移动端 `keyCode` 恒为 `229`）。校验/计数请用 12.8 的 `input` 事件。
+
+### 12.4 指针事件（Pointer Events）
+
+指针事件用**一套 API 统一鼠标 / 触摸 / 触控笔**：把代码里的 `mouse<event>` 换成 `pointer<event>`，就同时获得了鼠标兼容与触屏支持。
+
+| 属性                | 含义                                                     |
+| ------------------- | -------------------------------------------------------- |
+| `pointerId`         | 每个**触点**的唯一 ID（5 指同时触摸 = 5 个不同 ID）       |
+| `pointerType`       | `"mouse"` / `"pen"` / `"touch"`                          |
+| `isPrimary`         | 是否第一根手指（多点触控时区分主触点）                    |
+| `pressure` / `width` / `height` | 压感与接触面积（多数设备不支持，取默认值）      |
+
+两个实战要点：
+
+1. **`pointercancel`**：浏览器"劫持"了交互（原生图片拖放、手势缩放、设备旋转）时会触发，之后不再有 `pointermove`。解法：
+   ```js
+   ball.ondragstart = () => false; // 阻止原生拖放
+   ```
+   ```css
+   #ball { touch-action: none; } /* 阻止浏览器接管触摸手势 */
+   ```
+2. **指针捕获 `setPointerCapture(pointerId)`**：把该触点后续所有事件**重定向到指定元素**，直到 `pointerup`/`pointercancel` 自动释放。做拖拽/滑块时不必再往 `document` 上挂 `mousemove`，也不会误触发其他元素的悬停逻辑。
+
+```js
+thumb.onpointerdown = (event) => {
+  thumb.setPointerCapture(event.pointerId); // 后续事件都打到 thumb 上
+  thumb.onpointermove = (e) => {
+    thumb.style.left = `${e.clientX - slider.getBoundingClientRect().left}px`;
+  };
+  thumb.onpointerup = () => {
+    thumb.onpointermove = thumb.onpointerup = null; // 捕获自动释放，无需手动 release
+  };
+};
+```
+
+### 12.5 滚动
+
+```js
+window.addEventListener("scroll", () => {
+  // 用 window.pageYOffset / scrollY 读页面滚动量
+});
+```
+
+- **`scroll` 事件无法用 `preventDefault()` 取消**——它在滚动**已经发生之后**才触发。要禁止滚动，请对**引发滚动的事件**（`keydown` 的 PageUp/PageDown、wheel、touchmove）`preventDefault()`，或直接用 CSS `overflow: hidden`。
+- 滚动是**弹性**且**不精确**的：触屏/触控板能滚出边界再回弹，滚到底时距真实底部可能有 0~50px 误差。判定"到底"要留余量：
+
+  ```js
+  const nearBottom =
+    document.documentElement.getBoundingClientRect().bottom <=
+    document.documentElement.clientHeight + 100;
+  ```
+
+- 高频场景（`scroll` 每秒可触发几十次）：**监听要 passive + 节流**，做"元素是否进入视口"优先用 `IntersectionObserver`（不占主线程、不触发强制布局），懒加载图片用它替代 `getBoundingClientRect` 轮询。
+- `scrollIntoView()` / `scrollTo({ behavior: 'smooth' })` 做锚点定位；`scrollTop = 0` 回顶，`scrollTop = 1e9` 到底。
+
+### 12.6 焦点：focus / blur
+
+```js
+input.onblur = () => { if (!input.value.includes("@")) showError(); };
+input.onfocus = () => clearError();
+```
+
+- **`focus` / `blur` 不冒泡**。要"表单内任意控件聚焦就高亮整个表单"，两种办法：
+  ```js
+  form.addEventListener("focus", () => form.classList.add("focused"), true); // ① 捕获阶段
+  form.addEventListener("focusin", () => form.classList.add("focused")); // ② 用会冒泡的 focusin/focusout
+  ```
+- **默认只有可交互元素（`<button>`/`<input>`/`<select>`/`<a>`）可聚焦**；给 `<div>`/`<li>` 加 `tabindex` 就能聚焦并触发事件：
+  - `tabindex="0"`：可聚焦 + 保持默认 Tab 顺序；
+  - `tabindex="-1"`：只能被 `elem.focus()` 程序化聚焦，Tab 跳过；
+  - `tabindex="1+"`：人为提前到最前（**通常应避免**，会打乱自然的 Tab 顺序）。
+- `document.activeElement` 读当前焦点元素。
+- **`alert()` 会抢焦点**（触发 `blur`，关闭后又 `focus`）；**元素从 DOM 移除也会丢焦点**，且插回来不会自动恢复——这些"非用户导致的焦点变化"常常让 `focus/blur` 处理器意外触发。
+- 不能在 `blur` 里 `preventDefault()` 阻止失焦（那时已经失焦了）。
+
+### 12.7 表单导航与控件取值
+
+```js
+const form = document.forms.my; // 或 document.forms[0]
+form.elements.one; // name="one" 的控件（可简写为 form.one）
+form.elements.age; // 同名 radio 会得到一个**集合**，用 ageElems[0] 访问
+
+loginInput.form; // 反向引用所属表单
+```
+
+- **`form.elements` 不看嵌套层级**：控件藏多深都能按 `name` 取到；`<fieldset>` 也有 `elements`（相当于子表单）。
+- **取值**：`input.value` / `textarea.value`（**不要用 `textarea.innerHTML`**，那只是初始 HTML）/ `input.checked`（checkbox/radio 的布尔）。
+- **`<select>`**：`select.options`（所有 `<option>`）、`select.value`（当前值）、`select.selectedIndex`（当前索引）。设值三选一：`options[i].selected = true` / `select.value = 'banana'` / `select.selectedIndex = 2`。多选（`multiple`）时用 `Array.from(select.options).filter(o => o.selected).map(o => o.value)`。
+- 创建选项：`new Option(text, value, defaultSelected, selected)`。
+
+> `form.login` 这种简写有个历史包袱：改了元素的 `name` 后，**旧名字依然可访问**（`form.elements` 会更新，直接属性不会）。通常无所谓，但重构时别依赖它。
+
+### 12.8 数据变更事件：change / input / cut / copy / paste
+
+| 事件                    | 何时触发                                                        | 能否阻止 | 用途                     |
+| ----------------------- | --------------------------------------------------------------- | -------- | ------------------------ |
+| `change`                | 文本类：**失焦时**；`select` / checkbox / radio：**改动即触发**  | ✅       | 表单提交前的最终校验     |
+| `input`                 | **值每次变化立即触发**（粘贴、语音输入也会）                     | ❌       | 实时校验、字数统计、计算器 |
+| `cut` / `copy` / `paste` | 剪贴板操作                                                      | ✅       | 格式化粘贴内容、防泄密   |
+
+```js
+// input 事件里 preventDefault 无效：值已经改完了，来不及
+input.addEventListener("input", (e) => {
+  result.textContent = input.value; // 实时联动
+});
+
+// 剪贴板：只在**用户发起的事件**上下文中可读
+input.addEventListener("paste", (event) => {
+  const text = event.clipboardData.getData("text/plain");
+  event.preventDefault(); // 阻止默认粘贴，改成自己处理
+});
+```
+
+> 剪贴板是**操作系统级**资源，安全限制严格：`event.clipboardData` 只在用户触发的事件处理器内有效（存起来稍后用会失效），除 Firefox 外都禁止用 `dispatchEvent` 伪造剪贴板事件。任意上下文读写请用异步的 `navigator.clipboard`（需用户授权）。
+
+### 12.9 表单提交
+
+- **`submit` 事件的两种触发方式**：点击 `<input type="submit">`，或在输入框里按 **Enter**（此时会顺带在 submit 按钮上触发一次 `click`——明明没点却有 click，就是这个原因）。
+- 校验不通过就 `event.preventDefault()`，然后自己 `fetch` 提交：
+
+  ```js
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!validate()) return;
+    await fetch(form.action, { method: form.method, body: new FormData(form) });
+  });
+  ```
+
+- **`form.submit()` 不会触发 `submit` 事件**——规范认为此时脚本已经自己处理完了一切。用它动态创建并提交表单时，注意别指望事件处理器会跑。
+- 表单必须**在文档中**才能 `submit()`（先 `append` 再提交）。
+
+### 12.10 MutationObserver：监听 DOM 变化
+
+`MutationObserver` 异步、批量地观察 DOM 变动，是"响应别人（第三方脚本）改 DOM"的标准手段。
+
+```js
+const observer = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    for (const node of m.addedNodes) {
+      if (!(node instanceof HTMLElement)) continue; // 跳过文本节点
+      if (node.matches("pre[class*='language-']")) Prism.highlightElement(node);
+      node.querySelectorAll("pre[class*='language-']").forEach(Prism.highlightElement);
+    }
+  }
+});
+
+observer.observe(document.body, {
+  childList: true, // 直接子节点的增删
+  subtree: true, // 及所有后代
+  // attributes: true,        // 特性变化
+  // attributeFilter: ["class"], // 只看指定特性（性能优化）
+  // characterData: true,     // 文本节点内容变化
+  // attributeOldValue / characterDataOldValue: true  // 需要 oldValue 时
+});
+
+// 收尾：先取走未处理的记录，再断开
+const pending = observer.takeRecords();
+observer.disconnect();
+```
+
+要点：
+
+- 配置越精确，回调越少、开销越低（`config` 本质是"订阅哪些变化"）。
+- 回调在**微任务**中执行且**批量**传入 `MutationRecord[]`（`type` / `target` / `addedNodes` / `removedNodes` / `oldValue` 等），不会像已废弃的 Mutation Events 那样每条变动同步触发一次。
+- 典型用途：检测并清理第三方脚本插入的 DOM、给动态加载的内容自动做代码高亮/懒加载/埋点绑定。
+- 观察器对节点持**弱引用**，不会阻止节点被 GC。
+
+---
+
 ## 附：高频面试题速记
 
 1. **输入 URL 到页面显示经历了什么？** → 见 1.5（DNS→连接→请求→解析→CRP→渲染→交互）。
@@ -699,7 +1572,13 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 8. **Cookie / localStorage / IndexedDB 区别？** → 见 5.1/5.2/5.3 表格。
 9. **同源策略与跨域方案？** → 见 6.1。
 10. **XSS / CSRF / 点击劫持如何防御？** → HttpOnly + CSP / SameSite + Token / X-Frame-Options（6.2/6.3）。
+11. **`DOMContentLoaded` 与 `load` 区别？为什么 DCL 会被样式拖住？** → DOM 就绪 vs 资源就绪；样式后的脚本要等样式 → DCL 间接等待（9.1/9.2）。
+12. **`defer` 与 `async` 的区别？动态插入的脚本呢？** → 文档顺序 + DCL 之前 vs 加载优先 + 与 DCL 无关；动态脚本默认 async，`script.async = false` 可恢复保序（9.5）。
+13. **跨域脚本为什么只报 "Script error."？** → 跨源策略隐藏细节；`crossorigin` + 服务端 CORS 头才能拿到完整堆栈（9.7）。
+14. **事件冒泡与捕获三阶段？事件委托怎么写？** → 捕获→目标→冒泡；祖先上挂一个 + `closest()` + `contains()`（11.3/11.4）。
+15. **`mouseover` 与 `mouseenter` 区别？`focus` 为什么无法委托？** → 前者移入子元素也触发且会冒泡，后者不会；`focus` 不冒泡，改用 `focusin` 或捕获阶段（12.2/12.6）。
+16. **`input` 与 `change` 何时触发？做输入校验用哪个？** → `input` 每次改值立即触发（不可 preventDefault），`change` 文本类失焦才触发；校验用 `input`（12.8）。
 
 ---
 
-> 本文持续更新。核心心法：**"浏览器不是黑盒"**——架构决定进程隔离、CRP 决定渲染性能、事件循环决定响应、缓存/存储决定状态、安全头决定边界。多数"玄学报错"都能在 DevTools 的 **Network / Performance / Memory / Application** 四个面板里找到真相。
+> 本文持续更新。核心心法：**"浏览器不是黑盒"**——架构决定进程隔离、CRP 决定渲染性能、事件循环决定响应、缓存/存储决定状态、安全头决定边界、DOM 与事件模型决定脚本能做什么。多数"玄学报错"都能在 DevTools 的 **Network / Performance / Memory / Application / Elements（Event Listeners）** 面板里找到真相。

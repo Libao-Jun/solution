@@ -180,9 +180,8 @@ export default extendConfig(
     cleanUrls: true,
     // 文档保留原始交叉链接，构建时不做死链校验。
     ignoreDeadLinks: true,
-    // README 与 AGENTS.md 属于仓库说明 / AI 协作规则，不作为站点页面。
-    // （.agents/** 是点目录，VitePress 默认不生成页面。）
-    srcExclude: ['README.md', 'AGENTS.md'],
+    // README / AGENTS.md 属仓库说明；.agent-reference/ 是首页实现细则附件（点目录，VitePress 默认不生成页面）。
+    srcExclude: ['README.md', 'AGENTS.md', '.agent-reference/**'],
     // 站点级 SEO head：只放与具体页面无关的标签，
     // 与页面强相关的 title / description / url 由 buildSeoHead（transformHead）按页生成。
     head: [

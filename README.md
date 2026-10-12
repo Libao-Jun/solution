@@ -102,7 +102,7 @@ solution/
 
 文档骨架为 **H1 + 参考资料引用块 + `## 目录` + `## 一、` / `### 1.1` 正文**；全部书写要求（层级不跳级、代码块标语言、`{{PLACEHOLDER}}` 原样保留、图片与 PDF 放 `public/` 并以绝对路径引用等）见 `AGENTS.md` §3.2。
 
-新增文档不是「只加一个文件」，而是把所有登记位置一次改齐：`config.mts` 的 `sidebar`（**必改**）、`data/topics.ts` 的 `topicGroups` 与统计常量、本文件的「内容目录分类」表，以及 `nav` / `footer.nav` / `roadmaps/index.md` 等按需联动；**完整清单（a~j）与自查方法见 `AGENTS.md` §4.2**。漏改症状：页面能打开，但侧栏里找不到、首页索引里没有、统计数字是旧值。
+新增文档不是「只加一个文件」，而是把所有登记位置一次改齐：`config.mts` 的 `sidebar`（**必改**）、`data/topics.ts` 的 `topicGroups` 与统计常量、本文件的「内容目录分类」表，以及 `nav` / `footer.nav` / `roadmaps/index.md` 等按需联动；**完整清单（a~j）见 `AGENTS.md` §4.2，全量排查命令与逐项检查清单见 `.agent-reference/agent-guide-details.md` 三**。漏改症状：页面能打开，但侧栏里找不到、首页索引里没有、统计数字是旧值。
 
 ## 文档「目录」锚点规则
 
@@ -139,14 +139,14 @@ VitePress 的标题 id 按自己的规则生成，**不是** GitHub 那种「去
 | 内容地图（自绘 SVG）                           | `ClosingIllustration.vue`                                               |
 | 页脚                                           | `SiteFooter.vue`                                                        |
 
-> 首页动效由 `.vitepress/theme/animations/motion.ts`（GSAP + ScrollTrigger）驱动；等距图、网格边框与动效的**实现细则与自查口径统一维护在 `AGENTS.md` §2.6**，本节只列区块构成。
+> 首页动效由 `.vitepress/theme/animations/motion.ts`（GSAP + ScrollTrigger）驱动；等距图、网格边框与动效的**关键规则在 `AGENTS.md` §2.6，完整实现细则与自查口径见 `.agent-reference/homepage-implementation-notes.md`**，本节只列区块构成。
 
 ## 主题与样式
 
 - **主题入口** `.vitepress/theme/index.ts`：复用 VoidZero 主题的 `enhanceApp`，并通过 `themeContextKey` 覆盖品牌资源（`logoDark` / `logoLight` / `logoAlt` / `footerBg` / `monoIcon`，对应 `public/` 下的 svg）。
 - **布局** `.vitepress/theme/Layout.vue`：首页走 `marketing-layout` 分支（`OSSHeader` + `Home` + `SiteFooter`），其余页面用主题默认布局；首页运行时同步 `data-theme="light"`，避免系统深色偏好影响首屏。
 - **样式** `.vitepress/theme/styles.css` 共 7 段：品牌色 / 布局宽度配置 / 正文细节修正 / 首页装饰 / 终端演示 / 能力展示渐变 / 首页动效。改动前看清段落，不要零散写死宽度或颜色。
-- **动效** `.vitepress/theme/animations/motion.ts`：首页 GSAP 唯一入口（动态加载 / `useMotion()` / `revealOnScroll()`）；组件不得各自 `import gsap`，硬约束见 `AGENTS.md` §2.6。
+- **动效** `.vitepress/theme/animations/motion.ts`：首页 GSAP 唯一入口（动态加载 / `useMotion()` / `revealOnScroll()`）；组件不得各自 `import gsap`，硬约束与失败复盘见 `AGENTS.md` §2.6 及 `.agent-reference/homepage-implementation-notes.md`。
 
 ## 布局宽度配置
 

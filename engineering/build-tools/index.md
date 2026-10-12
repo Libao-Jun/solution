@@ -1710,19 +1710,35 @@ module.exports = {
 
 ### 10.9 各工具配置对比速查表
 
-把最常用、最容易混淆的配置项横向对比，方便「换工具时对照写」：
+把最常用、最容易混淆的配置项横向对比，方便「换工具时对照写」。配置类工具一组，约定类工具一组：
 
-| 配置维度           | Webpack                       | Vite                                            | Rollup                   | Rspack                         | esbuild                | Turbopack            | Parcel                       |
-| ------------------ | ----------------------------- | ----------------------------------------------- | ------------------------ | ------------------------------ | ---------------------- | -------------------- | ---------------------------- |
-| **入口**           | `entry`                       | `build.rollupOptions.input` / 默认 `index.html` | `input`                  | `entry`                        | `entryPoints`          | 无（Next 入口固定）  | 命令行传文件                 |
-| **出口**           | `output`                      | `build.outDir`                                  | `output`                 | `output`                       | `outfile/outdir`       | 无                   | `targets.distDir`            |
-| **别名**           | `resolve.alias`               | `resolve.alias`                                 | `@rollup/plugin-alias`   | `resolve.alias`                | `alias`                | `turbo.resolveAlias` | 默认无                       |
-| **分包**           | `optimization.splitChunks`    | `build.rollupOptions.output.manualChunks`       | `output.manualChunks`    | `optimization.splitChunks`     | `splitting`            | 自动                 | 自动                         |
-| **压缩**           | `terser` / `css-minimizer`    | `build.minify` (esbuild)                        | `@rollup/plugin-terser`  | `SwcJs/LightningCss` Minimizer | `--minify`             | 自动                 | 自动                         |
-| **代理/DevServer** | `devServer.proxy`             | `server.proxy`                                  | 无（库不跑）             | `devServer.proxy`              | 无                     | `turbo.rules`        | 自动                         |
-| **环境变量**       | `DefinePlugin`                | `import.meta.env` / `define`                    | `@rollup/plugin-replace` | `DefinePlugin`                 | `define`               | `turbo.env`          | 无                           |
-| **插件机制**       | `plugins` 数组                | `plugins` 数组（Rollup 钩子）                   | `plugins` 数组           | `plugins` 数组                 | 较弱                   | 声明式 `turbo.*`     | `.parcelrc`                  |
-| **配置语言**       | `webpack.config.js` (CJS/ESM) | `vite.config.js` (ESM)                          | `rollup.config.js` (ESM) | `rspack.config.js`             | `esbuild.config` / CLI | `next.config.mjs`    | `.parcelrc` / `package.json` |
+**配置型工具（Webpack / Vite / Rollup / Rspack）**
+
+| 配置维度           | Webpack                       | Vite                                            | Rollup                   | Rspack                         |
+| ------------------ | ----------------------------- | ----------------------------------------------- | ------------------------ | ------------------------------ |
+| **入口**           | `entry`                       | `build.rollupOptions.input` / 默认 `index.html` | `input`                  | `entry`                        |
+| **出口**           | `output`                      | `build.outDir`                                  | `output`                 | `output`                       |
+| **别名**           | `resolve.alias`               | `resolve.alias`                                 | `@rollup/plugin-alias`   | `resolve.alias`                |
+| **分包**           | `optimization.splitChunks`    | `build.rollupOptions.output.manualChunks`       | `output.manualChunks`    | `optimization.splitChunks`     |
+| **压缩**           | `terser` / `css-minimizer`    | `build.minify` (esbuild)                        | `@rollup/plugin-terser`  | `SwcJs/LightningCss` Minimizer |
+| **代理/DevServer** | `devServer.proxy`             | `server.proxy`                                  | 无（库不跑）             | `devServer.proxy`              |
+| **环境变量**       | `DefinePlugin`                | `import.meta.env` / `define`                    | `@rollup/plugin-replace` | `DefinePlugin`                 |
+| **插件机制**       | `plugins` 数组                | `plugins` 数组（Rollup 钩子）                   | `plugins` 数组           | `plugins` 数组                 |
+| **配置语言**       | `webpack.config.js` (CJS/ESM) | `vite.config.js` (ESM)                          | `rollup.config.js` (ESM) | `rspack.config.js`             |
+
+**约定型工具（esbuild / Turbopack / Parcel）**
+
+| 配置维度           | esbuild                | Turbopack            | Parcel                       |
+| ------------------ | ---------------------- | -------------------- | ---------------------------- |
+| **入口**           | `entryPoints`          | 无（Next 入口固定）  | 命令行传文件                 |
+| **出口**           | `outfile/outdir`       | 无                   | `targets.distDir`            |
+| **别名**           | `alias`                | `turbo.resolveAlias` | 默认无                       |
+| **分包**           | `splitting`            | 自动                 | 自动                         |
+| **压缩**           | `--minify`             | 自动                 | 自动                         |
+| **代理/DevServer** | 无                     | `turbo.rules`        | 自动                         |
+| **环境变量**       | `define`               | `turbo.env`          | 无                           |
+| **插件机制**       | 较弱                   | 声明式 `turbo.*`     | `.parcelrc`                  |
+| **配置语言**       | `esbuild.config` / CLI | `next.config.mjs`    | `.parcelrc` / `package.json` |
 
 > 记忆：Vite 的 `build` 内部就是 Rollup，所以「出口 / 分包 / 插件」基本照搬 Rollup 写法；Rspack 几乎照搬 Webpack 写法；Turbopack/Parcel 走「约定优于配置」路线，需要手写的不多。
 

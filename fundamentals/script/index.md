@@ -187,46 +187,17 @@ document.head.appendChild(s)
 | `<script type="module" async>` | 否         | 依赖树获取完立即执行           | 不确定           | 不保证       | 独立模块入口                 |
 | 动态注入（默认 async）     | 否             | 下载完立即执行                 | 不确定（可改）   | 不保证       | 按需加载 / 实验脚本          |
 
-对应的解析器 / 下载 / 执行时间线（示意，横轴为相对的同一段时间）：
+对应的解析器 / 下载 / 执行时间线示意图（六行依次对应上表六种方式）：
 
-```mermaid
-gantt
-    title 脚本加载方式时间线对比（同一段相对时间）
-    dateFormat X
-    axisFormat %s
-    section 同步
-    解析 HTML :s1a, 0, 3
-    下载 fetch :active, s1b, 3, 6
-    解析被阻塞 :done, s1c, 3, 8
-    执行 :crit, s1d, 6, 8
-    解析 HTML（恢复） :s1e, 8, 14
-    section defer
-    解析 HTML :s2a, 0, 10
-    下载 fetch :active, s2b, 1, 5
-    解析完成后按序执行 :crit, s2c, 10, 12
-    section async
-    解析 HTML :s3a, 0, 4
-    下载 fetch :active, s3b, 1, 4
-    执行（阻塞解析） :crit, s3c, 4, 6
-    解析 HTML（恢复） :s3d, 6, 10
-    section module
-    解析 HTML :s4a, 0, 10
-    下载 fetch（含依赖） :active, s4b, 1, 6
-    解析完成后按序执行 :crit, s4c, 10, 12
-    section module + async
-    解析 HTML :s5a, 0, 10
-    下载 fetch（含依赖） :active, s5b, 1, 6
-    获取完立即执行 :crit, s5c, 6, 8
-    section 动态注入
-    解析 HTML :s6a, 0, 5
-    下载 fetch :active, s6b, 2, 5
-    到货即执行（阻塞解析） :crit, s6c, 5, 7
-    解析 HTML（恢复） :s6d, 7, 10
-```
+1️⃣ 自动生成的脚本加载方式示意图
+![脚本加载方式时间线对比：六种模式各自的 Scripting（fetch / execution）与 HTML Parser 时间线，绿色为解析、蓝色为下载、红色为执行](/images/script-loading-timeline.svg)
 
-> 图例（对应 [HTML 规范脚本处理模型](https://htmlspecs.com/#attr-script-async) 的 parser / fetch / execution 三段）：
-> **默认色 = 解析 HTML**、**蓝色 = 下载 fetch**、**红色 = 执行脚本**、**灰色 = 解析被阻塞等待**。
-> 关键差异一眼看：**同步**的红条夹在解析中间且解析有整段灰条；**defer / module** 的红条整体推到最后；**async / module + async / 动态注入** 的红条紧跟自己的下载条，出现位置随机。
+2️⃣ htmlspecs 脚本加载方式示意图
+![脚本加载方式时间线对比：六种模式各自的 Scripting（fetch / execution）与 HTML Parser 时间线，绿色为解析、蓝色为下载、红色为执行](/images/attr-script-async.svg)
+
+> 图例（对应 [HTML 规范脚本处理模型](https://htmlspecs.com/#attr-script-async) 示意图的 parser / fetch / execution 三色）：
+> **绿色 = 解析 HTML（parser）**、**蓝色 = 下载 fetch**、**红色 = 执行脚本（execution）**、**白色空隙 = 该时间段解析被阻塞或被打断**。
+> 关键差异一眼看：**同步**的红条夹在解析中间且解析有整段空隙；**defer / module** 的红条整体推到最后；**async / module async / 动态注入** 的红条紧跟自己的下载条，出现位置随机。
 
 > 记忆口诀：**defer = 「下载不挡路，结尾按序跑」；async = 「下载不挡路，谁先到谁先跑」；module = 默认就是 defer，再加 async 才乱序**。
 
@@ -398,26 +369,9 @@ gantt
 
 ### 7.2 事件时序
 
-```mermaid
-gantt
-    title 执行时机与 DOMContentLoaded（示意）
-    dateFormat X
-    axisFormat %s
-    section 同步脚本
-    下载 fetch :active, e1, 1, 3
-    执行（阻塞解析） :crit, e2, 3, 5
-    DOMContentLoaded :done, e3, 8, 9
-    section defer 或 module
-    下载 fetch :active, e4, 1, 6
-    解析完成后按序执行 :crit, e5, 8, 10
-    DOMContentLoaded（执行完才触发） :done, e6, 10, 11
-    section async 或动态注入
-    下载 fetch :active, e7, 1, 4
-    到货即执行 :crit, e8, 4, 6
-    DOMContentLoaded（前后均可能） :done, e9, 7, 8
-```
+![执行时机与 DOMContentLoaded：同步、defer / module、async / 动态注入三种模式的下载与执行时间线，菱形标记 DOMContentLoaded 触发点](/images/script-dom-timing.svg)
 
-> 灰色块 = `DOMContentLoaded` 事件触发点：defer / module 的执行在它**之前**，async / 动态注入则落在它前后任意位置。
+> 橙色菱形 = `DOMContentLoaded` 事件触发点：defer / module 的执行在它**之前**，async / 动态注入则落在它前后任意位置。
 
 ### 7.3 属性记忆卡
 

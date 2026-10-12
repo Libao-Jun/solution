@@ -13,6 +13,7 @@ const sidebar = [
     text: 'Web 基础',
     items: [
       { text: 'HTML5 知识指南', link: '/fundamentals/html5/' },
+      { text: '脚本 Script 加载与执行指南', link: '/fundamentals/script/' },
       { text: '浏览器核心知识手册', link: '/fundamentals/browser/' },
       { text: 'HTTP / HTTPS 核心知识手册', link: '/fundamentals/http/' },
       { text: 'JavaScript 知识点指南', link: '/fundamentals/javascript/' },
@@ -263,6 +264,7 @@ export default extendConfig(
             title: 'Web 基础',
             items: [
               { text: 'HTML5', link: withBase('/fundamentals/html5/') },
+              { text: '脚本 Script', link: withBase('/fundamentals/script/') },
               { text: '浏览器', link: withBase('/fundamentals/browser/') },
               { text: 'HTTP / HTTPS', link: withBase('/fundamentals/http/') },
               { text: 'JavaScript', link: withBase('/fundamentals/javascript/') },

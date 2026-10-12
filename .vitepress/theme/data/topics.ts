@@ -19,7 +19,7 @@ export interface StatItem {
   label: string
 }
 
-export const docCount = 22
+export const docCount = 23
 export const roadmapCount = 47
 export const categoryCount = 5
 

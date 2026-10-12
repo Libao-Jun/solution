@@ -558,6 +558,8 @@
 
 `<script type="application/ld+json">` 可内嵌 JSON-LD 结构化数据。
 
+> 脚本加载方式（同步 / `defer` / `async` / 模块 / 动态注入）、属性速查与避坑的完整专题，见 [脚本 Script 加载与执行指南](/fundamentals/script/)。
+
 ### 2.13 模板与 Web Components
 
 | 元素       | 作用                                             |

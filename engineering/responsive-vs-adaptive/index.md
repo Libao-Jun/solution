@@ -4,6 +4,14 @@
 >
 > - 如果你是新手：按 01 → 04 → 05 → 08 顺序通读，先建立心智模型，再看代码怎么落地。
 > - 如果你已有经验：直奔 **09 团队规范**、**10 避坑清单**、**12 评审 Checklist**，把它当作落地标准与自查表。
+> - 面向角色：前端工程师、UI 设计师，以及需要制定多端适配规范的团队负责人。
+>
+> **参考资料**
+>
+> - [MDN — 响应式设计](https://developer.mozilla.org/zh-CN/docs/Learn_web_development/Core/CSS_layout/Responsive_Design)
+> - [Ethan Marcotte — Responsive Web Design（2010 原文）](https://alistapart.com/article/responsive-web-design/)
+> - [TED 知识体系 — 响应式设计](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A1)
+> - [博客园 — 说说响应式设计和自适应设计的区别](https://www.cnblogs.com/ai888/p/18569746)
 
 ---
 
@@ -24,7 +32,7 @@
 - [07 现在最流行的自适应解决方案](#_07-现在最流行的自适应解决方案)
 - [08 响应式与自适应如何选择](#_08-响应式与自适应如何选择)
 - [09 团队规范指南](#_09-团队规范指南)
-- [10 避坑指南（27 个高频坑）](#_10-避坑指南-27-个高频坑)
+- [10 避坑指南（30 个高频坑）](#_10-避坑指南-30-个高频坑)
 - [11 完整最小实践骨架](#_11-完整最小实践骨架)
 - [12 评审 Checklist](#_12-评审-checklist)
 - [13 参考资料](#_13-参考资料)
@@ -61,6 +69,17 @@ Web 早期只有两种建站思路（MDN 对这段历史的描述）：
 3. **媒体查询（Media Queries）** — 纯 CSS 完成"不同尺寸下切换布局"，取代早期用 JS 探测分辨率再加载 CSS 的土办法。
 
 **关键认知**：响应式**不是某一项技术**，而是"一组最佳实践"的统称。现代 CSS 布局（Flexbox / Grid）**天生就是响应式的**，加上容器查询、`clamp()` 等新特性，"让页面响应视口"已经是 Web 的默认基线能力。
+
+**现代响应式的六条核心原则**（在 Marcotte 三要素之上的工程化扩展，设计与开发对齐时可直接当验收口径）：
+
+| 原则         | 落地要求                                                              |
+| ------------ | --------------------------------------------------------------------- |
+| **流式布局** | 主尺寸用相对单位（`%` / `fr` / `rem` / `clamp()`），不写死像素        |
+| **弹性图像** | 图片随容器缩放，并按 DPR 与布局宽度提供多档资源（`srcset` / `image-set`） |
+| **媒体查询** | 只在"结构必须改变"处使用，尺寸微调交给弹性布局与流式令牌              |
+| **移动优先** | 基础样式面向最窄屏，再用 `min-width` 逐级增强                         |
+| **内容优先** | 核心内容在所有设备上都可达，小屏是"重排与折叠"，不是"删除信息"        |
+| **性能优先** | 按端下发资源：响应式图片、懒加载、条件加载，避免小屏下载全量桌面资源   |
 
 ```css
 /* 响应式的典型形态：连续流动 + 少量断点修正 */
@@ -201,6 +220,17 @@ Web 早期只有两种建站思路（MDN 对这段历史的描述）：
 | `viewport-fit=cover` | iOS 刘海屏下让内容延伸到安全区之外（配合 `env(safe-area-inset-*)`） |
 
 > **无障碍红线**：不要写 `user-scalable=no` 或 `maximum-scale=1`，这会剥夺用户缩放能力，违反可访问性原则。
+> 补充事实：从 **iOS 10 起 Safari 已在系统层面忽略这两个值**（用户仍可缩放），但它们**在 Android 与部分 WebView 内依然生效**——"写了也不一定生效"不能成为违反无障碍的理由，一律不写。
+
+**其他可选元信息**（主要在 iOS 上生效，按需添加）：
+
+```html
+<meta name="format-detection" content="telephone=no" />
+<!-- 禁止把数字串自动识别成电话号码 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<!-- 添加到主屏后以独立 App 模式运行（隐藏浏览器工具栏） -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+```
 
 ### 2.2 三种像素
 
@@ -311,6 +341,44 @@ Web 早期只有两种建站思路（MDN 对这段历史的描述）：
 - `auto-fit`：空轨道会被折叠，有元素时**拉伸填满**（卡片列表用它）；
 - `auto-fill`：保留空轨道，元素不拉伸（固定尺寸网格用它）。
 
+**经典百分比栅格（读懂老项目的必备知识）**：Bootstrap 式 12 栏栅格的本质就是"百分比 + `border-box` + 负边距"，现代可用 Flex 简写，不必再引整套栅格库：
+
+```css
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 15px;
+  box-sizing: border-box;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-inline: -15px; /* 负边距抵消列的 padding，保证左右不留白 */
+}
+.col {
+  flex: 1 1 0;
+  min-width: 0; /* 坑 8：防长内容撑破 */
+  padding-inline: 15px;
+  box-sizing: border-box;
+}
+.col-3 {
+  flex: 0 0 25%;
+}
+.col-6 {
+  flex: 0 0 50%;
+}
+@media (width < 48em) {
+  .col,
+  .col-3,
+  .col-6 {
+    flex: 0 0 100%;
+  } /* 窄屏一律单列 */
+}
+```
+
+老项目里还能见到用 `float: left` + 百分比 + `::after { content: ""; display: table; clear: both; }` 实现的版本（兼容性最好，但要手动清浮动）。**新项目不要再写 float 布局**，Flex / Grid 已全面覆盖其能力。
+
 ### 3.3 媒体查询（Media Queries）
 
 ```css
@@ -340,6 +408,20 @@ Web 早期只有两种建站思路（MDN 对这段历史的描述）：
 | `2xl` | ≥ 1536px | 大屏桌面              |
 
 > Tailwind 默认断点即上表，已成为事实标准。
+
+**区间（单档）写法的正确姿势**：只想让样式在"某一档内"生效时，用 `and` 连接上下界，并让**相邻档首尾相接**：
+
+```css
+/* ✅ 480–767、768–1023 首尾相接，无缝隙、无重叠 */
+@media (width >= 30em) and (width < 48em) { ... }
+@media (width >= 48em) and (width < 64em) { ... }
+
+/* ❌ 767 / 769 之间留缝：768px 处两条都不匹配（见坑 6） */
+@media (max-width: 767px) { ... }
+@media (min-width: 769px) { ... }
+```
+
+与移动优先的分工：**主布局一律单向 `min-width`（移动优先），区间写法只用于"必须限定在某一档"的补丁样式**，不要拿它搭主干骨架。
 
 ### 3.4 响应式排版：流式字号
 
@@ -392,6 +474,34 @@ body {
   <img src="pic.jpg" alt="" />
 </picture>
 ```
+
+**响应式背景图**（CSS 背景不走 `srcset`，需要自己处理）：
+
+```css
+.hero {
+  background-image: url(hero-800.jpg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+@media (width >= 48em) {
+  .hero {
+    background-image: url(hero-1600.jpg);
+  } /* 大屏才换大图 */
+}
+
+/* 按格式与 DPR 挑选：image-set（不支持的浏览器回退上一行） */
+.hero {
+  background-image: url(hero.jpg);
+  background-image: image-set(
+    url(hero.avif) type("image/avif"),
+    url(hero.webp) type("image/webp"),
+    url(hero.jpg) type("image/jpeg")
+  );
+}
+```
+
+> ⚠️ 背景图**没有** `srcset` 那样的"按视口挑一张"机制：写在 `@media` 之外的背景图，即使当前档位用不到也可能被下载。移动端要换小图，就必须像上面那样用媒体查询显式切换。
 
 基线样式（几乎所有项目都该有）：
 
@@ -489,6 +599,137 @@ a {
   touch-action: manipulation;
 } /* 消除 300ms 点击延迟 */
 ```
+
+### 3.9 加载性能：图片懒加载、字体与资源提示
+
+响应式不只是"看起来对"，还要"**加载得对**"——小屏不该为桌面端的大图和大字体买单。
+
+**图片懒加载**：现代浏览器用原生属性就够了；需要自定义策略（提前触发、按网络质量降级）才上 `IntersectionObserver`：
+
+```html
+<img src="p-800.jpg" loading="lazy" decoding="async" width="800" height="600" alt="" />
+```
+
+```js
+// 自定义懒加载：首屏外图片进入视口前 200px 才开始加载
+const io = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const img = entry.target;
+      img.src = img.dataset.src; // 真实地址放在 data-src 上
+      img.removeAttribute("data-src");
+      io.unobserve(img);
+    }
+  },
+  { rootMargin: "200px 0px" }, // 提前 200px 触发，滚动时不出现空白
+);
+
+document.querySelectorAll("img[data-src]").forEach((img) => io.observe(img));
+```
+
+三条红线：
+
+1. **首屏图（LCP 候选）绝不加 `loading="lazy"`**——会推迟加载、拖慢 LCP（见 [坑 28](#坑-28-首屏图片懒加载拖慢-lcp)）；
+2. 懒加载图片**必须**带 `width`/`height` 或 `aspect-ratio`，否则滚动加载时布局跳动（CLS）；
+3. 老 WebView 没有 `IntersectionObserver` 时要回退（直接赋值 `src`，或只依赖原生 `loading` 属性）。
+
+**Web 字体优化**：
+
+```css
+@font-face {
+  font-family: "CustomFont";
+  src: url(font.woff2) format("woff2");
+  font-display: swap; /* 先用后备字体渲染，避免"文字空白"（FOIT） */
+  font-weight: 400;
+}
+/* 按 unicode-range 切片：只下载页面真正用到的字符块 */
+@font-face {
+  font-family: "CustomFont";
+  src: url(font-latin.woff2) format("woff2");
+  unicode-range: U+0000-007F;
+}
+```
+
+```html
+<link rel="preload" href="/fonts/main.woff2" as="font" type="font/woff2" crossorigin />
+```
+
+字号本身也要响应式（见 [3.4 流式字号](#_3-4-响应式排版-流式字号)）。中文字体动辄数 MB，**优先子集化 + 系统字体栈**（`system-ui`），别让字体成为小屏最大的资源。
+
+**资源提示（Resource Hints）**：
+
+| 提示           | 用途                                     | 注意                                            |
+| -------------- | ---------------------------------------- | ----------------------------------------------- |
+| `preconnect`   | 提前与第三方域（CDN / API）建连          | 只对 1~3 个关键域，多了浪费连接与带宽           |
+| `preload`      | 抢先加载当前页关键资源（字体、LCP 图、CSS） | 必须带 `as`；**预加载了却没用会被浏览器告警** |
+| `prefetch`     | 预取"下一页"可能用到的资源               | 优先级最低，不与当前页抢带宽                    |
+| `dns-prefetch` | 只做 DNS 预解析                          | 老浏览器的 `preconnect` 降级方案                |
+
+```html
+<link rel="preconnect" href="https://cdn.example.com" crossorigin />
+<link rel="preload" as="image" href="/hero-800.webp" />
+```
+
+> 预加载本质是"插队"：**只对真正阻塞首屏的 1~2 个资源使用**，滥用会让关键资源反而变慢（见 [坑 30](#坑-30-preload-滥用抢占首屏带宽)）。
+
+### 3.10 断点调试技巧
+
+**技巧一：把当前断点直接显示在页面上**（评审 / 联调时最快）：
+
+```css
+.debug-bp::before {
+  content: "base (<640)";
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 9999;
+  background: #e11d48;
+  color: #fff;
+  font: 12px/1.6 monospace;
+  padding: 2px 6px;
+}
+@media (width >= 40em) {
+  .debug-bp::before {
+    content: "sm ≥640";
+  }
+}
+@media (width >= 48em) {
+  .debug-bp::before {
+    content: "md ≥768";
+  }
+}
+@media (width >= 64em) {
+  .debug-bp::before {
+    content: "lg ≥1024";
+  }
+}
+@media (width >= 80em) {
+  .debug-bp::before {
+    content: "xl ≥1280";
+  }
+}
+@media (width >= 96em) {
+  .debug-bp::before {
+    content: "2xl ≥1536";
+  }
+}
+```
+
+**技巧二：一键定位"横向滚动条真凶"**（控制台粘贴）：
+
+```js
+// 1. 全元素描边，谁溢出一眼看到
+document.querySelectorAll("*").forEach((el) => (el.style.outline = "1px solid rgb(255 0 0 / 0.3)"));
+// 2. 精确列出右边超出视口的元素
+[...document.querySelectorAll("*")]
+  .filter((el) => el.getBoundingClientRect().right > innerWidth + 1)
+  .map((el) => `${el.tagName}.${el.className} → ${Math.round(el.getBoundingClientRect().right)}px`);
+```
+
+**技巧三：DevTools** — 设备工具栏（`Ctrl+Shift+M`）自定义 320 / 375 / 768 / 1024 / 1440 并把 DPR 设为 2；Rendering 面板可模拟 `prefers-color-scheme`、`prefers-reduced-motion` 与**系统字号**；调试容器查询时，在 Elements 面板找容器元素的 `container-type` 徽标确认上下文。
+
+**技巧四**：调试期可以给模块临时加 `outline` / 背景色，**提交前务必清掉**，别让调试样式混进生产代码。
 
 ---
 
@@ -945,6 +1186,9 @@ $bp: (
 - 禁止 `user-scalable=no` / `maximum-scale=1`。
 - 尊重 `prefers-reduced-motion`：动效需提供减弱版本。
 - 键盘可达：隐藏的导航折叠后焦点不可落到 `display:none` 元素上（用 `hidden` 属性或 `inert`）。
+- **对比度**：正文 ≥ 4.5:1、大字（≥18.66px 粗体或 ≥24px）≥ 3:1（WCAG AA）；深色模式要**重校一遍**，不能只换背景不管文字色。
+- **语义化与读屏**：折叠按钮带 `aria-expanded`、图标按钮带 `aria-label`、纯装饰图 `alt=""`；响应式重排时**尽量不改 DOM 顺序**，慎用 `order` / `grid-row` 做大幅重排——读屏顺序跟着 DOM 走，视觉顺序与读屏顺序不一致是典型无障碍缺陷。
+- **焦点可见**：自定义 `:focus-visible` 样式，禁止只写 `outline: none` 而不补偿。
 
 ### 9.6 性能预算
 
@@ -984,7 +1228,7 @@ styles/
 
 ---
 
-## 10 避坑指南（27 个高频坑）
+## 10 避坑指南（30 个高频坑）
 
 ### 布局与断点类
 
@@ -1207,6 +1451,32 @@ document.documentElement.style.fontSize = (w / 750) * 100 + "px";
 **症状**：评审通过，真机上一塌糊涂。
 **解决**：真机 + 设备模拟器双测，覆盖 DPR 2/3、横竖屏、深色模式、系统字号 200%、iOS Safari 与 Android Chrome 双内核。
 
+### 加载与字体类
+
+#### 坑 28：首屏图片懒加载拖慢 LCP
+
+**症状**：首屏大图（Banner / Hero）加了 `loading="lazy"`，反而变成白屏等待，Lighthouse 的 LCP 指标变差。
+**原因**：懒加载会把图片推迟到"布局完成后"才开始请求，而 LCP 元素往往正是这张图。
+**解决**：
+
+```html
+<!-- 首屏图：立刻加载，并可显式提高优先级 -->
+<img src="hero-800.webp" alt="" fetchpriority="high" decoding="async" width="800" height="450" />
+<!-- 首屏外的图才用 lazy -->
+<img src="p-2.jpg" alt="" loading="lazy" width="400" height="300" />
+```
+
+#### 坑 29：Web 字体未设 `font-display` 导致文字闪白与布局跳动
+
+**症状**：首屏文字先空白一段时间再突然出现（FOIT），或字体切换瞬间整段文字高度变化（CLS）。
+**解决**：`font-display: swap` + 关键字体 `preload` + 后备字体栈（`system-ui`）；中文字体做 `unicode-range` 子集化；字号令牌用 `clamp()` 保证切换前后行高稳定。
+**参考**：[3.9 加载性能](#_3-9-加载性能-图片懒加载、字体与资源提示)
+
+#### 坑 30：`preload` 滥用抢占首屏带宽
+
+**症状**：给一堆资源都加了 `rel="preload"`，结果 LCP 更慢，控制台出现 "resource was preloaded but not used"。
+**解决**：`preload` 只给 1~2 个真正阻塞首屏的资源（关键字体、LCP 图、关键 CSS）；其余用 `prefetch`（下一页）或不加；预加载字体必须带 `crossorigin`，否则会下载两次。
+
 ---
 
 ## 11 完整最小实践骨架
@@ -1402,8 +1672,21 @@ document.documentElement.style.fontSize = (w / 750) * 100 + "px";
 
 - [ ] 图片有 `width/height` 或 `aspect-ratio`（防 CLS）
 - [ ] 内容图用 `srcset`/`sizes`/`<picture>`
-- [ ] 首屏图未加 `loading="lazy"`，首屏外已加
+- [ ] 首屏图未加 `loading="lazy"`（甚至可用 `fetchpriority="high"`），首屏外已加
 - [ ] 隐藏元素未造成无用资源加载（已改条件加载）
+
+**字体与资源提示**
+
+- [ ] Web 字体设了 `font-display: swap`，关键字体已 `preload`（且带 `crossorigin`）
+- [ ] 中文字体已子集化或改用系统字体栈
+- [ ] `preload` 不超过 1~2 个关键资源，无"预加载但未使用"
+
+**可访问性**
+
+- [ ] 正文对比度 ≥ 4.5:1（深色模式另测一遍）
+- [ ] 折叠/展开控件带 `aria-expanded`，图标按钮带 `aria-label`
+- [ ] `:focus-visible` 样式存在，无裸 `outline: none`
+- [ ] 响应式重排未打乱 DOM 顺序（读屏顺序与视觉顺序一致）
 
 **测试**
 
@@ -1433,3 +1716,4 @@ document.documentElement.style.fontSize = (w / 750) * 100 + "px";
 [10. 腾讯 CoDesign — 全面解析｜自适应与响应式网页设计的区别与应用](https://codesign.qq.com/hc/article/responsive-web-design/)
 [11. 前端三剑客 — 布局 / 响应式布局](https://baimohui.github.io/前端三剑客/CSS/布局/响应式布局/)
 [12. 百度开发者中心 — 响应式网页设计:构建全设备兼容的现代 Web 方案](https://developer.baidu.com/article/detail.html?id=5637371)
+[13. TED 知识体系 — 响应式设计](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A1)

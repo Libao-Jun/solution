@@ -660,21 +660,29 @@ Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 
 **建立连接（三次握手）**
 
-```
-Client  ── SYN ───────────────────▶  Server   ① 客户端：我想连，初始序号 x
-Client  ◀── SYN + ACK ────────────  Server   ② 服务端：收到，我也想连，序号 y，确认 x+1
-Client  ── ACK ───────────────────▶  Server   ③ 客户端：确认收到，开始传数据
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client（客户端）
+    participant S as Server（服务端）
+    C->>S: SYN（我想连，初始序号 x）
+    S-->>C: SYN + ACK（收到，我也想连，序号 y，确认 x+1）
+    C->>S: ACK（确认收到，开始传数据）
 ```
 
 - **为什么不是两次？** 若为两次，服务端在发完 `SYN+ACK` 后就会认为连接已建立；但若这个包**丢失或迟到**，服务端会一直为"已建立"的无效连接分配资源（半开连接堆积），易被 **SYN Flood 攻击**耗尽。第三次 ACK 让服务端确认"客户端确实收到了我的响应"，连接才真正建立。
 
 **断开连接（四次挥手）** —— TCP 是**全双工**，两个方向需各自关闭：
 
-```
-Client  ── FIN ───────────────────▶  Server   ① 客户端：我没数据要发了（仍可收）
-Client  ◀── ACK ──────────────────  Server   ② 服务端：知道你发完了（此时服务端可能还有数据要发）
-Client  ◀── FIN ──────────────────  Server   ③ 服务端：我也发完了
-Client  ── ACK ───────────────────▶  Server   ④ 客户端：确认，进入 TIME_WAIT
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client（客户端）
+    participant S as Server（服务端）
+    C->>S: FIN（我没数据要发了，仍可收）
+    S-->>C: ACK（知道你发完了，此时服务端可能还有数据要发）
+    S-->>C: FIN（我也发完了）
+    C->>S: ACK（确认，进入 TIME_WAIT）
 ```
 
 - **为什么不是三次？** 服务端收到 `FIN` 后，可能**还有未发完的数据**，所以 `ACK`（确认收到关闭请求）和 `FIN`（我也关了）不能合并，必须分两次发——故为四次。

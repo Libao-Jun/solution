@@ -41,6 +41,7 @@ const sidebar = [
       { text: '前端数据大屏通用适配方案', link: '/engineering/data-screen-adaptation/' },
       { text: 'H5 唤起 APP 与跳转应用商店', link: '/engineering/h5-app-invoke/' },
       { text: 'Git 入门、避坑与速查指南', link: '/engineering/git/' },
+      { text: '微前端从入门到精通', link: '/engineering/micro-frontend/' },
     ],
   },
   {
@@ -108,6 +109,7 @@ const siteKeywords = [
   '响应式与自适应',
   '数据大屏',
   'H5 唤起 APP',
+  '微前端',
   '学习路线',
   '开源许可证',
   '求职与职场',
@@ -285,6 +287,7 @@ export default extendConfig(
               { text: '数据大屏适配', link: withBase('/engineering/data-screen-adaptation/') },
               { text: 'H5 唤起 APP', link: withBase('/engineering/h5-app-invoke/') },
               { text: 'Git 速查指南', link: withBase('/engineering/git/') },
+              { text: '微前端', link: withBase('/engineering/micro-frontend/') },
             ],
           },
           {

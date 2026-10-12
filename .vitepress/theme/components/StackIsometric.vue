@@ -75,13 +75,13 @@ const short = (t: string) => SHORT[t] ?? t
 const platformDocs = categories[0].chips // Web 基础 6 篇
 const leftDocs = categories[1].chips.slice(0, 4) // React / Vue / Svelte / 语法对比
 const rightDocs = categories[1].chips.slice(4) // Taro / 微信小程序 / App 开发
-/** 工程化与适配 6 篇：打包构建 / Emmet / 响应式 / 数据大屏 / H5 唤起 APP / Git */
+/** 工程化与适配 7 篇：打包构建 / Emmet / 响应式 / 数据大屏 / H5 唤起 APP / Git / 微前端 */
 const engineeringDocs: Doc[] = categories[2].chips
-/** 放到「侧面」那一排的工程化文档：让「正面」一排正好留下 5 个位置（含 Git） */
+/** 放到「侧面」那一排的工程化文档：让「正面」一排正好留下 6 个位置（含 Git / 微前端） */
 const SIDE_ROW_ENGINEERING = ['/engineering/h5-app-invoke/']
 /**
  * 底部两排（分别对齐平台的「正面」与「侧面」，改动前必读 §2.6）：
- * - 正面一排沿 **x 轴**、5 张：工程化 5 篇（打包构建 / Emmet / 响应式 / 数据大屏 / Git）；
+ * - 正面一排沿 **x 轴**、6 张：工程化 6 篇（打包构建 / Emmet / 响应式 / 数据大屏 / Git / 微前端）；
  * - 侧面一排沿 **y 轴**、固定 4 张：H5 唤起 + 学习路线 / 开源许可证 / 求职职场。
  * 侧面一排不能再加：第 5 张卡片会越过 viewBox 下边界被裁掉。新增文档时优先占正面这一排。
  */
@@ -266,7 +266,7 @@ const CARD_H = 38
 /** 同一排相邻卡片的中心间距（局部单位；等距投影沿轴保长，所以也就是屏幕上的沿轨距离） */
 const CARD_PITCH = 96
 /** 两排最外侧卡片的局部起点（正面一排是 x，侧面一排是 y）：负值让外端伸到平台之外 */
-const ROW_FROM = -104
+const ROW_FROM = -200
 /**
  * 两排导轨的位置：都在各自那一面的台面边之外、并留出相同的净空（厚度 32 + 净空 38），
  * 于是两排离平台的视觉距离一致。再往里会贴住平台的侧面厚度，再往外会与平台脱节。
@@ -281,7 +281,7 @@ const SIDE_ROW_X = W + FACE_PAD + DEPTH + ROW_CLEARANCE
 const ROW_VERTEX = { x: SIDE_ROW_X + CARD_W / 2, y: FRONT_ROW_Y + CARD_H / 2 }
 
 /**
- * 两排的组成在上面（`bottomRows`）定义：正面一排沿 x 轴（工程化 5 篇）、侧面一排沿 y 轴（4 篇）。
+ * 两排的组成在上面（`bottomRows`）定义：正面一排沿 x 轴（工程化 6 篇）、侧面一排沿 y 轴（4 篇）。
  * 两排的 `rail` 指向下方那两条导轨线（下标接在上方 4 条之后）。
  * ★ 入场 / 漂浮的错落序号用**全局序号**：两排卡片数不等，沿用 rowIndex*4+i 会让第 5 张与
  *   第二排第 1 张序号撞车（同一时刻入场 + 漂浮相位相同）。
@@ -841,7 +841,7 @@ useMotion(root, (tools, element) => {
           </g>
         </a>
 
-        <!-- 6. 底部两组卡片：正面一排 5 张沿 x 轴、侧面一排 4 张沿 y 轴（组成见脚本里的 bottomRows） -->
+        <!-- 6. 底部两组卡片：正面一排 6 张沿 x 轴、侧面一排 4 张沿 y 轴（组成见脚本里的 bottomRows） -->
         <a
           v-for="card in cards"
           :key="card.link"

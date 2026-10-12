@@ -521,6 +521,7 @@ class Dog extends Animal {
 - 解决「多团队独立部署」：Module Federation（运行时共享依赖）、qiankun/无界（iframe/代理）。
 - 难点：样式隔离、JS 沙箱、全局状态/路由协调、公共依赖去重（避免加载两份 React）。
 - **方向**：先问「是否真需要微前端」；单体过早拆分是反模式。
+- 展开见 [微前端从入门到精通](/engineering/micro-frontend/)：方案对比、qiankun / 无界原理与落地清单。
 
 ### 14.12 无障碍（a11y）与 SEO
 - 语义化 HTML（`<button>`/`<nav>`/`<main>`/`<label for>`）优于 `div+onClick`；可访问性内置且 SEO 友好。

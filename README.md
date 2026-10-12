@@ -90,7 +90,7 @@ solution/
 
 | 目录            | 分类                                                                           |
 | --------------- | ------------------------------------------------------------------------------ |
-| `fundamentals/` | Web 基础（HTML5、脚本 Script、浏览器、HTTP、JavaScript、ECMAScript 6、TypeScript）          |
+| `fundamentals/` | Web 基础（HTML5、脚本 Script、浏览器、HTTP、JavaScript、ECMAScript 6、TypeScript、前端性能）           |
 | `frameworks/`   | 框架与端（React、Vue、Svelte、框架对比、Taro、微信小程序、App 开发）           |
 | `engineering/`  | 工程化与适配（打包构建工具、Emmet、响应式与自适应、数据大屏适配、H5 唤起 APP、Git、微前端） |
 | `roadmaps/`     | 学习路线图索引页（PDF 原件位于 `public/roadmaps/`，随站点原样发布）            |

@@ -571,7 +571,7 @@ Content-Security-Policy: default-src 'self';
 
 ## 七、性能与调试
 
-> 本节以 Chromium DevTools 为主。核心心法：**先用面板看"真凶"，再改代码**，别靠猜。
+> 本节以 Chromium DevTools 为主。核心心法：**先用面板看"真凶"，再改代码**，别靠猜。系统性的性能优化体系（指标 / 加载 / 渲染 / 运行时 / 监控 / 坑点清单）另见 [前端性能优化知识手册](/fundamentals/front-end-performance/)。
 
 ### 7.1 Performance 面板
 

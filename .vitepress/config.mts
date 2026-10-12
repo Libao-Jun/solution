@@ -19,6 +19,7 @@ const sidebar = [
       { text: 'JavaScript 知识点指南', link: '/fundamentals/javascript/' },
       { text: 'ECMAScript 6 知识指南', link: '/fundamentals/ecmascript-6/' },
       { text: 'TypeScript 入门到精通指南', link: '/fundamentals/typescript/' },
+      { text: '前端性能优化知识手册', link: '/fundamentals/front-end-performance/' },
     ],
   },
   {
@@ -98,6 +99,7 @@ const siteKeywords = [
   'JavaScript',
   'ECMAScript 6',
   'TypeScript',
+  '前端性能优化',
   'React',
   'Vue',
   'Svelte',
@@ -269,6 +271,7 @@ export default extendConfig(
               { text: 'HTTP / HTTPS', link: withBase('/fundamentals/http/') },
               { text: 'JavaScript', link: withBase('/fundamentals/javascript/') },
               { text: 'TypeScript', link: withBase('/fundamentals/typescript/') },
+              { text: '前端性能', link: withBase('/fundamentals/front-end-performance/') },
             ],
           },
           {

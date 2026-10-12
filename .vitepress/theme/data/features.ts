@@ -68,8 +68,13 @@ export const featurePanels: FeaturePanel[] = [
         detail: '语言基础、异步编程与类型系统',
         link: '/fundamentals/typescript/',
       },
+      {
+        text: '前端性能优化知识手册',
+        detail: '指标体系、加载 / 渲染 / 运行时优化与监控',
+        link: '/fundamentals/front-end-performance/',
+      },
     ],
-    meta: '收录 6 篇文档',
+    meta: '收录 8 篇文档',
     tone: 1,
     command: '$ npx tsc --noEmit',
     lines: [

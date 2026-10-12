@@ -19,7 +19,7 @@ export interface StatItem {
   label: string
 }
 
-export const docCount = 23
+export const docCount = 24
 export const roadmapCount = 47
 export const categoryCount = 5
 
@@ -36,6 +36,7 @@ export const categories: CategoryCard[] = [
       { text: 'JavaScript', link: '/fundamentals/javascript/' },
       { text: 'ES6', link: '/fundamentals/ecmascript-6/' },
       { text: 'TypeScript', link: '/fundamentals/typescript/' },
+      { text: '前端性能', link: '/fundamentals/front-end-performance/' },
     ],
   },
   {

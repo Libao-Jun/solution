@@ -24,6 +24,8 @@ const sidebar = [
       { text: '前端安全防护', link: '/fundamentals/frontend-security/' },
       { text: 'WebSocket 实时通信解决方案', link: '/fundamentals/websocket/' },
       { text: '超长列表优化处理', link: '/fundamentals/long-list-optimization/' },
+      { text: '文件上传处理', link: '/fundamentals/file-upload/' },
+      { text: 'SEO 全流程知识手册', link: '/fundamentals/seo/' },
     ],
   },
   {
@@ -280,6 +282,8 @@ export default extendConfig(
               { text: '前端安全', link: withBase('/fundamentals/frontend-security/') },
               { text: 'WebSocket', link: withBase('/fundamentals/websocket/') },
               { text: '超长列表优化', link: withBase('/fundamentals/long-list-optimization/') },
+              { text: '文件上传处理', link: withBase('/fundamentals/file-upload/') },
+              { text: 'SEO 全流程', link: withBase('/fundamentals/seo/') },
             ],
           },
           {

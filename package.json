@@ -9,6 +9,7 @@
     "preview": "vitepress preview"
   },
   "dependencies": {
+    "@vue-flow/core": "^1.48.2",
     "gsap": "^3.15.0",
     "mermaid": "^12.1.0",
     "reka-ui": "^2.7.0"

@@ -730,6 +730,7 @@ sequenceDiagram
 - 必须自己实现**心跳（ping/pong）**维持长连接（避免被代理/NAT 超时断开）与**断线重连**（指数退避 + 重连上限）。
 - 用 `wss://` 并配合 CSRF/鉴权（连接的 Query/String 里带 token，因为 WebSocket 不走常规 CORS，但同源策略与 Cookie 仍适用）。
 - 弱网/兼容性要求高时，可用 **SSE（单向）** 或**长轮询**作为降级方案。
+- 关于 WebSocket 的握手细节、心跳保活、断线重连、鉴权安全与可复用客户端封装（含从代码到实现的完整 TypeScript 模板），见专门的 [WebSocket 实时通信解决方案](/fundamentals/websocket/)。
 
 ### 9.6 运营商劫持与防护
 

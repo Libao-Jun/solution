@@ -22,6 +22,8 @@ const sidebar = [
       { text: '前端性能优化知识手册', link: '/fundamentals/front-end-performance/' },
       { text: '浏览器存储', link: '/fundamentals/browser-storage/' },
       { text: '前端安全防护', link: '/fundamentals/frontend-security/' },
+      { text: 'WebSocket 实时通信解决方案', link: '/fundamentals/websocket/' },
+      { text: '超长列表优化处理', link: '/fundamentals/long-list-optimization/' },
     ],
   },
   {
@@ -276,6 +278,8 @@ export default extendConfig(
               { text: '前端性能', link: withBase('/fundamentals/front-end-performance/') },
               { text: '浏览器存储', link: withBase('/fundamentals/browser-storage/') },
               { text: '前端安全', link: withBase('/fundamentals/frontend-security/') },
+              { text: 'WebSocket', link: withBase('/fundamentals/websocket/') },
+              { text: '超长列表优化', link: withBase('/fundamentals/long-list-optimization/') },
             ],
           },
           {

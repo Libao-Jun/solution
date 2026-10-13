@@ -2,7 +2,7 @@
 
 > 参考资料：
 >
-> - [前端知识体系 — 解决方案 / 前端解决方案 / 前端安全防护（本文结构蓝本）](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E5%AE%89%E5%85%A8%E9%98%B2%E6%8A%A4)
+> - [前端知识体系 — 解决方案 / 前端解决方案 / 前端安全防护（本文结构蓝本）](https://books.tedshen.cn/docs/解决方案/前端解决方案/前端安全防护/)
 > - [前端基础知识 — 安全篇（XSS / CSRF / 点击劫持等）](https://woai3c.github.io/Front-end-basic-knowledge/safe.html#xss)
 > - [OWASP — Cross Site Scripting Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
 > - [OWASP — Cross-Site Request Forgery Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)

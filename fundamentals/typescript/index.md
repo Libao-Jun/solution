@@ -1388,12 +1388,12 @@ const user = UserSchema.parse(JSON.parse(raw)); // 运行时校验 + 类型安�
 
 ## 十四、延伸阅读
 
-- **TypeScript 官方文档（Handbook / Reference）**：<https://www.typescriptlang.org/docs/>
-- **TSConfig 参考**：<https://www.typescriptlang.org/tsconfig>
-- **类型体操练习（Type Challenges）**：<https://github.com/type-challenges/type-challenges>
-- **阮一峰《TypeScript 教程》**：<https://wangdoc.com/typescript/>
-- **Zod（运行时校验 + 类型推断）**：<https://zod.dev>
-- **@typescript-eslint**：<https://typescript-eslint.io>
+- [TypeScript 官方文档（Handbook / Reference）](https://www.typescriptlang.org/docs/)
+- [TSConfig 参考](https://www.typescriptlang.org/tsconfig)
+- [类型体操练习（Type Challenges）](https://github.com/type-challenges/type-challenges)
+- [阮一峰《TypeScript 教程》](https://wangdoc.com/typescript/)
+- [Zod（运行时校验 + 类型推断）](https://zod.dev)
+- [@typescript-eslint](https://typescript-eslint.io)
 
 ---
 

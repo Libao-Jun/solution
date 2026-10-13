@@ -78,8 +78,13 @@ export const featurePanels: FeaturePanel[] = [
         detail: 'Cookie / Web Storage / IndexedDB / Cache 的选型与封装',
         link: '/fundamentals/browser-storage/',
       },
+      {
+        text: '前端安全防护',
+        detail: 'XSS / CSRF / CSP / 会话安全与端到端 SDL',
+        link: '/fundamentals/frontend-security/',
+      },
     ],
-    meta: '收录 9 篇文档',
+    meta: '收录 10 篇文档',
     tone: 1,
     command: '$ npx tsc --noEmit',
     lines: [

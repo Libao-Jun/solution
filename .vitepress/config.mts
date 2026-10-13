@@ -21,6 +21,7 @@ const sidebar = [
       { text: 'TypeScript 入门到精通指南', link: '/fundamentals/typescript/' },
       { text: '前端性能优化知识手册', link: '/fundamentals/front-end-performance/' },
       { text: '浏览器存储', link: '/fundamentals/browser-storage/' },
+      { text: '前端安全防护', link: '/fundamentals/frontend-security/' },
     ],
   },
   {
@@ -274,6 +275,7 @@ export default extendConfig(
               { text: 'TypeScript', link: withBase('/fundamentals/typescript/') },
               { text: '前端性能', link: withBase('/fundamentals/front-end-performance/') },
               { text: '浏览器存储', link: withBase('/fundamentals/browser-storage/') },
+              { text: '前端安全', link: withBase('/fundamentals/frontend-security/') },
             ],
           },
           {

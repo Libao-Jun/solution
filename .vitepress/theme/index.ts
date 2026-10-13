@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 // 前端安全「攻防全景」思维导图（正文 `fundamentals/frontend-security/` 1.2 节使用）：
 // 外层骨架可直接 SSR，真正的 @vue-flow/core 画布在浏览器端动态加载，故此处静态引入是安全的。
 import FrontendSecurityMindmap from './components/FrontendSecurityMindmap.vue'
+import StorageDecisionTree from './components/StorageDecisionTree.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -260,6 +261,9 @@ export default {
 
     // 前端安全「攻防全景」思维导图（@vue-flow/core 实现），供正文 Markdown 直接使用
     ctx.app.component('FrontendSecurityMindmap', FrontendSecurityMindmap)
+
+    // 浏览器存储机制选择决策树（@vue-flow/core 实现），供 browser-storage 2.2 节使用
+    ctx.app.component('StorageDecisionTree', StorageDecisionTree)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

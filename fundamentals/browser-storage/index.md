@@ -109,22 +109,7 @@ flowchart TB
 
 ### 2.2 存储机制选择决策树
 
-```mermaid
-flowchart TD
-    A["要存的数据"] --> B{"需要随 HTTP 请求<br/>自动发给服务端？"}
-    B -->|"是"| B1{"JS 需要读取内容？"}
-    B1 -->|"否"| B2["HttpOnly Cookie<br/>（服务端 Set-Cookie 下发）"]
-    B1 -->|"是"| C["Cookie（SameSite + Secure）"]
-    B -->|"否"| D{"需要索引 / 查询 / 事务<br/>或数据量大于 5MB？"}
-    D -->|"是"| E{"是文件或超大二进制？"}
-    E -->|"是"| E1["OPFS / File System Access"]
-    E -->|"否"| F["IndexedDB"]
-    D -->|"否"| G{"只在当前标签页会话<br/>内需要？"}
-    G -->|"是"| H["sessionStorage"]
-    G -->|"否"| I{"数据量极小且极高频读取？"}
-    I -->|"是"| J["内存变量 + Cache Storage 兜底"]
-    I -->|"否"| K["localStorage"]
-```
+<StorageDecisionTree />
 
 **读图口诀（四问定归属）**：
 

@@ -50,6 +50,7 @@ const sidebar = [
       { text: 'H5 唤起 APP 与跳转应用商店', link: '/engineering/h5-app-invoke/' },
       { text: 'Git 入门、避坑与速查指南', link: '/engineering/git/' },
       { text: '微前端从入门到精通', link: '/engineering/micro-frontend/' },
+      { text: '最全开发者资源宝典', link: '/engineering/developer-resources/' },
     ],
   },
   {
@@ -305,6 +306,7 @@ export default extendConfig(
               { text: 'H5 唤起 APP', link: withBase('/engineering/h5-app-invoke/') },
               { text: 'Git 速查指南', link: withBase('/engineering/git/') },
               { text: '微前端', link: withBase('/engineering/micro-frontend/') },
+              { text: '开发者资源宝典', link: withBase('/engineering/developer-resources/') },
             ],
           },
           {

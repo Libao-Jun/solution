@@ -248,8 +248,8 @@ flowchart TD
 | a   | `config.mts` → `sidebar`         | **每次新增都必改**    | 对应分组 `items` 追加 `{ text: '<标题>', link: '/<分类>/<主题>/' }` |
 | b   | `config.mts` → `nav`             | 新增**分类**时        | 加 `{ text, link: '/<分类>/<主题>/', activeMatch: '^/<分类>/' }`    |
 | c   | `config.mts` → `footer.nav`      | 新增分类 / 需页脚曝光 | 把链接加入合适分组                                                  |
-| d   | `data/topics.ts` → `topicGroups` | **每次新增都必改**    | 对应分组追加 `{ title, details, link }`                             |
-| e   | `data/topics.ts` → `categories`  | 需进首页分类 chips    | 追加 `{ text, link }`                                               |
+| d   | `data/topics.ts` → `categories`（首页分类卡片的 `chips`） | **每次新增都必改（= 首页入口）** | 在对应分类卡片的 `chips` 追加 `{ text, link }`；首页「分类地图」与 `StackIsometric` 面板均数据驱动渲染此数组，**漏改则首页对该文档无入口** |
+| e   | `data/topics.ts` → `categories`（与 d 同一数据源，勿重复登记） | 同 d，已在 d 覆盖 | 同上，确保首页分类 chips 与新增文档一一对应（d、e 指向同一数组，只改一次即可） |
 | f   | `data/topics.ts` → 统计常量      | 数量变化时            | `docCount` +1；路线图另加 `roadmapCount`；新分类加 `categoryCount`  |
 | g   | `README.md`                      | 新增分类 / 首个主题   | 「内容目录分类」表 + 受影响的「首页组成」「目录结构」等描述         |
 | h   | `roadmaps/index.md`              | 新增学习路线图时      | 追加 PDF 链接                                                       |

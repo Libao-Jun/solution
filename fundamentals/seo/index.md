@@ -9,6 +9,8 @@
 > - [ordinary-coder — SEO 优化](https://libao-jun.github.io/ordinary-coder/docs/seo/seo.html#seo-优化)
 >
 > 面向角色：初中级到高级前端工程师。本文按「总览 → 技术 SEO → 渲染模式与 JavaScript SEO → 元数据与社交分享 → 体验信号 → 内容语义化 → 工程化落地 → 站外权威 → 数据驱动 → 坑点与 Checklist」展开，覆盖一个前端高级工程师必须掌握的 SEO 关键知识点与完整工程流程。HTTP 状态码与缓存见 [HTTP / HTTPS 核心知识手册](/fundamentals/http/)，体验指标（LCP / INP / CLS）的工程优化见 [前端性能优化知识手册](/fundamentals/front-end-performance/)，浏览器渲染管线见 [浏览器核心知识手册](/fundamentals/browser/)，语义化标签见 [HTML5 知识指南](/fundamentals/html5/)，响应式适配见 [响应式与自适应设计](/engineering/responsive-vs-adaptive/)——本文聚焦「搜索引擎怎么看页面、前端怎么把页面做给爬虫看」。
+>
+> **只想把自己的网站 / 博客按流程做对 SEO、不知道从哪下手？** 直接跳到 [第十一章：实战落地流程](#十一、实战落地流程-从配置到上线的完整闭环)——它按「配置 → 本地验证配置是否生效 → 发布 → 上线复验」给出一条可照做的闭环，并附「上线前必做配置清单」与「配置没生效怎么排查」。
 
 ---
 
@@ -24,6 +26,7 @@
 8. [站外 SEO 与权威建设：Off-page](#八、站外-seo-与权威建设-off-page)
 9. [数据驱动：监控、分析与诊断](#九、数据驱动-监控、分析与诊断)
 10. [常见坑、反模式与上线前 Checklist](#十、常见坑、反模式与上线前-checklist)
+11. [实战落地流程：从配置到上线的完整闭环](#十一、实战落地流程-从配置到上线的完整闭环)
 
 ---
 
@@ -438,3 +441,125 @@ useHead({
 - [ ] Search Console 覆盖率无异常、无「被排除」的重要页。
 
 > 把以上能力固化进构建与发布流程（CI 校验 sitemap、Lighthouse CI 卡 Core Web Vitals、上线前跑 Search Console URL 检查），才能让 SEO 从「一次性补丁」变成「工程常态」。
+
+---
+
+## 十一、实战落地流程：从配置到上线的完整闭环
+
+前面十章是「知识」，这一章是「动作」。如果你要给自己的网站 / 博客做 SEO，照着下面四个阶段走：**配置 → 本地验证配置是否生效 → 发布 → 上线复验**。每一个阶段都给出「做到什么程度算完成」，避免「配了一堆但不知道有没有用」。
+
+### 11.1 先想清楚：你要优化什么、现状如何
+
+动手前先回答三个问题，避免方向错：
+
+1. **目标是什么**：内容站 / 博客 → 要自然搜索流量与收录；电商 → 商品页曝光与排名；工具站 → 品牌词与功能页可达。
+2. **现状盘点**（用 `site:你的域名` 在搜索引擎查收录，或看 Search Console）：
+   - 页面现在是 CSR 还是 SSR / SSG？`view-source:` 看首屏有没有正文；
+   - 有没有被收录？有没有 Search Console / Bing Webmaster 账号？
+   - 有没有 `sitemap.xml` / `robots.txt`？
+3. **定 KPI**：展示量（Impressions）、点击量（Clicks）、平均排名、核心词排名、Core Web Vitals（LCP / INP / CLS）。
+
+> 新手常见误区：一上来就堆关键词、买外链。先把「能被抓取、能被索引、体验达标」这三件基础做对，收益最大也最稳。
+
+### 11.2 阶段一：配置（上线前把基础打牢）
+
+下面是一份「上线前必做配置清单」，按「配置项 → 在哪配 → 怎么验证生效」三列给出，逐项打勾即可：
+
+| 配置项                     | 在哪配 / 用什么                                                            | 怎么验证生效（详见 §11.3）                              |
+| -------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 渲染模式                   | 选 SSG（博客 / 文档站，如 VitePress / Astro / Next `output: export`）或 SSR | `view-source:` 首屏 HTML 含核心文本与链接               |
+| `robots.txt`               | 站点根目录放静态文件，放行关键路径 + 声明 `Sitemap:`                       | 浏览器访问 `域名/robots.txt` 看到内容                   |
+| `sitemap.xml`              | 构建生成（`vite-plugin-sitemap` / 框架插件 / 脚本从路由表产出）            | 访问 `域名/sitemap.xml`；提交 Search Console            |
+| `canonical`                | 每页 `<link rel="canonical">`，SSR 直出真身 URL                            | `view-source:` 含正确且 200 可达的 URL                  |
+| `title` / `description`    | 元信息库（Vue `@vueuse/head` / React `react-helmet-async`），SSR 直出       | `view-source:` 含 `<title>` 与 `description`            |
+| Open Graph / Twitter Card | 同上，配 `og:*` / `twitter:*` + `og:image`(1200×630)                       | `view-source:` 含；社交调试器预览卡片正确               |
+| 结构化数据 JSON-LD         | 页面注入 `TechArticle` / `BreadcrumbList` / `FAQPage` 等                   | Google Rich Results Test 无错误                         |
+| HTTPS + 域名统一           | 托管 / 服务器 301：http→https、www↔非 www 取其一                          | `curl -I` 看到 301 且最终为 https                      |
+| 多语言 `hreflang`          | 有国际化时才配，`<link rel="alternate" hreflang>` 成对互指                 | `view-source:` 含且 A↔B 互指                           |
+| 体验优化                   | 预连接关键域名、图片尺寸占位、`font-size-adjust`、响应式 `srcset`          | Lighthouse 的 LCP / INP / CLS 达标                      |
+
+> 核心原则：**所有「会被爬虫先读」的东西（正文、title、canonical、sitemap、结构化数据）都必须进首屏直出的 HTML**，不能等 JS 执行后才出现——详见第三章。
+
+### 11.3 阶段二：本地测试（配置到底生没生效，先自己验）
+
+**这一步最关键，也最容易被跳过。** 很多人的「配了没用」其实是「配置只在浏览器渲染后才有，爬虫视角根本看不到」。
+
+**① 用「爬虫视角」看页面，而不是 DevTools**
+
+DevTools 里看到的 DOM 是 JS 执行后的结果；爬虫（尤其不渲染 JS 的）看到的是「原始 HTML」。验证必须抓**原始 HTML**：
+
+```bash
+# 先起本地预览（本仓库：pnpm run build && pnpm run preview；其它框架用各自 serve）
+# 再用 curl 抓「未渲染」的纯 HTML，看关键元信息是否已直出
+curl -s http://localhost:4173/fundamentals/seo/ | grep -E \
+  '<title>|<link rel="canonical"|<meta name="description"|<script type="application/ld\+json"'
+```
+
+- 如果你看到 `title` / `canonical` / 正文都在 → 配置直出成功；
+- 如果 `grep` 什么都抓不到、或只看到 `<div id="app"></div>` 空壳 → 说明是纯 CSR，**爬虫拿不到内容**，必须改 SSR / SSG / 预渲染（见 §3、§7）。
+
+> 小技巧：浏览器里 `view-source:域名/路径` 看到的就是爬虫拿到的原文，比 DevTools 更可信。
+
+**② 结构化数据校验**
+
+把页面 URL 或 JSON-LD 贴到 [Google Rich Results Test](https://search.google.com/test/rich-results)（或本地 schema 校验器），确认无语法错误、富媒体字段被正确识别。
+
+**③ 体验指标**
+
+本地或 CI 跑 Lighthouse / PageSpeed Insights，确认 LCP ≤ 2.5s、INP ≤ 200ms、CLS ≤ 0.1：
+
+```bash
+npx lighthouse http://localhost:4173/fundamentals/seo/ --only-categories=performance,seo,best-practices
+```
+
+**④ 社交卡片预览**
+
+把链接贴到调试器自测：Facebook Sharing Debugger、Twitter Card Validator、微信「公众号文章卡片」自测——确认标题 / 描述 / 封面图正确。
+
+**⑤ 死链与锚点**
+
+本仓库构建已用 `ignoreDeadLinks` 放行站内死链（便于写作），但上线前建议跑一次链接检查（如 `markdown-link-check` 或框架插件），确保没有 404 的内部链接、锚点可跳转。
+
+### 11.4 阶段三：发布
+
+- **部署到静态托管 / 服务器**：GitHub Pages、Vercel、Netlify、对象存储 + CDN 等；
+- **确认绝对地址正确**：`canonical` / `sitemap` / `og:url` 必须指向**线上域名**（CI 下 `base` 与 `siteUrl` 切换，见本站 `config.mts` 的 `base` / `siteUrl` 机制），否则会把 localhost 写进搜索引擎；
+- **配置 301 重定向**：http→https、`www`↔非 `www`、旧路径迁移，全部用 301（不要用 302，见 §2.4）；
+- **把校验固化进 CI**：sitemap 自动生成、Lighthouse CI 卡 Core Web Vitals、构建期校验元信息——让 SEO 成为「每次发布自动保证」，而不是手动补丁。
+
+### 11.5 阶段四：上线后验证（发布 ≠ 完成）
+
+发布后还要确认「搜索引擎真的收到了、且收对了」：
+
+1. **提交 sitemap**：在 Google Search Console、Bing Webmaster Tools 的「sitemap」处提交 `域名/sitemap.xml`；
+2. **URL 检查**：在 Search Console 贴具体 URL，看「抓取 / 索引 / 渲染」是否正常，可手动「请求编入索引」加速新站收录；
+3. **查收录**：用 `site:你的域名/具体路径` 看是否已出现在结果中（新站通常要几天到几周）；
+4. **监控覆盖率报告**：重点看有没有重要页被「排除」（常见原因：`noindex` 误配、canonical 指向别人、404）；
+5. **看真实体验**：CrUX 的 Core Web Vitals 报告需要积累真实用户数据，上线一段时间后才准确；
+6. **看搜索效果**：Search Console 的「搜索效果」报告看展示量 / 点击量 / CTR / 平均排名，按页面与查询下钻；
+7. **社交自测**：把链接真正发出去（微信 / Twitter 等），确认卡片展示符合预期。
+
+### 11.6 最小可行流程（MVP）：只想先把博客做对
+
+如果时间紧，按这条精简路径就够覆盖 80% 收益：
+
+1. 用 **SSG** 框架（VitePress / Astro / Hugo / Next `output: export）生成静态站；
+2. 构建期**自动生成 `sitemap.xml`**，根目录放 `robots.txt` 放行并声明它；
+3. 每页配 **`title` + `description` + `canonical`**（框架元信息库，SSR 直出）；
+4. 配 **Open Graph**（含 1200×630 封面）让分享好看；
+5. 部署后到 **Search Console 提交 sitemap + 请求编入索引**；
+6. 用 `view-source:` / `curl` 复验首屏含正文与元信息。
+
+### 11.7 配置「没生效」怎么排查
+
+| 现象                                   | 大概率原因                                   | 排查动作                                               |
+| -------------------------------------- | -------------------------------------------- | ------------------------------------------------------ |
+| `view-source:` 首屏是空壳             | 纯 CSR，内容靠 JS 渲染                       | 改 SSR / SSG / 预渲染（§3、§7）                        |
+| `<title>` 搜不到 / 是默认值           | 元信息是 JS 才设，未 SSR 直出                | 把 `useHead` / `helmet` 放进 SSR 输出                  |
+| 富结果不显示                           | JSON-LD 语法错或内容对爬虫不可见             | Rich Results Test 看报错；确认数据在直出 HTML 里       |
+| canonical 不生效 / 被忽略             | 指向 404 / 5xx，或 A、B 页 canonical 互指    | 保证 canonical 是 200 可达的真身且自洽                  |
+| 收录很慢 / 不收录                      | 新站抓取预算少、无外链、sitemap 未提交       | 提交 sitemap + URL 检查请求收录 + 适度外链              |
+| 排名有但点击少                         | 标题 / 描述写得不吸引人                      | 改 `title` / `description` 提升 CTR                    |
+| 移动端排名差                           | 未响应式 / 有侵入弹窗 / 视口缺失             | 查 §5.2；用 Search Console 移动端测试                  |
+
+> 一句话心法：**先让爬虫「看得到、读得懂」，再谈「排得高」；配置完必须「用爬虫视角（view-source / curl）验过」才算数，最后用 Search Console 确认搜索引擎真的收了。**

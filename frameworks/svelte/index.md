@@ -1080,9 +1080,9 @@ npx sv migrate svelte-5
 
 ## 17. 参考文档
 
-- **Svelte 官方文档（中文）**：<https://svelte.js.cn/docs>
-- **Svelte 官方文档（英文）**：<https://svelte.dev/docs>
-- **Svelte 基础教程（本规范主要补充来源）**：<https://svelte.js.cn/tutorial/svelte/welcome-to-svelte>
+- [Svelte 官方文档（中文）](https://svelte.js.cn/docs)
+- [Svelte 官方文档（英文）](https://svelte.dev/docs)
+- [Svelte 基础教程（本规范主要补充来源）](https://svelte.js.cn/tutorial/svelte/welcome-to-svelte)
   - 入门：你的第一个组件、动态属性、样式、嵌套组件、HTML 标签
   - 响应式：状态、深层状态、派生状态、检查状态、效果、通用响应式
   - Props：声明、默认值、展开
@@ -1090,16 +1090,16 @@ npx sv migrate svelte-5
   - 事件：DOM 事件、内联处理、捕获、组件事件、展开事件
   - 绑定：文本/数字/复选框/选择/单选组/多选/文本域、class 与 style、媒体尺寸、组件实例
   - 类与样式、附件（attach）、过渡、运动（tweened/spring）、特殊元素
-- **Svelte MCP（官方 AI 工具）**：<https://github.com/sveltejs/ai-tools>
-- **Svelte 5 最佳实践技能（社区）**：<https://github.com/ejirocodes/agent-skills>
+- [Svelte MCP（官方 AI 工具）](https://github.com/sveltejs/ai-tools)
+- [Svelte 5 最佳实践技能（社区）](https://github.com/ejirocodes/agent-skills)
   - `svelte/skills/svelte5-best-practices/SKILL.md` 及其 `references/`（runes / snippets / events / typescript / migration / sveltekit / performance）
-- **`{@attach}` 参考**：<https://svelte.js.cn/docs/svelte/svelte-attachments>
-- **`{@html}` 安全（OWASP XSS）**：<https://owasp.org/www-community/attacks/xss/>
-- **Svelte 概览**：<https://svelte.dev/docs/svelte/overview>
-- **SvelteKit 介绍**：<https://svelte.dev/docs/kit/introduction>
-- **SvelteKit 项目结构**：<https://svelte.dev/docs/kit/project-structure>
-- **Svelte 官方包列表**：<https://svelte.dev/packages>
-- **Svelte CLI（sv add 插件）**：<https://svelte.dev/docs/cli/sv-add>
+- [`{@attach}` 参考](https://svelte.js.cn/docs/svelte/svelte-attachments)
+- [`{@html}` 安全（OWASP XSS）](https://owasp.org/www-community/attacks/xss/)
+- [Svelte 概览](https://svelte.dev/docs/svelte/overview)
+- [SvelteKit 介绍](https://svelte.dev/docs/kit/introduction)
+- [SvelteKit 项目结构](https://svelte.dev/docs/kit/project-structure)
+- [Svelte 官方包列表](https://svelte.dev/packages)
+- [Svelte CLI（sv add 插件）](https://svelte.dev/docs/cli/sv-add)
 
 ---
 

@@ -2,12 +2,10 @@
 
 > 参考资料：
 >
-> - [无界 wujie 官方文档 · 微前端是什么](https://wujie-micro.github.io/doc/guide/)
 > - [无界 wujie 官方文档 · 快速上手](https://wujie-micro.github.io/doc/guide/start.html)
-> - [无界 wujie 官方文档 · startApp API](https://wujie-micro.github.io/doc/api/startApp.html)
 > - [无界 wujie 官方文档 · 首页](https://wujie-micro.github.io/doc/)
 > - [前端码农手册 · 微前端](https://fe-hl.github.io/handbook/pages/micro.html)
-> - [TED 知识体系 · 微前端](https://books.tedshen.cn/docs/%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%89%8D%E7%AB%AF%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/%E5%BE%AE%E5%89%8D%E7%AB%AF/)
+> - [TED 知识体系 · 微前端](https://books.tedshen.cn/docs/解决方案/前端解决方案/微前端/)
 > - [博客园 · 什么是微前端？有什么好处？有哪一些方案？](https://www.cnblogs.com/zxlh1529/p/18815555)
 > - [博客园 · qiankun、micro-app、wujie 深度对决与选型指南](https://www.cnblogs.com/yangykaifa/p/19391240)
 > - [ExplainThis · 什么是微前端架构？为什么要用微前端架构？](https://www.explainthis.io/zh-hans/swe/micro-frontend)
@@ -475,15 +473,7 @@ if (window.__POWERED_BY_QIANKUN__) {
 
 ### 6.3 HTML Entry 加载流程
 
-```mermaid
-flowchart TD
-    H["路由命中 activeRule"] --> S1["1. 请求子应用 index.html（HTML Entry）"]
-    S1 --> S2["2. import-html-entry 解析 script / style / 外链资源"]
-    S2 --> S3["3. 调用 bootstrap()（首次加载，仅一次）"]
-    S3 --> S4["4. 调用 mount(props)<br>JS 进沙箱执行 · 模板注入容器"]
-    S4 --> S5["5. 子应用渲染完成 → 通知主应用"]
-    L["路由离开"] --> S6["6. 调用 unmount()<br>清理实例 · 移除样式 · 还原 window"]
-```
+<MicroFrontendHtmlEntryFlow />
 
 ### 6.4 生命周期与内存泄漏
 

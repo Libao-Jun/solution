@@ -535,15 +535,7 @@ Chrome 中 Ctrl + 滚轮会改变 innerWidth，触发页面重排。scale 方案
 
 ## 10、选型决策树
 
-```mermaid
-flowchart TD
-    Q1{"大屏是否固定运行在<br>16:9 屏幕（LED / 展厅投影）？"}
-    Q1 -->|是，几乎没有弹窗、拖拽交互| A["scale 整体缩放<br>开发快、还原度高、接受黑边"]
-
-    Q1 -->|否，需兼容多种比例、<br>超宽拼接屏、有交互| Q2{"业务复杂度如何？"}
-    Q2 -->|简单 demo，快速验证| B["vw / vh 流式方案"]
-    Q2 -->|正式企业项目| C["混合方案<br>vw/vh 布局 + clamp 字体<br>+ JS 处理 ECharts 图表"]
-```
+<DataScreenSelectionDecisionTree />
 
 > 重要前置：开发前确认甲方真实设备分辨率、屏幕比例，是否允许页面留白黑边，很多适配问题属于需求沟通问题，不是纯技术问题。
 

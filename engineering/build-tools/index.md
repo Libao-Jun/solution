@@ -53,17 +53,9 @@
 
 ### 1.2 构建流程核心阶段
 
-理解下面这条流水线，你就理解了所有构建工具在做什么：
+理解下面这条流水线，你就理解了所有构建工具在做什么（图示可拖拽平移、可缩放）：
 
-```mermaid
-flowchart TD
-    SRC["源码<br>TS / JSX / Vue / Sass / ..."] --> R["① 解析 Resolve<br>找到 import 指向哪个文件"]
-    R --> L["② 加载 Load<br>读取文件原始内容"]
-    L --> T["③ 转换 Transform<br>编译 / 转译（babel / esbuild / sass）"]
-    T --> B["④ 打包 Bundle<br>按依赖图拼接成 chunk"]
-    B --> O["⑤ 优化 Optimize<br>Tree Shaking / 压缩 / 分包 / 内联"]
-    O --> E["⑥ 输出 Emit<br>写入 dist：js / css / 图片 / html"]
-```
+<BuildToolsFlow variant="pipeline" />
 
 - **① 解析（Resolve）**：根据 `resolve.alias`、`extensions`、`modules` 等规则，把 `import './a'` 解析成绝对路径。
 - **② 加载（Load）**：读取文件内容。这一步之后由 Loader/Plugin 接管。
@@ -80,14 +72,7 @@ flowchart TD
 - **出口（Output）**：产物写哪儿、叫什么名，如 `dist/assets/[name].[contenthash].js`。
 - **依赖图（Dependency Graph）**：从入口出发，把所有 `import/require` 串起来形成的一张「有向图」。构建工具靠它知道：哪些文件要打进包、谁依赖谁、哪些可以拆出去懒加载。
 
-```mermaid
-graph LR
-  A[main.ts] --> B[utils.ts]
-  A --> C[App.tsx]
-  C --> D[Button.tsx]
-  C --> E[store.ts]
-  B --> F[lib.js]
-```
+<BuildToolsFlow variant="deps" />
 
 ### 1.4 模块化标准
 
@@ -137,28 +122,9 @@ module.exports = { bar: 1 };
 | **SWC**            | Rust                                  | Babel 替代（转译+压缩）  | Next.js 默认转译器                   |
 | **tsup / unbuild** | JS（基于 esbuild/Rollup）             | 库的极简打包封装         | 快速发布 npm 库                      |
 
-**生态关系图**：
+**生态关系图**（虚线框为两个分层，箭头 = 依赖关系）：
 
-```mermaid
-flowchart TD
-    subgraph APP["应用开发层"]
-        W["Webpack<br>JS / 全能"]
-        V["Vite<br>esbuild + Rollup"]
-        N["Next.js → Turbopack"]
-    end
-
-    subgraph LIB["库 / 底层层"]
-        R["Rollup<br>纯净 ESM"]
-        E["esbuild<br>极快引擎"]
-        RD["Rolldown<br>Rust / Vite 未来内核"]
-    end
-
-    RS["Rspack<br>Webpack 配置的 Rust 提速版"]
-
-    V --> R
-    V --> E
-    RD --> V
-```
+<BuildToolsFlow variant="ecosystem" />
 
 ---
 
@@ -1750,26 +1716,7 @@ module.exports = {
 
 ### 11.1 决策树
 
-```
-你要在做什么？
-│
-├─ 开发一个 Web 应用（Vue/React）？
-│   ├─ 新项目 → 直接用 Vite（推荐，省心又快）
-│   └─ 已有 Webpack 大型项目想提速 → Rspack（配置基本复用）
-│
-├─ 做一个 Next.js 项目？
-│   └─ 直接用 Turbopack（next dev --turbo，默认）
-│
-├─ 发布一个 npm 库 / 组件库？
-│   ├─ 想要极简 → tsup / unbuild（一行命令）
-│   └─ 想要完全控制 → Rollup
-│
-├─ 做一个小项目 / 原型 / 快速验证？
-│   └─ Parcel（零配置）或 Vite
-│
-└─ 必须兼容 IE11 / 老系统？
-    └─ Webpack + Babel（配置最全）
-```
+<BuildToolsFlow variant="decision" />
 
 ### 11.2 一句话总结各工具
 
@@ -1841,14 +1788,14 @@ npx tsup src/index.ts --format esm,cjs --dts
 
 ### C. 官方文档导航
 
-- Vite：https://vitejs.cn/
-- esbuild：https://esbuild.bootcss.com/getting-started/
-- Webpack：https://www.webpackjs.com/
-- Rollup：https://cn.rollupjs.org/
-- Rolldown：https://rolldown.rs/
-- Rspack：https://rspack.rs/zh/
-- Turbopack：https://nextjs.net.cn/docs/app/api-reference/turbopack
-- Parcel：https://v2.parceljs.cn/
+- [Vite](https://vitejs.cn/)
+- [esbuild](https://esbuild.bootcss.com/getting-started/)
+- [Webpack](https://www.webpackjs.com/)
+- [Rollup](https://cn.rollupjs.org/)
+- [Rolldown](https://rolldown.rs/)
+- [Rspack](https://rspack.rs/zh/)
+- [Turbopack](https://nextjs.net.cn/docs/app/api-reference/turbopack)
+- [Parcel](https://v2.parceljs.cn/)
 
 ---
 

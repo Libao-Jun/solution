@@ -218,10 +218,7 @@ flowchart TD
 
 混合 App 自上而下分三层：
 
-```mermaid
-flowchart TD
-    A["① HTML5 网页层（前端页面）<br>前端工程师写这层（Vue/React/原生 JS）"] --> B["② 网页引擎层（WebView 实例）<br>本质是一个隔离的浏览器内核"] --> C["③ 容器层（原生外壳）<br>原生工程师写这层"]
-```
+<HybridAppLayers />
 
 - **容器**：原生外壳，内部隐藏一个浏览器；能提供**API Bridge**（常以 JavaScript 形式暴露，故称 **JSBridge**），让网页调用底层系统 API（相机、GPS、支付……）。
 - **JSBridge 是混合 App 的灵魂**：容器接到网页请求 → 调底层 API → 返回结果给网页。
@@ -388,21 +385,7 @@ flowchart TD
 
 ### 3.2 选型决策树（前端开发者视角）
 
-```mermaid
-flowchart TD
-    Q1["你的团队 / 技术底色是什么？"]
-    Q1 -->|会 React / RN 生态| A1["RN（快速）或 Expo"]
-    Q1 -->|会 Vue| A2["uni-app（覆盖小程序）或 Ionic/Capacitor（纯 H5 壳）"]
-    Q1 -->|无前端包袱 · 追求体验一致| A3["Flutter"]
-    Q1 -->|已有原生团队 · 只共享逻辑| A4["KMP"]
-    Q1 -->|只做展示页 / 活动页 · 预算极低| A5["Hybrid（WebView + Vue/React）"]
-
-    Q2["项目诉求是什么？"]
-    Q2 -->|性能体验高 · 预算足 · 大型 App| B1["原生（Kotlin/Compose、Swift/SwiftUI）"]
-    Q2 -->|一个团队覆盖双端| B2["跨平台（Flutter / RN）"]
-    Q2 -->|同时覆盖小程序 + App| B3["uni-app / Taro"]
-    Q2 -->|快速拉新 · 内容展示| B4["Web App / H5 / PWA"]
-```
+<TechSelectionDecisionTree />
 
 ### 3.3 经典选型结论（阮一峰原文总结）
 
@@ -522,39 +505,7 @@ flowchart TD
 
 > 这是**"App 从开发到上架的整个流程"**的标准骨架。
 
-```mermaid
-flowchart TD
-    subgraph P1["阶段一：需求与设计"]
-        s1["1. 需求分析"]
-        s2["2. 原型设计"]
-        s3["3. UI 设计"]
-    end
-
-    subgraph P2["阶段二：技术准备与基础搭建"]
-        s4["4. 技术选型"]
-        s5["5. 搭建项目"]
-        s6["6. 开发页面"]
-    end
-
-    subgraph P3["阶段三：核心功能开发"]
-        s7["7. 封装网络请求"]
-        s8["8. 登录注册"]
-        s9["9. 状态管理"]
-        s10["10. 本地存储"]
-        s11["11. 权限处理"]
-        s12["12. 接入推送/支付/地图/相机"]
-    end
-
-    subgraph P4["阶段四：测试、上架与迭代"]
-        s13["13. 真机测试"]
-        s14["14. 性能优化"]
-        s15["15. 打包"]
-        s16["16. 应用市场上架"]
-        s17["17. 后续版本迭代"]
-    end
-
-    s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8 --> s9 --> s10 --> s11 --> s12 --> s13 --> s14 --> s15 --> s16 --> s17
-```
+<FullDevWorkflow />
 
 ### 阶段一：需求与设计（1–3）
 
@@ -779,12 +730,7 @@ struct LoginView: View {
 
 ### 8.1 缓存的分层模型（一张图看懂）
 
-```mermaid
-flowchart TD
-    U[用户请求] --> L1["① 内存缓存 L1<br>最快 · 进程内 · 重启即失<br>LruCache / Map / 图片内存缓存"]
-    L1 -->|未命中| L2["② 磁盘缓存 L2<br>文件 / SQLite / Room / Core Data / WebView Cache"]
-    L2 -->|未命中| L3["③ 网络 L3 源<br>HTTP 缓存 + CDN 边缘缓存 + 服务端缓存(Redis)"]
-```
+<CacheLayerModel />
 
 **四个核心指标**：**命中率**（越高越省）、**新鲜度**（什么时候过期）、**容量**（占多少内存/磁盘）、**一致性**（会不会看到旧数据）。
 
@@ -887,11 +833,7 @@ val client = OkHttpClient.Builder()
 
 **经典三级缓存**（Android 高频考点）：
 
-```mermaid
-flowchart TD
-    M["内存缓存 LruCache<br>强引用 · 按 size 计量 · 最快"] -->|未命中| D["磁盘缓存 DiskLruCache / 文件<br>journal 日志索引 · key 用 MD5 作文件名"]
-    D -->|未命中| N["网络<br>下载后依次写入 磁盘 → 内存"]
-```
+<ImageCacheThreeTier />
 
 - **LRU（Least Recently Used，最近最少使用）**：缓存将满时淘汰"最近最少被使用"的对象。Android 3.1+ 自带 `LruCache`（内部基于 `LinkedHashMap`，**按占用的 size 而非条数计量**，需重写 `sizeOf()`）；`DiskLruCache` **不属于 SDK**，需额外引入。
 - **Glide 的三级体系**：**活动资源**（正在被 View 使用的图片，弱引用持有）→ **内存缓存 LruCache** → **磁盘缓存**；可用 `skipMemoryCache()` / `diskCacheStrategy()` 精细控制。
@@ -1215,14 +1157,7 @@ jarsigner -keystore my.jks -signedjar signed.apk unsigned.apk myalias
 
 ### 11.2 iOS
 
-```mermaid
-flowchart TD
-    A["① 注册 Apple Developer Program<br>（个人 $99/年 或 公司需 D-U-N-S 编号）"] --> B["② 创建 App ID（Bundle Identifier）"]
-    B --> C["③ 配置证书与描述文件（Certificates / Provisioning Profiles）"]
-    C --> D["④ Xcode → Product → Archive 打包"]
-    D --> E["⑤ 上传 App Store Connect（Xcode / Transporter）"]
-    E --> F["⑥ TestFlight 内测 → 提交审核 → 通过后发布"]
-```
+<IOSReleaseFlow />
 
 | 项           | 说明                                                                        |
 | ------------ | --------------------------------------------------------------------------- |
@@ -1567,8 +1502,15 @@ flowchart LR
 ### 13.7 iOS App Store 上架
 
 ```mermaid
-flowchart LR
-    A[注册 Apple Developer] --> B[创建 App ID] --> C[配置证书与描述文件] --> D[Xcode Archive] --> E[上传 App Store Connect] --> F[TestFlight 测试] --> G[填写信息/截图/隐私] --> H[提交审核] --> I[通过后发布]
+flowchart TD
+    A[注册 Apple Developer] --> B[创建 App ID]
+    B --> C[配置证书与描述文件]
+    C --> D[Xcode Archive]
+    D --> E[上传 App Store Connect]
+    E --> F[TestFlight 测试]
+    F --> G[填写信息/截图/隐私]
+    G --> H[提交审核]
+    H --> I[通过后发布]
 ```
 
 **iOS 审核特别注意**：
@@ -1757,19 +1699,7 @@ flowchart LR
 
 ### 17.1 前端开发者转移动端（推荐路线）
 
-```mermaid
-flowchart TD
-    S1["阶段一（基础）<br>HTML/CSS/JS → TypeScript → Vue 或 React（精其一）"]
-    S2["阶段二（移动端认知）<br>页面/路由/状态/权限/打包/上架全流程"]
-    Q{"阶段三（选主战场）"}
-    Q -->|快速做 App| A["React Native / uni-app"]
-    Q -->|高质量跨平台| B["Flutter"]
-    Q -->|覆盖小程序 + App| C["uni-app / Taro"]
-    S4["阶段四（做完整项目）<br>从 0 到 1 做完整 App（登录/网络/存储/推送/支付）"]
-    S5["阶段五（原生能力补充）<br>Android：Kotlin + Jetpack Compose / iOS：Swift + SwiftUI"]
-    S6["阶段六（工程与发布）<br>打包签名 → 各市场/商店上架 → 监控与迭代 → 性能优化"]
-    S1 --> S2 --> Q --> S4 --> S5 --> S6
-```
+<FrontendToMobileRoadmap />
 
 ### 17.2 分阶段能力对照
 

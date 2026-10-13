@@ -1050,17 +1050,7 @@ fitScreen();
 
 ### 8.1 决策树
 
-```mermaid
-flowchart TD
-    Q1{"PC 端与移动端的<br>信息架构 / 功能差异巨大？"}
-    Q1 -->|是| Q2{"是否有极致性能要求？<br>首屏秒开 / 弱网"}
-    Q2 -->|是| A["独立移动站<br>+ 服务端动态服务"]
-    Q2 -->|否| B["RESS / SSR 分流<br>（混合方案）"]
-
-    Q1 -->|否| Q3{"内容是否复杂<br>需大量断点？"}
-    Q3 -->|是| C["响应式 RWD<br>+ 容器查询"]
-    Q3 -->|否| D["纯弹性布局<br>Grid / Flex / 零断点"]
-```
+<ResponsiveAdaptiveDecisionTree />
 
 ### 8.2 打分决策表
 

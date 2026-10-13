@@ -8,6 +8,21 @@ import { nextTick } from 'vue'
 import FrontendSecurityMindmap from './components/FrontendSecurityMindmap.vue'
 import MiniprogramSetupFlow from './components/MiniprogramSetupFlow.vue'
 import StorageDecisionTree from './components/StorageDecisionTree.vue'
+import HybridAppLayers from './components/HybridAppLayers.vue'
+import TechSelectionDecisionTree from './components/TechSelectionDecisionTree.vue'
+import FullDevWorkflow from './components/FullDevWorkflow.vue'
+import CacheLayerModel from './components/CacheLayerModel.vue'
+import ImageCacheThreeTier from './components/ImageCacheThreeTier.vue'
+import IOSReleaseFlow from './components/IOSReleaseFlow.vue'
+import FrontendToMobileRoadmap from './components/FrontendToMobileRoadmap.vue'
+// 决策树（@vue-flow/core 实现，外框 SSR + 画布懒加载，分支条件支持换行标签）：
+// 工程化与适配两篇正文各一张——响应式与自适应如何选择 / 大屏选型决策树
+import ResponsiveAdaptiveDecisionTree from './components/ResponsiveAdaptiveDecisionTree.vue'
+import DataScreenSelectionDecisionTree from './components/DataScreenSelectionDecisionTree.vue'
+// 微前端 HTML Entry 加载流程（加载主链 + 路由离开卸载分支，正文 `engineering/micro-frontend/` 6.3 节使用）
+import MicroFrontendHtmlEntryFlow from './components/MicroFrontendHtmlEntryFlow.vue'
+// 前端打包构建工具「流程 / 依赖 / 生态 / 选型」四张图（正文 `engineering/build-tools/` 1.2 / 1.3 / 1.6 / 11.1 节使用）
+import BuildToolsFlow from './components/BuildToolsFlow.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -268,6 +283,34 @@ export default {
 
     // 小程序「从 0 到 1」开通流程图（@vue-flow/core 实现，三行蛇形布局），供 wechat-miniprogram 2.1 节使用
     ctx.app.component('MiniprogramSetupFlow', MiniprogramSetupFlow)
+
+    // 前端打包构建工具「流程 / 依赖 / 生态 / 选型」四张图（@vue-flow/core 实现，variant 切换），
+    // 供 engineering/build-tools 1.2 / 1.3 / 1.6 / 11.1 节使用
+    ctx.app.component('BuildToolsFlow', BuildToolsFlow)
+
+    // —— 以下 7 个组件：把 frameworks/app-development 中 7 张 mermaid 流程图重构为 @vue-flow/core ——
+    // 1.7 混合 App 的三层结构与 JSBridge
+    ctx.app.component('HybridAppLayers', HybridAppLayers)
+    // 3.2 选型决策树（前端开发者视角）
+    ctx.app.component('TechSelectionDecisionTree', TechSelectionDecisionTree)
+    // 五、从 0 到 1：完整项目开发流程（17 步）
+    ctx.app.component('FullDevWorkflow', FullDevWorkflow)
+    // 8.1 缓存的分层模型（一张图看懂）
+    ctx.app.component('CacheLayerModel', CacheLayerModel)
+    // 8.5 图片缓存（流量与内存的最大头）
+    ctx.app.component('ImageCacheThreeTier', ImageCacheThreeTier)
+    // 11.2 iOS 上架流程
+    ctx.app.component('IOSReleaseFlow', IOSReleaseFlow)
+    // 17.1 前端开发者转移动端（推荐路线）
+    ctx.app.component('FrontendToMobileRoadmap', FrontendToMobileRoadmap)
+
+    // 08 响应式与自适应如何选择（8.1 决策树）
+    ctx.app.component('ResponsiveAdaptiveDecisionTree', ResponsiveAdaptiveDecisionTree)
+    // 大屏适配（10 选型决策树）
+    ctx.app.component('DataScreenSelectionDecisionTree', DataScreenSelectionDecisionTree)
+
+    // 6.3 HTML Entry 加载流程（加载主链 + 路由离开卸载分支）
+    ctx.app.component('MicroFrontendHtmlEntryFlow', MicroFrontendHtmlEntryFlow)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

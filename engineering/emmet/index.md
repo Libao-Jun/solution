@@ -6,10 +6,10 @@
 >
 > 参考资料：
 >
-> - Emmet 快速语法：<https://code.z01.com/emmet/>
-> - Emmet 完整命令集：<https://code.z01.com/emmet/all.html>
-> - Emmet 官网：<https://emmet.io/>
-> - 官方速查表：<http://docs.emmet.io/cheat-sheet/>
+> - [Emmet 快速语法](https://code.z01.com/emmet/)
+> - [Emmet 完整命令集](https://code.z01.com/emmet/all.html)
+> - [Emmet 官网](https://emmet.io/)
+> - [官方速查表](http://docs.emmet.io/cheat-sheet/)
 
 ---
 

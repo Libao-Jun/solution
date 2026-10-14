@@ -35,22 +35,9 @@
 
 一句话定位：**JavaScript 是一门单线程、基于原型、运行时弱类型、异步非阻塞的脚本语言；其能力由「宿主环境」（浏览器 / Node / Deno / Bun）提供。**
 
-```
-JS 全貌
-├─ 语言核心（ECMAScript 标准）
-│  ├─ 语法与类型         let/const、原始类型、对象、Symbol、BigInt
-│  ├─ 执行模型           作用域、闭包、this、原型链、类
-│  ├─ 异步模型           事件循环、宏任务/微任务、Promise、async/await
-│  └─ 现代特性           Proxy/Reflect、迭代器、生成器、可选链、空值合并
-├─ 宿主环境 API（非语言本身）
-│  ├─ 浏览器             DOM、BOM、Fetch、Canvas、Web Worker、Storage
-│  ├─ Node.js/Deno/Bun   fs、net、process、crypto、child_process
-│  └─ 跨端               小程序/WebView/IoT 等各自宿主
-└─ 工程生态
-   ├─ 模块系统           ESM（推荐）/ CommonJS（Node 遗留）
-   ├─ 构建工具           Vite / esbuild / webpack / tsc
-   └─ 类型层             TypeScript / JSDoc
-```
+下面这张「全貌树」把 JS 的知识域按三级铺开（图示可拖拽平移、可缩放）：
+
+<JsOverviewMap />
 
 **方向性建议**
 

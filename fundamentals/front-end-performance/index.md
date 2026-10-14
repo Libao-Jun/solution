@@ -54,11 +54,7 @@
 
 把「输入 URL 到页面可交互」的完整链路摆出来，每一环都对应一类优化：
 
-```text
-DNS 解析 → TCP/TLS 握手 → 发送请求 → 服务端处理 → 响应传输
-→ HTML 解析(DOM) → CSSOM 构建 → 渲染树 → 布局(Layout) → 绘制(Paint) → 合成(Composite)
-→ 脚本执行 → 可交互 → 持续运行(动画/滚动/交互响应)
-```
+<FrontendPerformanceFlow variant="loading" />
 
 - **前半段（网络）**：靠缓存、CDN、协议升级、压缩、资源提示。
 - **中段（解析与首次渲染）**：靠关键渲染路径优化、资源分层（关键 / 非关键）、SSR / 预渲染。
@@ -182,17 +178,7 @@ Core Web Vitals 之外，这些指标用于更细的归因与专项优化：
 
 **完整判定流程**
 
-```text
-发起请求
-  ↓
-本地有副本且 Cache-Control / Expires 未过期？
-  ├─ 是 → 直接用本地副本，200 (from cache)，完全不发请求 ✅
-  └─ 否 → 携带 If-None-Match(ETag) / If-Modified-Since(Last-Modified) 发请求
-            ↓
-          服务器校验（ETag 优先；ETag 存在时忽略 Last-Modified）
-            ├─ 指纹一致 → 304 Not Modified（无 body），浏览器读本地 ✅
-            └─ 不一致  → 200 + 新资源，浏览器更新本地缓存
-```
+<FrontendPerformanceFlow variant="cache" />
 
 **`Cache-Control` 指令速查**（多个指令用逗号组合）
 

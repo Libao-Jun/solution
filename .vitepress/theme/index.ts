@@ -23,6 +23,13 @@ import DataScreenSelectionDecisionTree from './components/DataScreenSelectionDec
 import MicroFrontendHtmlEntryFlow from './components/MicroFrontendHtmlEntryFlow.vue'
 // 前端打包构建工具「流程 / 依赖 / 生态 / 选型」四张图（正文 `engineering/build-tools/` 1.2 / 1.3 / 1.6 / 11.1 节使用）
 import BuildToolsFlow from './components/BuildToolsFlow.vue'
+// 以下 3 个组件共用 DocFlow（外层骨架）+ DocFlowCanvas（@vue-flow/core 画布）：
+// 正文 fundamentals/javascript 第 1 节的「JS 全貌」三级树
+import JsOverviewMap from './components/JsOverviewMap.vue'
+// 正文 fundamentals/long-list-optimization 2.3 节的「组合策略」场景 → 方案对照
+import LongListCombinationFlow from './components/LongListCombinationFlow.vue'
+// 正文 fundamentals/front-end-performance 1.3「加载流程」与 3.3「缓存完整判定流程」（variant 切换）
+import FrontendPerformanceFlow from './components/FrontendPerformanceFlow.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -311,6 +318,14 @@ export default {
 
     // 6.3 HTML Entry 加载流程（加载主链 + 路由离开卸载分支）
     ctx.app.component('MicroFrontendHtmlEntryFlow', MicroFrontendHtmlEntryFlow)
+
+    // —— 以下 3 个组件：把正文里的纯文本图（缩进树 / 箭头链 / 判定分支）重构为 @vue-flow/core ——
+    // 1. 学习地图：JS 的全貌（三级横向树）
+    ctx.app.component('JsOverviewMap', JsOverviewMap)
+    // 2.3 组合策略（业务场景 → 推荐策略组合）
+    ctx.app.component('LongListCombinationFlow', LongListCombinationFlow)
+    // 1.3 加载流程视角（variant="loading"）/ 3.3 缓存完整判定流程（variant="cache"）
+    ctx.app.component('FrontendPerformanceFlow', FrontendPerformanceFlow)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

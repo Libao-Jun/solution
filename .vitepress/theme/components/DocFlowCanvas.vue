@@ -18,8 +18,13 @@ import DecisionTreeLabelEdge from './DecisionTreeLabelEdge.vue'
 
 /** 语义色相：节点只声明色相，明暗两套色值由 <style> 里的 hsl() 统一推导 */
 export type FlowTone = 'slate' | 'indigo' | 'sky' | 'emerald' | 'amber' | 'brand'
-/** 外形：普通卡片 / 起点 / 流程 / 判断菱形 / 结果 */
-export type FlowShape = 'card' | 'start' | 'process' | 'decision' | 'result'
+/**
+ * 外形：
+ * - card / start / process / decision / result：实体节点（有填充色，会盖住其下方的连线）
+ * - frame：**只有虚线边框、不填充**的区域框（容器 / 分组用；必须不填充，否则框内的连线与连线标签会被它遮住）
+ * - ghost：透明锚点，只作连线端点，不可见
+ */
+export type FlowShape = 'card' | 'start' | 'process' | 'decision' | 'result' | 'frame' | 'ghost'
 /** 入线、出线所在边 */
 export type FlowSide = 'top' | 'right' | 'bottom' | 'left'
 
@@ -32,6 +37,8 @@ export interface DocFlowNodeData {
   tone?: FlowTone
   /** 文本对齐（默认居中；表格化的「场景 → 方案」用 left） */
   align?: 'center' | 'left'
+  /** 标签纵向位置（默认居中；嵌套容器 / 分层带状节点用 top 压在顶边内侧） */
+  labelPos?: 'center' | 'top'
   /** 出线所在边（默认 bottom） */
   sourcePos?: FlowSide
   /** 入线所在边（默认 top） */
@@ -51,6 +58,10 @@ export interface DocFlowEdge {
   target: string
   /** 连线上的标签（HTML 片段），省略即无标签 */
   label?: string
+  /** 按条覆盖出线侧（默认取 source 节点的 sourcePos） */
+  sourcePos?: FlowSide
+  /** 按条覆盖入线侧（默认取 target 节点的 targetPos） */
+  targetPos?: FlowSide
 }
 
 const props = withDefaults(
@@ -90,8 +101,8 @@ const flowEdges = computed<Edge[]>(() =>
     id: `${props.flowId}-e-${index}`,
     source: edge.source,
     target: edge.target,
-    sourceHandle: `s-${sideOf(edge.source, 'sourcePos', 'bottom')}`,
-    targetHandle: `t-${sideOf(edge.target, 'targetPos', 'top')}`,
+    sourceHandle: `s-${edge.sourcePos ?? sideOf(edge.source, 'sourcePos', 'bottom')}`,
+    targetHandle: `t-${edge.targetPos ?? sideOf(edge.target, 'targetPos', 'top')}`,
     type: edge.label ? LABELED_EDGE : 'smoothstep',
     data: { label: edge.label ?? '' },
     selectable: false,
@@ -136,6 +147,7 @@ const { isDark } = useData()
             `doc-node--${data.shape ?? 'card'}`,
             `doc-node--tone-${data.tone ?? 'slate'}`,
             data.align === 'left' ? 'doc-node--align-left' : '',
+            data.labelPos === 'top' ? 'doc-node--label-top' : '',
           ]"
           :style="{ width: `${data.width}px`, height: `${data.height}px` }"
         >
@@ -278,6 +290,37 @@ const { isDark } = useData()
 .doc-canvas :deep(.doc-node__diamond--fill) {
   inset: 1px;
   background: hsl(var(--doc-hue) 80% 96%);
+}
+
+/* ---- 标签压顶（嵌套容器 / 分层带状节点） ---- */
+.doc-canvas :deep(.doc-node--label-top) {
+  justify-content: flex-start;
+  padding-top: 8px;
+}
+
+/* ---- 区域框：只画虚线边框、不填充，框内的连线与标签才能露出来 ---- */
+.doc-canvas :deep(.doc-node--frame) {
+  border: 1.5px dashed hsl(var(--doc-hue) 58% 68%);
+  border-radius: 12px;
+  background: transparent;
+  color: hsl(var(--doc-hue) 58% 34%);
+}
+
+.doc-canvas.is-dark :deep(.doc-node--frame) {
+  border-color: hsl(var(--doc-hue) 46% 46%);
+  background: transparent;
+  color: hsl(var(--doc-hue) 72% 82%);
+}
+
+/* ---- 透明锚点：只作连线端点，不可见 ---- */
+.doc-canvas :deep(.doc-node--ghost) {
+  border: 0;
+  background: transparent;
+}
+
+.doc-canvas.is-dark :deep(.doc-node--ghost) {
+  border: 0;
+  background: transparent;
 }
 
 /* ---- 节点文案（.t 主标题行 / .d 补充说明行） ---- */

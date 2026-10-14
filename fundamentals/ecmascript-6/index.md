@@ -7,6 +7,7 @@
 >
 > - [ECMA-262 规范](https://ecma262.com/c/)
 > - [阮一峰《ECMAScript 6 入门》](https://es6.ruanyifeng.com/)
+> - [WinDocs — ES6 知识笔记](https://dongmeng22.github.io/docs/basics/ES6/)
 
 ---
 
@@ -63,6 +64,19 @@ ECMAScript 新特性不是直接写进标准的，而是要经过 TC39 委员会
 - 现代浏览器（Chrome/Edge/Firefox/Safari 近 2~3 年版本）基本已原生支持到 **ES2023/ES2024** 的大部分特性；
 - 但老项目（如仍需兼容 IE11，或低版本 WebView）则需要 **Babel + polyfill** 转译；
 - Node.js 每个大版本都会跟进当年的标准特性，可用 `node --version` 对照其发布年份判断支持度。
+
+### 1.4 ES6 到底解决了什么问题
+
+从设计动机看，ES2015 的四条定位可以概括为：
+
+| 定位                     | 含义                                 | 典型落地                                                                                       |
+| ------------------------ | ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| 修正原有语法的问题与不足 | 修补 ES5 中易错、易混淆的语义        | `let/const` 取代 `var`（消除变量提升、重复声明）；`Number.isNaN` 取代会隐式转换的全局 `isNaN`  |
+| 对原有语法做增强         | 在不破坏兼容的前提下让表达更简洁     | 解构、模板字符串、默认 / Rest 参数、对象字面量简写、`class`、`for...of`                        |
+| 全新的对象、方法与功能   | 补齐语言级缺失的能力                 | `Promise`、`Proxy` / `Reflect`、`Symbol`、模块系统、Iterator / Generator、`Map` / `Set`         |
+| 全新的数据类型与数据结构 | 补上原本只能用对象「模拟」的类型     | 原始类型 `Symbol`、有序键值集合 `Map`、去重集合 `Set`、弱引用 `WeakMap` / `WeakSet`            |
+
+> 一句话总结：ES6 把 JavaScript 从「脚本语言」推向了「可用于大型应用的工程语言」——块级作用域解决变量污染，模块化解决依赖管理，`Promise` + Iterator / Generator 解决异步与迭代的表达问题。
 
 ---
 
@@ -174,6 +188,25 @@ const obj = {
 };
 ```
 
+**进阶补充：哪些事情箭头函数做不了**
+
+| 能力                | 箭头函数                           | 普通函数      |
+| ------------------- | ---------------------------------- | ------------- |
+| 自己的 `this`       | ❌ 词法继承外层                    | ✅ 调用时决定 |
+| `arguments` 对象    | ❌（用 rest 参数代替）             | ✅            |
+| 用 `new` 构造       | ❌ 抛 `TypeError`                  | ✅            |
+| `prototype` 属性    | ❌                                 | ✅            |
+| `yield`（generator） | ❌                                 | ✅            |
+| `new.target`        | ❌（取到的是外层的值）             | ✅            |
+| `super`             | ⚠️ 只能词法继承外层方法中的 `super` | ✅ 自己绑定   |
+
+避坑要点：
+
+- **不要用箭头函数定义对象方法**：`{ fn: () => this }` 里的 `this` 指向模块 / 全局作用域，而不是这个对象——对象方法请用简写 `fn() {}`。
+- **需要动态 `this` 的回调不能用箭头函数**：DOM 事件监听、需要 `call/apply/bind` 改 `this` 的工具函数、依赖「谁调用指向谁」的老式类写法。
+- **最适合箭头函数的场景**：需要「锁定定义时外层 `this`」的地方——`setTimeout`、数组 `map/filter/reduce` 回调、Promise 回调、类字段里绑定 `this` 的回调。
+- `async` 箭头函数合法（`const fn = async () => await task();`），但箭头函数永远不能是 generator。
+
 ### 3.3 解构赋值（Destructuring）
 
 ```js
@@ -201,6 +234,37 @@ function fn({ id, type = "default" }) {}
 let x;
 ({ x } = { x: 1 }); // 必须括号，否则 { 被解析为代码块
 ```
+
+**进阶规则与易错点**：
+
+```js
+// 1) 默认值只在“值严格等于 undefined”时生效（null 不生效）
+const { a = 1 } = { a: null }; // a === null
+const [x = 1] = [undefined]; // x === 1
+const [y = 1] = [null]; // y === null
+
+// 2) 数组解构依赖可迭代协议，右侧必须是可迭代对象
+const [p] = "ab"; // 'a'（字符串可迭代）
+const [m, n] = new Set([1, 2]); // m=1, n=2
+// const [q] = { 0: "a", length: 1 }; // TypeError: not iterable
+
+// 3) 跳过元素 / 取剩余
+const [, , third] = [1, 2, 3]; // third = 3
+const [head, ...tail] = [1, 2, 3]; // head=1, tail=[2,3]
+
+// 4) 默认值可以是表达式，并从左到右引用前面已解构出的变量
+const [u = 1, v = u * 2] = []; // u=1, v=2
+
+// 5) 嵌套解构要防中间层为 undefined，否则会抛 TypeError
+const { data: { list = [] } = {} } = response;
+
+// 6) 函数参数解构 + 默认值：替代“参数对象字段可能缺失”的防御代码
+function draw({ size = 1, color = "black" } = {}) {}
+```
+
+- 对象解构遇到属性不存在只是得到 `undefined`，不会报错；数组解构遇到不可迭代对象才会抛 `TypeError`。
+- 函数参数默认值同样只在 `undefined` 时生效，这比旧的 `x = x || 1` 更安全（`0`、`""`、`false` 不再被误覆盖）。
+- 解构是「浅」的：嵌套层级只取引用，不会递归复制内部对象。
 
 ### 3.4 模板字符串（Template Literals）
 
@@ -246,6 +310,14 @@ Math.max(...arr); // 取代 apply
 
 > `...` 三点是同一个语法符号，用在**形参位置 = Rest 收集**，用在**实参/数组字面量位置 = Spread 展开**。
 
+补充要点：
+
+- 默认值表达式拥有**独立作用域**，且**按需求值**：只在对应实参为 `undefined` 时执行一次，因此 `function f(d = new Date()) {}` 不会每次调用都创建 `Date`。
+- 默认值表达式里不能引用函数体内的变量，但可以引用外层变量与**前面的形参**（`function f(x = 1, y = x * 2) {}`）。
+- rest 参数必须是**最后一个形参**，且是真数组，只包含未被前面形参接收的实参；`arguments` 则是类数组对象（含全部实参、非严格模式下与形参联动，新代码不应再使用）。
+- 带默认值或 rest 的参数**不计入函数 `length`**：`function f(a, b = 1, ...rest) {}` 的 `f.length` 为 `1`。
+- 展开属于**浅拷贝**：`[...arr]`、`{ ...obj }` 只复制第一层的值 / 引用；且被展开的对象必须是**可迭代**的（`[...{ length: 1 }]` 会抛 `TypeError`）。
+
 ### 3.6 数组、对象、字符串、数值、正则的扩展
 
 **数组新增方法**
@@ -262,6 +334,13 @@ Array.of(1, 2, 3); // 取代 new Array(3) 的歧义
 ["a", "b"].keys(); // 迭代器 0,1
 ["a", "b"].entries(); // [0,'a'],[1,'b']
 ```
+
+补充要点：
+
+- `Array.from` 接受两类输入：**可迭代对象**（字符串、`Set`、`Map`、生成器）与**类数组**（带 `length` 的普通对象）；第二个参数是 map 回调，`Array.from({ length: 3 }, (_, i) => i)` 是「造有序数组」的惯用法。
+- `find` / `findIndex` 找不到时返回 `undefined` / `-1`，比 `indexOf` 更通用（可传断言函数，还能定位对象元素）。
+- `keys()` / `values()` / `entries()` 返回的是**迭代器**而非数组，需要用 `[...]`、`Array.from` 或 `for...of` 消费。
+- ES2015 数组新增方法中，只有 `copyWithin` / `fill` 会**修改原数组**（且返回自身），其余均为返回新结果的查询型方法。
 
 **对象新增方法**
 
@@ -313,6 +392,36 @@ const myIterable = {
 [...myIterable]; // [0,1,2]
 ```
 
+**全局注册表 `Symbol.for`**：
+
+```js
+Symbol("k") === Symbol("k"); // false：每次调用都产生全新值
+Symbol.for("k") === Symbol.for("k"); // true：同名字符串从全局注册表取同一个 Symbol
+Symbol.keyFor(Symbol.for("k")); // 'k'（未注册过的 Symbol 返回 undefined）
+```
+
+用途：跨模块、跨 iframe（realm）共享同一个 Symbol 键，例如给全局对象挂约定好的元数据键。
+
+**常用内置 Symbol（well-known symbols）**：
+
+| Symbol                                         | 作用                                               |
+| ---------------------------------------------- | -------------------------------------------------- |
+| `Symbol.iterator`                              | 定义默认迭代器，被 `for...of` / 展开 / 解构调用    |
+| `Symbol.asyncIterator`                         | 定义异步迭代器，被 `for await...of` 调用           |
+| `Symbol.toPrimitive`                           | 对象转原始值（`+obj`、`String(obj)`）时被调用      |
+| `Symbol.toStringTag`                           | 影响 `Object.prototype.toString.call(obj)` 的输出  |
+| `Symbol.hasInstance`                           | 自定义 `instanceof` 的判断行为                     |
+| `Symbol.species`                               | 指定派生对象（如 `map` 的返回值）使用的构造函数    |
+| `Symbol.isConcatSpreadable`                    | 控制 `Array.prototype.concat` 是否展开该对象       |
+| `Symbol.match` / `replace` / `search` / `split` | 让对象可被字符串方法当作正则使用                   |
+| `Symbol.unscopables`                           | 指定 `with` 语句中不可见的属性（历史遗留）         |
+
+注意事项：
+
+- Symbol 键**不可枚举**：`for...in`、`Object.keys`、`JSON.stringify` 都不会遍历到，取值必须用 `Object.getOwnPropertySymbols(obj)`。
+- Symbol **不能参与隐式运算**：`sym + ""` 会抛 `TypeError`，必须显式 `String(sym)` 或 `sym.toString()`。
+- 每个内置 Symbol 都对应一项语言内部行为，实现它就能让自定义对象「表现得像内建类型」。
+
 ### 3.8 集合：Map / Set / WeakMap / WeakSet
 
 ```js
@@ -333,6 +442,14 @@ wm.set(obj, "meta"); // obj 被回收时，条目自动消失
 ```
 
 **对比 `Object` vs `Map`**：需要频繁增删键值、键非字符串、需要遍历顺序稳定时用 `Map`；简单配置对象仍可用 `Object`。
+
+补充要点：
+
+- `Map` / `Set` 的键比较用「SameValueZero」：`NaN` 可以当键（`map.get(NaN)` 有效），`+0` 与 `-0` 视为同一个键。
+- 二者都实现了迭代器，可直接 `for...of` 或展开：`Map` 迭代出 `[key, value]`，`Set` 迭代出值本身。
+- 判断键是否存在请用 `has()`，不要用 `get() !== undefined`——值本身可能合法地就是 `undefined`。
+- `Set` 去重同样基于 SameValueZero（`new Set([NaN, NaN]).size` 为 `1`），但对象按引用去重（两个内容相同的对象字面量不会被合并）。
+- `WeakMap` / `WeakSet` 的键必须是对象、且为弱引用：键对象被 GC 后条目自动消失，因此**不可遍历、没有 `size`**。典型用途是把「对象 → 私有数据 / 缓存 / 元信息」附着在对象上，而不阻止其被回收。
 
 ### 3.9 Proxy 与 Reflect
 
@@ -366,6 +483,39 @@ const handler = {
 ```
 
 > 典型用途：Vue 3 的响应式系统底层就是 `Proxy + Reflect`；数据校验、日志、不可变对象。
+
+**常用陷阱与拦截的操作**：
+
+| 陷阱                                   | 拦截的操作                          | 典型用途                     |
+| -------------------------------------- | ----------------------------------- | ---------------------------- |
+| `get` / `set`                          | 读取 / 写入属性                     | 响应式（Vue 3）、默认值、校验 |
+| `has`                                  | `key in obj`                        | 隐藏或伪造属性存在性         |
+| `deleteProperty`                       | `delete obj.key`                    | 保护某些属性不可删除         |
+| `ownKeys` + `getOwnPropertyDescriptor` | `Object.keys` / `for...in` / 序列化 | 过滤私有键、只暴露白名单字段 |
+| `apply`                                | 直接调用函数 `fn()`                 | 调用日志、参数校验           |
+| `construct`                            | `new fn()`                          | 构造函数参数处理             |
+
+```js
+// 1) 可撤销代理：撤销后任何操作都抛 TypeError，适合临时授权 / 资源回收
+const { proxy, revoke } = Proxy.revocable({}, {});
+revoke();
+// proxy.x; // TypeError: Cannot perform 'get' on a proxy that has been revoked
+
+// 2) 用 get 陷阱给数组加负索引（注意把 receiver 透传给 Reflect）
+const arr = new Proxy([1, 2, 3], {
+  get(target, key, receiver) {
+    if (key === "-1") return target[target.length - 1];
+    return Reflect.get(target, key, receiver);
+  },
+});
+arr[-1]; // 3
+```
+
+**`Reflect` 与陷阱一一对应（共 13 个）**：`get`、`set`、`has`、`deleteProperty`、`ownKeys`、`getOwnPropertyDescriptor`、`defineProperty`、`getPrototypeOf`、`setPrototypeOf`、`isExtensible`、`preventExtensions`、`apply`、`construct`。
+
+- 在陷阱里用 `Reflect.xxx` 执行默认行为，并**返回它的结果**；`set` / `deleteProperty` 等陷阱必须返回布尔值，否则严格模式下会抛 `TypeError`。
+- `receiver` 用于「继承链 / getter」场景：手写 `obj[key]` 会把 getter 的 `this` 指向 `target`，`Reflect.get(target, key, receiver)` 才能保持正确的接收者。
+- `Proxy` 的拦截发生在**运行时每次属性访问**上，比直接访问慢得多，热路径（大循环、逐帧渲染）要谨慎使用。
 
 ### 3.10 Promise
 
@@ -415,6 +565,14 @@ function* range(n) {
 
 > `for...of` 遍历**值**；`for...in` 遍历**可枚举字符串键（含原型链）**，两者用途不同。
 
+补充要点：
+
+- **可迭代对象与迭代器是两个概念**：可迭代对象实现了 `[Symbol.iterator]()`，迭代器实现了 `next()`；`for...of` 的流程是「取迭代器 → 反复 `next()` → 直到 `done: true`」。
+- `next()` 返回 `{ value, done }` 结构；`done: true` 时 `value` 是收尾值（生成器的 `return` 值），普通迭代器一般为 `undefined`。
+- `for...of` **提前退出**（`break` / `return` / 循环体内抛错）会调用迭代器的 `return()` 方法做清理——这是「流 / 句柄自动释放」的实现机制。
+- 手写迭代器时优先用生成器（`function*` + `yield`），无需自己维护 `next` 状态。
+- 相比 `forEach`，`for...of` 支持 `break` / `continue` / `await`（异步迭代用 `for await...of`）。
+
 ### 3.12 Generator 函数
 
 `function*` + `yield`，可暂停/恢复执行，是异步编程（co / redux-saga）与状态机的基础。
@@ -430,6 +588,50 @@ g.next(); // { value: 1, done: false }
 g.next(); // { value: 2, done: false }
 g.next(); // { value: 'done', done: true }
 ```
+
+**进阶用法**：
+
+```js
+// 1) next(value)：把值传回生成器内部，成为上一个 yield 表达式的返回值
+function* calc() {
+  const a = yield "first";
+  const b = yield "second";
+  return a + b;
+}
+const it = calc();
+it.next(); // { value: 'first', done: false }
+it.next(2); // { value: 'second', done: false }（2 赋给 a）
+it.next(3); // { value: 5, done: true }（3 赋给 b）
+
+// 2) yield* 委托：把迭代权交给另一个可迭代对象（数组、字符串、生成器均可）
+function* inner() {
+  yield "a";
+  yield "b";
+}
+function* outer() {
+  yield 1;
+  yield* inner();
+  yield 2;
+}
+[...outer()]; // [1, 'a', 'b', 2]
+
+// 3) return() / throw()：提前结束或向生成器内部抛错，会先执行 finally（适合资源清理）
+function* withFinally() {
+  try {
+    yield 1;
+    yield 2;
+  } finally {
+    console.log("清理资源");
+  }
+}
+const g2 = withFinally();
+g2.next(); // { value: 1, done: false }
+g2.return("stop"); // 打印“清理资源”，返回 { value: 'stop', done: true }
+```
+
+- 调用生成器函数**不会执行任何函数体代码**，只是创建迭代器；真正的执行从第一次 `next()` 开始。
+- 第一次 `next()` 传入的参数会被丢弃（此时还没有「上一个 `yield`」接收它）。
+- 生成器天然满足迭代器协议，所以能直接用于 `for...of`、展开运算符与解构。
 
 ### 3.13 Class 类
 
@@ -460,6 +662,30 @@ class Dog extends Animal {
 
 > ⚠️ ES2015 的 class **没有私有字段**。私有成员要等到 **ES2022** 的 `#` 语法（见第四节）。
 
+**与「构造函数 + 原型」的行为差异**（面试常问）：
+
+```js
+// 1) 类声明不存在变量提升，声明前使用抛 ReferenceError（TDZ）
+// new Bar(); // ReferenceError: Cannot access 'Bar' before initialization
+// class Bar {}
+
+// 2) 类体内部始终是严格模式；类必须用 new 调用，直接调用会抛 TypeError
+class Foo {}
+// Foo(); // TypeError: Class constructor Foo cannot be invoked without 'new'
+
+// 3) 类的方法定义在原型上且不可枚举，不会被 for...in / Object.keys 遍历到
+Object.keys(Foo.prototype); // []
+
+// 4) extends 同时连接「实例原型链」与「静态属性链」，静态方法会被继承
+class Base {
+  static create() {
+    return new this();
+  }
+}
+class Sub extends Base {}
+Sub.create(); // Sub 的实例：this 指向 Sub
+```
+
 ### 3.14 Module（ES Module, ESM）
 
 ES2015 引入了语言级模块系统，取代了 CommonJS（`require`/`module.exports`）和 AMD。
@@ -484,12 +710,94 @@ import * as math from "./math.js"; // 命名空间导入
 - **严格模式**：ESM 自动启用严格模式；
 - 浏览器通过 `<script type="module">` 使用；Node.js 用 `.mjs` 或 `package.json` 的 `"type": "module"`。
 
+导出 / 导入的完整语法形态：
+
+```js
+// 导出侧
+export const a = 1; // 声明式导出
+export { b, c as alias }; // 列表导出（可重命名）
+export default function () {} // 默认导出（一个模块只能有一个）
+export { x } from "./x.js"; // 重导出（转发：引入别的模块后再导出，也可重命名）
+export * from "./a.js"; // 星号重导出
+export * as ns from "./a.js"; // ES2020：聚合为命名空间对象
+
+// 导入侧
+import d from "./m.js"; // 默认导入
+import { b, alias } from "./m.js"; // 命名导入
+import * as all from "./m.js"; // 命名空间导入（默认导出在 all.default 上）
+import "./side-effect.js"; // 仅执行副作用（样式、polyfill）
+```
+
+- **导入声明会被提升**（模块顶层任意位置书写效果相同），但循环依赖时取到的绑定可能尚未初始化（TDZ），因此建议统一写在文件顶部。
+- **静态 `import` 与动态 `import()` 的区别**：前者编译期确定依赖、可被 Tree Shaking；后者运行时求值、返回 Promise，可按需 / 条件加载（路由懒加载），代价是打包器会另起 chunk。
+- **ESM 与 CommonJS 的关键差异**：ESM 导出的是**只读的实时绑定**、静态分析友好、异步加载；CommonJS 导出的是**值的拷贝**、支持运行时 `require`、同步加载。Node 中 ESM 可以 `import` CommonJS 模块，反向则受限。
+
 ### 3.15 其他 ES2015 特性
 
 - **二进制 / 八进制字面量**：`0b1010`、`0o17`；
 - **`new.target`**：判断函数是否通过 `new` 调用；
 - **`super`**：在子类构造函数中必须先于 `this` 调用 `super()`；
 - **尾调用优化（TCO）**：在严格模式下，尾部递归可被优化（注意：**大多数现代引擎并未实际实现 TCO**，不要依赖它做深递归）。
+
+### 3.16 对象字面量增强（对象增强）
+
+ES2015 大幅简化了对象字面量的写法，这是日常代码里出现频率最高的语法糖。
+
+```js
+const name = "Tom";
+const key = "age";
+
+// 1) 属性简写（Shorthand）：变量名即属性名
+const user = { name }; // 等价于 { name: name }
+
+// 2) 计算属性名（Computed Property Names）：在创建对象时求值一次
+const profile = { [key]: 18, [`${name}_id`]: "u1" }; // { age: 18, Tom_id: 'u1' }
+
+// 3) 方法简写（Method Shorthand）：可叠加 generator / async
+const api = {
+  getData() {}, // 等价于 getData: function () {}
+  *gen() {}, // 生成器方法
+  async fetchData() {}, // async 方法
+};
+
+// 4) 字面量设置原型（ES2015 把 __proto__ 标准化，但生产环境更推荐 Object.create）
+const child = { __proto__: user };
+```
+
+- 「计算属性名 + 属性简写」组合可以省掉 `const obj = {}; obj[key] = value;` 的中间步骤，构造动态键对象更直观。
+- 只有 `__proto__` 作为**直接键名**时才有「设置原型」的特殊语义；写成计算属性名 `{ ["__proto__"]: v }` 时只是一个普通自有属性。
+
+### 3.17 对象 API 扩展（定义与操作对象）
+
+| API                                       | 年份   | 说明                                                                    |
+| ----------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| `Object.is(a, b)`                         | ES2015 | SameValue 比较：`NaN` 相等、`+0` 与 `-0` 不等（`===` 恰好相反）         |
+| `Object.assign(target, ...sources)`       | ES2015 | 浅合并可枚举自有属性（含 Symbol 键），**修改并返回 `target`**           |
+| `Object.setPrototypeOf(obj, proto)`       | ES2015 | 设置原型；会破坏引擎对对象形状的优化，优先用 `Object.create(proto)`     |
+| `Object.getOwnPropertySymbols(obj)`       | ES2015 | 取出 Symbol 键（`Object.keys` 拿不到）                                  |
+| `Object.getOwnPropertyDescriptors(obj)`   | ES2017 | 取出完整属性描述符，配合 `Object.defineProperties` 可保留 getter/setter |
+| `Object.fromEntries(entries)`              | ES2019 | `Object.entries` 的逆操作（`[ [k, v] ] → {}`）                          |
+
+```js
+Object.is(NaN, NaN); // true（=== 为 false）
+Object.is(0, -0); // false（=== 为 true）
+
+// Object.assign 的两个坑：会改第一个参数、只做浅拷贝
+const target = { a: 1 };
+const merged = Object.assign(target, { b: 2 }); // target 也被改成 { a: 1, b: 2 }
+merged === target; // true
+
+// 拷贝 getter/setter 需要描述符，而不是「取值结果」
+const src = {
+  get x() {
+    return 1;
+  },
+};
+Object.assign({}, src).x; // 1（getter 被求值成普通属性）
+Object.defineProperties({}, Object.getOwnPropertyDescriptors(src)); // 保留 getter 本身
+```
+
+> 浅拷贝手段对比：对象展开 `{ ...obj }` 最常用（复制可枚举自有属性，含 Symbol 键）；`JSON.parse(JSON.stringify(obj))` 会丢 `undefined` / 函数 / Symbol、把 `Date` 变成字符串、遇到循环引用直接报错；深拷贝优先用宿主提供的 `structuredClone()`（浏览器与 Node 17+ 可用，属宿主 API 而非 ECMAScript 标准）。
 
 ---
 
@@ -883,13 +1191,18 @@ not dead
 3. **`==` 和 `===` 的区别？ES2020 的 `??` 与 `||` 又有什么区别？** → `==` 会类型转换；`??` 只认 `null/undefined`，`||` 把 `0/''/false` 当假值。
 4. **`Promise` 的状态流转与微任务时机？** → pending→fulfilled/rejected；“then 回调是微任务”。
 5. **`for...in` 与 `for...of` 的区别？** → 前者遍历可枚举字符串键（含原型），后者遍历可迭代对象的值。
-6. **`Object.assign` 是深拷贝吗？** → 否，浅拷贝；深拷贝要用结构化克隆（现代用 `structuredClone()`，ES2021/浏览器原生）。
+6. **`Object.assign` 是深拷贝吗？** → 否，只做浅拷贝；深拷贝要用结构化克隆 `structuredClone()`（浏览器 / Node 17+ 提供的宿主 API，非 ECMAScript 标准）。
 7. **`Map` 和 `Object` 怎么选？** → 键非字符串、需频繁增删、需 `size` 与遍历时用 `Map`。
 8. **`class` 是真正的类吗？** → 是原型继承的语法糖；私有成员要 ES2022 `#`。
 9. **`async/await` 和 `Promise` 的关系？** → `async/await` 是 Promise 的语法糖，`await` 暂停的是 `async` 函数执行，不阻塞主线程。
 10. **如何实现数组去重？** → `new Set(arr)`（仅基本类型）；对象去重需自定义 key。
 11. **`?.` 链式里某层是 `0`、`''`、`false` 会怎样？** → 不会短路，只有 `null/undefined` 才短路。
 12. **`BigInt` 能直接和 `Number` 运算吗？** → 不能，需统一类型（都转或都 `BigInt`）。
+13. **`includes` 与 `indexOf` 判断 `NaN` 的结果为什么不同？** → `includes` 用 SameValueZero（`NaN` 等于 `NaN`），`indexOf` 用严格相等（`NaN !== NaN`）。
+14. **什么是暂时性死区（TDZ）？** → `let/const` 声明执行前的那段区间；其间访问抛 `ReferenceError`，连 `typeof` 都不再安全。
+15. **类字段 `x = 1` 与写在 `constructor` 里有什么区别？** → 字段初始化发生在 `super()` 之后、构造器体之前，并按声明顺序执行；构造器体里的同名字段赋值会覆盖它。私有字段 `#x` 只能在类内部访问。
+16. **`Object.assign` 能拷贝 getter 吗？** → 不能，它复制的是「取值结果」；要保留访问器需用 `Object.getOwnPropertyDescriptors` + `Object.defineProperties`。
+17. **Iterator Helpers（`map` / `filter` / `take`…）会立即生成数组吗？** → 不会，是惰性求值；只有 `toArray()`、`reduce()` 这类终结操作或 `for...of` 才真正开始遍历。
 
 ---
 

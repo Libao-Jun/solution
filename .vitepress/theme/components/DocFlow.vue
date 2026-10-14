@@ -15,8 +15,8 @@ import '@vue-flow/core/dist/style.css'
 import type { DocFlowEdge, DocFlowNode, FlowTone } from './DocFlowCanvas.vue'
 
 export interface FlowLegendItem {
-  /** 图例色点：矩形（普通节点）/ 菱形（判断节点） */
-  shape: 'rect' | 'diamond'
+  /** 图例色点：矩形（实体节点）/ 虚线框（区域容器节点）/ 菱形（判断节点） */
+  shape: 'rect' | 'frame' | 'diamond'
   tone: FlowTone
   text: string
 }
@@ -144,6 +144,12 @@ onMounted(async () => {
   background: hsl(var(--doc-hue) 80% 96%);
 }
 
+.doc-flow__dot--frame {
+  border: 1px dashed hsl(var(--doc-hue) 58% 68%);
+  border-radius: 3px;
+  background: transparent;
+}
+
 .doc-flow__dot--diamond {
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   background: hsl(var(--doc-hue) 52% 66%);
@@ -238,6 +244,10 @@ onMounted(async () => {
 html.dark .doc-flow__dot--rect {
   border-color: hsl(var(--doc-hue) 46% 42%);
   background: hsl(var(--doc-hue) 36% 19%);
+}
+
+html.dark .doc-flow__dot--frame {
+  border-color: hsl(var(--doc-hue) 46% 46%);
 }
 
 html.dark .doc-flow__dot--diamond {

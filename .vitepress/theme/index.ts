@@ -30,6 +30,13 @@ import JsOverviewMap from './components/JsOverviewMap.vue'
 import LongListCombinationFlow from './components/LongListCombinationFlow.vue'
 // 正文 fundamentals/front-end-performance 1.3「加载流程」与 3.3「缓存完整判定流程」（variant 切换）
 import FrontendPerformanceFlow from './components/FrontendPerformanceFlow.vue'
+// —— 以下 3 个组件：把 fundamentals/css-css3 中的文本图与 mermaid 决策图重构为 @vue-flow/core ——
+// 3.1 盒模型（margin/border/padding/content 四层同心带状结构，层标签压顶）
+import CssBoxModelDiagram from './components/CssBoxModelDiagram.vue'
+// 8.1 Flex 术语图（容器 + item + 主轴 / 交叉轴连线，轴线用 ghost 锚点挂连线）
+import CssFlexContainerDiagram from './components/CssFlexContainerDiagram.vue'
+// 9.7 Flex 与 Grid 如何选型（决策树，分支到共识的连线按条覆盖出线侧）
+import FlexGridChoiceFlow from './components/FlexGridChoiceFlow.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -326,6 +333,14 @@ export default {
     ctx.app.component('LongListCombinationFlow', LongListCombinationFlow)
     // 1.3 加载流程视角（variant="loading"）/ 3.3 缓存完整判定流程（variant="cache"）
     ctx.app.component('FrontendPerformanceFlow', FrontendPerformanceFlow)
+
+    // —— CSS / CSS3 篇三张图（@vue-flow/core）——
+    // 3.1 盒模型（同心四层）
+    ctx.app.component('CssBoxModelDiagram', CssBoxModelDiagram)
+    // 8.1 Flex 术语图（容器 / item / 主轴 / 交叉轴）
+    ctx.app.component('CssFlexContainerDiagram', CssFlexContainerDiagram)
+    // 9.7 Flex 与 Grid 如何选型（决策树）
+    ctx.app.component('FlexGridChoiceFlow', FlexGridChoiceFlow)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

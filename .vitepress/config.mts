@@ -26,6 +26,7 @@ const sidebar = [
       { text: '超长列表优化处理', link: '/fundamentals/long-list-optimization/' },
       { text: '文件上传处理', link: '/fundamentals/file-upload/' },
       { text: 'SEO 全流程知识手册', link: '/fundamentals/seo/' },
+      { text: 'CSS / CSS3 从入门到精通指南', link: '/fundamentals/css-css3/' },
     ],
   },
   {
@@ -285,6 +286,7 @@ export default extendConfig(
               { text: '超长列表优化', link: withBase('/fundamentals/long-list-optimization/') },
               { text: '文件上传处理', link: withBase('/fundamentals/file-upload/') },
               { text: 'SEO 全流程', link: withBase('/fundamentals/seo/') },
+              { text: 'CSS / CSS3', link: withBase('/fundamentals/css-css3/') },
             ],
           },
           {

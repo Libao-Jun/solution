@@ -345,6 +345,24 @@ header img[alt='Solution'],
   transition: all 300ms ease-out;
 }
 
+/*
+ * ★ 标签栏必须隐藏横向滚动条（改前勿删）★
+ *
+ * <640px 时标签栏是横向可滚动的 flex（5 个标签按内容自适应宽度，总宽 > 视口），
+ * `overflow-x: auto` 因此会带出一条横向滚动条：在 Windows 的 Chrome / Edge 上它是**经典滚动条**
+ * ——一条 ~300px 的浅灰条压在「当前标签的白色指示条」上（视口 393 / 内容 518 ≈ 0.76 的滑块宽度），
+ * 看起来就像「选中的下划线不适配 / 多了一条对不上的线」。
+ *
+ * 滚动能力全部保留（触屏滑动 / 触控板横滑 / 键盘 / 程序化滚动），只是不画滚动条。
+ */
+.feature-toolbar-list {
+  scrollbar-width: none; /* Firefox */
+}
+
+.feature-toolbar-list::-webkit-scrollbar {
+  display: none; /* WebKit / Blink */
+}
+
 /* ==========================================================================
    7. 首页动效（GSAP）
    --------------------------------------------------------------------------
@@ -404,12 +422,14 @@ header img[alt='Solution'],
 }
 
 /* ==========================================================================
-   8. 首页页脚（主题 FooterNav 的导航列居中）
+   8. 首页页脚（主题 FooterNav 的导航列对齐）
    --------------------------------------------------------------------------
-   主题的 FooterNav 用一行 `md:justify-between` 摆放「导航列 + 社交列」；
-   本站 footer.nav 只有导航列、未配置 footer.social，导航列因此贴左侧内容边界，
-   右侧整片留白。这里把该行改为居中，使 4 组导航列在内容区水平居中
-   （若日后补上社交列，两者作为一组仍居中；移动端仍是单列堆叠，不受影响）。
+   主题的 FooterNav 用一行 `md:justify-between` 摆放「导航列 + 社交列」，
+   本站 footer.nav 只有导航列、未配置 footer.social：
+     · ≥768px：导航列贴左侧内容边界、右侧整片留白 → 该行改为居中，使 4 组导航列
+       在内容区水平居中（若日后补上社交列，两者作为一组仍居中）；
+     · <768px：导航列纵向堆叠且文字靠左，与上方居中的 CTA 区块（标题 / 副标题 /
+       按钮）不一致 → 列组、每一列、列内文字与版权行一并居中。
 
    选择器只用结构定位：footer 内的第一个 wrapper--ticks 区块即导航列区块
    （其后是版权行区块），不改主题包源码（node_modules 改动会在重装依赖后丢失）。
@@ -419,6 +439,24 @@ header img[alt='Solution'],
 @media (min-width: 768px) {
   .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div {
     justify-content: center;
+  }
+}
+
+/*
+ * 移动端（<768px）：列组「整行占满 + 文字靠左」，看起来整块贴在左边、右侧大片留白。
+ * 逐层居中：先让列组与每一列按内容宽度收缩并居中（align-items），再让列内文字居中；
+ * 版权行同样居中，避免页脚上半部分居中、最后一行仍靠左。
+ */
+@media (max-width: 767px) {
+  .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div,
+  .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div > div {
+    align-items: center;
+  }
+
+  .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div > div > div,
+  .marketing-layout footer > div > section.wrapper--ticks:last-of-type {
+    align-items: center;
+    text-align: center;
   }
 }
 
@@ -436,4 +474,34 @@ header img[alt='Solution'],
   .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div > div {
     column-gap: 10rem;
   }
+}
+
+/* ==========================================================================
+   9. 深色区块的底色不得溢出内容区（.wrapper）
+   --------------------------------------------------------------------------
+   ★ 规则：背景只允许画在内容区（.wrapper / 内容列）之内，越过左右竖线即视为缺陷 ★
+
+   主题把深色底漆写在「整屏宽的容器」上：
+     · 首页 Home.vue 的 `<section id="features" data-theme="dark" class="bg-primary">`
+       （能力展示区：大标题 + 吸顶工具栏 + 5 个面板）；
+     · 主题包 Footer.vue 的 `<footer class="bg-primary">`（页脚整块）。
+   而 .wrapper 在 ≥768px 时只有 `100vw - 2rem` 宽（左右各留 1rem + 一条竖线），
+   两者宽度不一致 → 深色底漆越过竖线一直铺到视口边缘（iPad 上左右各多出 11~16px，
+   视觉上就是「背景从内容框里溢出去了」；竖线是 #E5E4E7 浅灰，在深色上看得格外清楚）。
+
+   修法：把底漆从整屏宽的容器改画到它内部的 .wrapper 上——
+     · 颜色不变：`--color-primary`（#16171d）就是主题 `bg-primary` 用的同一个 token；
+     · 覆盖率不变：容器内的 .wrapper 首尾相接（实测无未覆盖缝隙），吸顶工具栏本就是
+       `bg-primary`，改后仍由规则统一供色；
+     · 宽度自动跟随内容区：<768px 时 .wrapper 就是整屏宽，手机端观感与改动前完全一致；
+       ≥768px 时与上下浅色区块一样停在竖线上，整页外框因此从上到下连续。
+   ========================================================================== */
+.marketing-layout #features,
+.marketing-layout footer {
+  background-color: transparent;
+}
+
+.marketing-layout #features .wrapper,
+.marketing-layout footer .wrapper {
+  background-color: var(--color-primary);
 }

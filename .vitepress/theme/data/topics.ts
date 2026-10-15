@@ -76,6 +76,33 @@ export const categories: CategoryCard[] = [
   },
 ]
 
+/** 首页收尾「内容地图」的卡片分组（`kind` 决定排在哪一排） */
+export interface ContentMapGroup {
+  title: string
+  /** 卡片内的叶子条目（短文案，3~4 条为宜，保证同排卡片高度接近） */
+  leaves: string[]
+  /** category = 内容分类（排在中心节点上方一排）；growth = 学习路线 / 职业成长（下方一排） */
+  kind: 'category' | 'growth'
+}
+
+/**
+ * 首页收尾「内容地图」的卡片内容（唯一真相源）。
+ * `ClosingIllustration.vue`（骨架）/ `ClosingIllustrationCanvas.vue`（@vue-flow/core 画布）
+ * 只负责按这份数据算版式与画图：**增删分组、改文案都只改这里**，
+ * 卡片数、每排间距、中心节点位置与面板高度会自动跟着重排（见 data/content-map.ts）。
+ */
+export const contentMapGroups: ContentMapGroup[] = [
+  { title: 'Web 基础', kind: 'category', leaves: ['HTML5', '浏览器', 'HTTP / HTTPS'] },
+  { title: '框架与端', kind: 'category', leaves: ['React', 'Vue / Svelte', '小程序 / App'] },
+  {
+    title: '工程化与适配',
+    kind: 'category',
+    leaves: ['打包构建', 'Emmet', '大屏 / H5 唤起', 'Git 速查'],
+  },
+  { title: '学习路线', kind: 'growth', leaves: ['初学者', '网站开发', '语言与平台'] },
+  { title: '职业成长', kind: 'growth', leaves: ['开源许可证', '求职 · 简历 · 职场'] },
+]
+
 /**
  * 首页「内容概览」数据行：每行 2 个指标（单行 2 项 → divide-x 正确），
  * 行与行之间是单列 → divide-y 正确。

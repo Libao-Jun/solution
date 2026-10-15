@@ -88,6 +88,9 @@ pnpm run preview # 预览构建产物
 | `config.mts` markdown 转义 | `escape-double-braces` + `code_inline` v-pre                          | 移除 / 简化（`{{}}` 报插值错）           |
 | `config.mts` 站点配置      | `srcExclude` / `cleanUrls`+尾斜杠 / `ignoreDeadLinks`                 | 删除项 / 去尾斜杠 404 / 关闭构建失败     |
 | `theme/styles.css`         | 「布局宽度统一配置」段 4 变量                                         | 别处零散写死                             |
+| `theme/styles.css` 页脚对齐 | 第 8 段：≥768px 导航列居中；<768px「列组 → 每一列 → 列内文字 → 版权行」逐层居中 | 删掉或收窄断点（移动端页脚整块贴左）     |
+| `theme/styles.css` 深色区块 | 第 9 段：`#features` / `footer` 的深色底漆画在 `.wrapper` 上（底色绝不越出内容框竖线） | 让全宽容器恢复 `bg-primary`（底色越过竖线铺到视口边缘，iPad 上左右各溢 11~16px） |
+| 工具栏 `FeatureToolbar.vue` | 标签栏隐藏滚动条（`.feature-toolbar-list`，styles.css §6）+ 指示条可重算（`fonts.ready` / ResizeObserver / `watch(activeSection)`） | 恢复滚动条（窄屏下浅灰滚动条压住指示条 → 「下划线不适配」）/ 指示条只在挂载时量一次 |
 | `theme/index.ts`           | `themeContextKey` 品牌资源覆盖                                        | 删除覆盖                                 |
 | `theme/Layout.vue`         | 首页 `data-theme="light"` 同步                                        | 移除同步                                 |
 | 首页网格                   | 格子数**整除列数** + divide 规则（§2.6 A）                            | 直接套 `divide-x/y`，缺边框              |
@@ -132,7 +135,7 @@ pnpm run preview # 预览构建产物
 | ★ 三禁   | 禁 CSS 先隐藏再等 JS 显形（起点 `gsap.set()` 生成）；禁 `gsap.from()`（用 `set()` + `to()` 写死终值）；`prefers-reduced-motion` 时零动画                       |
 | 标记     | `data-reveal`（`up`/`scale`/`left`/`right`）、`data-count`、`data-hero-step`、`data-hero-cta`（磁吸）                                                          |
 | ★ scope  | `useMotion()` 根节点必须带 `data-motion-scope`，否则同元素被建两份 tween 互抢 opacity                                                                          |
-| SVG      | CSS `transform` 覆盖 SVG `transform` 属性：带 `translate` 的元素（**内容地图卡片组** `ClosingIllustration.vue` 的内层 `<g transform>`）只能动画其**无 transform 属性的外层 `<g data-map-card>`**，或改用 opacity |
+| 位移目标 | CSS `transform` 会覆盖 SVG 的 `transform` 属性，也会覆盖 vue-flow 给节点写的内联定位 `transform`：只动**自身没有 transform** 的元素（`StackIsometric.vue` 等距方块的子元素、内容地图卡片的内层 `[data-map-card]` / `[data-map-hub]`），或改用 opacity |
 | Hero CTA | `styles.css` 第 7 段两条让路（**都不可删**）：① `.button` 的 `transition-property` 摘掉 `transform`（**保留 `scale`**）；② `:hover { scale: 105% !important }` |
 
 > 以上规则的**完整实现原理、失败复盘与逐项自查口径**（含 Bento 网格与边框口径、数据驱动收益、动效与悬停分层、SVG transform 覆盖、GSAP 三禁复盘、无头 Edge 验证步骤）见 **`.agent-reference/homepage-implementation-notes.md`**（关键规则见本表，详程见附件）。

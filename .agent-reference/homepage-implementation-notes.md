@@ -51,8 +51,9 @@
 ### 4. scope 争夺
 - ★ **每个用 `useMotion()` 的组件根节点必须带 `data-motion-scope`**：`revealOnScroll()` 只处理「最近 scope 祖先 === 本 root」的 `[data-reveal]`。漏掉会让 `Home.vue` 把子组件（技术栈面板 / 快速开始 / 工具栏）的标记一起收进来，同一元素被建两份 tween 互相抢 opacity（症状：滚到底后部分文案仍 `opacity: 0`）。
 
-### 5. SVG 与 CSS transform 覆盖
-- **SVG 元素**：CSS transform 会覆盖 SVG 的 `transform` 属性——带 `translate(...)` 的元素（**内容地图卡片组** `ClosingIllustration.vue` 的内层 `<g transform>`）只能动画其**没有 transform 属性**的外层 `<g data-map-card>`，或改用透明度。
+### 5. transform 归属：只动「自身没有 transform」的元素
+- **SVG 元素**：CSS transform 会覆盖 SVG 的 `transform` 属性——带 `translate(...)` 的元素（`StackIsometric.vue` 的等距方块）只能动画其**没有 transform 属性**的子元素，或改用透明度。
+- **vue-flow 节点**：vue-flow 会给 `.vue-flow__node` 写内联 `transform: translate(x, y)` 定位，动它会把版式带偏。内容地图（`ClosingIllustrationCanvas.vue`）的位移只挂在节点模板**内层**的 `[data-map-card]` / `[data-map-hub]` 上；端口圆点用 `left/top` 定位（不用 CSS transform 居中），把 `scale` 留给 GSAP。
 
 ### 6. Hero CTA 磁吸的两条让路规则（`styles.css` 第 7 段，都不可删）
 1. `.marketing-layout [data-hero-cta] .button { transition-property: … }` 把 `transform` 从过渡属性里摘掉交给 GSAP 独占（**必须保留 `scale`**）。
@@ -63,5 +64,18 @@
 2. 无头 Edge + CDP 慢速滚到底，断言：
    - `[data-reveal]` / `[data-hero-step]` 全部 `opacity ≥ 0.95`
    - `data-count` 回到原值
-   - `[data-panel-window]` / `[data-map-card]` 为 1
+   - `[data-panel-window]` 为 1；`[data-map-card]` 数量 = `topics.ts` 里 `contentMapGroups` 的条数（当前 5），`.vue-flow__edge-path` 数量与之相同
+   - 内容地图画布已整图入画（`.vue-flow__viewport` 有 transform + `scale`），且入场结束后画布根带 `is-flowing`（CSS 虚线流光已接力）
 3. 再用 `Emulation.setEmulatedMedia` 模拟减少动态效果，断言无内联样式且全部可见。
+
+## 二、内容地图（`ClosingIllustration.vue` 骨架 + `ClosingIllustrationCanvas.vue` 画布，2026-10 由静态 SVG 改为 @vue-flow/core）
+
+- **数据源**：`data/topics.ts` 的 `contentMapGroups`（5 组：3 内容分类在上排、2 成长类在下排）+ `categoryCount` / `docCount`；版式计算在 `data/content-map.ts`（排数、每排等分剩余空间、卡高 `42 + 条目数 × 20`、面板高度、中心节点位置），骨架与画布共用同一份，面板 `aspect-ratio` 才与内容严格同比例。增删分组只改 `topics.ts`。
+- **动态加载**：画布在 `onMounted` 里动态 `import()`（`@vue-flow/core` 依赖 d3-zoom），骨架 SSR 照常输出面板 / 刻度 / 工具栏；`@vue-flow/core/dist/style.css` 由骨架静态引入（纯 CSS，安全）。
+- **默认视图**：不用 `fitView`（按节点包围盒留边会多出空白），而是 `setViewport({ x: 0, y: 0, zoom: 容器宽 / 面板世界宽 })` 把面板整块铺满——与原静态图 `w-full` + viewBox 等比缩放观感一致；`minZoom` 必须低于窄屏值（26rem 面板 ≈ 0.42），故取 0.35。
+- ★ **入场触发用 IntersectionObserver + scroll/resize 复核，不要改回 ScrollTrigger**（两条都已踩过）：
+  1. `start: 'top 80%'` 会导致「面板已经露出一截、顶部还没越过 80% 线」的整段里节点停在 `opacity: 0`，表现是**面板空着只剩连线**；
+  2. 只用 IO 还有洞：元素若**在一帧内从视口下方直接跳到上方**（加载完立刻滚到页脚），两端都是 `isIntersecting: false`、不跨阈值，IO 一个回调都不会给 → 必须再挂 `scroll`（每帧复核一次）+ 初始 `check()`。
+- ★ **建时间线前必须等连线路径可测**：路径还没写 `d` 时 `getTotalLength()` 返回 0，会把内联 `stroke-dasharray` 设成 0 —— 虚线的 CSS 被内联压掉（**连线变实线**）且「画线」动画瞬现；就绪条件 = 节点已渲染 + 至少一条 `getTotalLength() > 0` 的边，未就绪最多重试 40 帧（**就绪前不设任何隐藏样式**，所以即使永远不就绪，内容也是完整可见的）。
+- ★ **节点必须分两层：`Handle` / 端口圆点挂在「不动画」的定位层，入场动效只动内层**（`closing-card-node` → `closing-card[data-map-card]`、`closing-hub-node` → `closing-hub[data-map-hub]`）。vue-flow 只在初始化时量一次 handle 坐标并缓存，若 handle 所在元素带着入场起始位移，量到的坐标会**永久偏掉**：实测卡片 `y: 20` 让 5 条连线端点统一偏 +20px（表现为「底部两张卡的点离了线、线穿进卡片 20px」），中心 `scale: 0.88` 让中心两端偏 4.3px（189→192.4 / 261→257.8）。把 handle 移出动画层后端点实测精确落在卡片边缘（140/140/150/300/310 对应卡边 139/139/149/301/311），圆点与线端相切相连。
+- 其他口径：时间线 `paused: true`，入场结束才开 CSS 虚线流光（`is-flowing`）与中心浮动；`prefers-reduced-motion` 时 `useMotion` 什么都不做，内容静态可见；端口圆点用 `left/top` 定位、位移只挂内层元素（见 §5）；卡片内条目必须把字号 / 行高 / 颜色显式写在 `li` 上（`.marketing-layout p, li` 会把 `li` 钉成 18px/28px，直接规则优先于继承，只改 `ul` 压不住）。

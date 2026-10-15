@@ -402,3 +402,38 @@ header img[alt='Solution'],
 .mermaid .node .label-container {
   overflow: visible;
 }
+
+/* ==========================================================================
+   8. 首页页脚（主题 FooterNav 的导航列居中）
+   --------------------------------------------------------------------------
+   主题的 FooterNav 用一行 `md:justify-between` 摆放「导航列 + 社交列」；
+   本站 footer.nav 只有导航列、未配置 footer.social，导航列因此贴左侧内容边界，
+   右侧整片留白。这里把该行改为居中，使 4 组导航列在内容区水平居中
+   （若日后补上社交列，两者作为一组仍居中；移动端仍是单列堆叠，不受影响）。
+
+   选择器只用结构定位：footer 内的第一个 wrapper--ticks 区块即导航列区块
+   （其后是版权行区块），不改主题包源码（node_modules 改动会在重装依赖后丢失）。
+   FooterNav 仅用于首页页脚（SiteFooter → OssFooter），文档页用的是 VPFooter，
+   故额外用 .marketing-layout 收窄作用域，避免波及非首页布局。
+   ========================================================================== */
+@media (min-width: 768px) {
+  .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div {
+    justify-content: center;
+  }
+}
+
+/*
+ * ★ 导航列之间的间距放大到 2 倍（5rem → 10rem）★
+ * 主题给列组写的是 `gap-10 md:gap-20`（桌面列间距 5rem），这里是它的 2 倍。
+ *
+ * 断点取 ≥1120px 的原因：列组总宽 = 各列内容宽之和（实测约 382px）+ 3×列间距，
+ * 列间距 10rem 时约 862px，而内容区宽 = 视口 - 224px（wrapper 左右各 1rem 外边距
+ * + px-24 的 96px 内边距）。视口 < 1086px 时列组放不下，flex 会压缩列宽导致
+ * 「响应式与自适应」这类长词折行，故用 1120px 留出字体差异的余量；1120px 以下
+ * 保持主题原值 5rem（与改动前一致），避免窄屏出现列内折行。
+ */
+@media (min-width: 1120px) {
+  .marketing-layout footer > div > section.wrapper--ticks:first-of-type > div > div {
+    column-gap: 10rem;
+  }
+}

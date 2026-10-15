@@ -11,6 +11,12 @@
 > - [阮一峰 — CSS Grid 网格布局教程](https://ruanyifeng.com/blog/2019/03/grid-layout-tutorial.html)
 > - [MDN — CSS 参考（中文）](https://developer.mozilla.org/zh-CN/docs/Web/CSS)
 > - [XP 中文网 — CSS3 教程](https://old.xp.cn/css3/)
+> - [前端工程师手册 — 盒模型](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-basic/box-module.html)
+> - [前端工程师手册 — CSS 定位方式](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-basic/css-position.html)
+> - [前端工程师手册 — CSS 选择器](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-basic/css-selector.html)
+> - [前端工程师手册 — CSS 书写与命名](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-basic/css-write-and-name.html)
+> - [前端工程师手册 — CSS3 新增特性](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-basic/css3-news.html)
+> - [前端工程师手册 — 自定义字体](https://leohxj.gitbooks.io/front-end-database/content/html-and-css-advance/custom-fonts.html)
 
 ---
 
@@ -427,6 +433,31 @@ button, input, select, textarea { font: inherit; color: inherit; }
 - 用 `:focus-visible` 代替 `:focus`，兼顾键盘可访问性与鼠标体验。
 - 不要用 `:has()` 做「每帧求值」的重活（极端场景下会带来样式失效范围扩大，见 13.4）。
 
+### 2.11 交互伪类的书写顺序（LVHA）
+
+链接的四个状态伪类（`:link` / `:visited` / `:hover` / `:active`）**特殊度完全相同**，因此「谁写在后面谁生效」。业界统一按 **LVHA** 排列（记忆法：LoVe / HAte）：
+
+```css
+a:link    { color: #2563eb; }   /* 未访问 */
+a:visited { color: #7c3aed; }   /* 已访问 */
+a:hover   { color: #1d4ed8; }   /* 悬停 */
+a:active  { color: #dc2626; }   /* 按下瞬间 */
+```
+
+顺序写错的典型症状：`:hover` 写在 `:visited` 之前 → 访问过的链接悬停不生效；`:active` 写太靠前 → 点击态永远看不到。
+
+| 注意点                | 说明                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------- |
+| `:visited` 有隐私限制 | 只能改颜色类属性（`color`、`background-color`、`border-color`、`outline-color`、`fill`、`stroke` 等），**不能改尺寸、位置与背景图**；`getComputedStyle()` 也会返回伪造值，防止历史记录被探测 |
+| 触屏没有 `hover`      | 移动端 `:hover` 会「粘住」上一次点击的元素，交互反馈必须另有 `:focus-visible` / `:active` 兜底（可用 `@media (hover: none)` 单独处理，见 10.2） |
+| `:active` 的时机      | 只在「按下未松开」期间生效，做按压反馈时放最后                                                  |
+| `:focus` 与键盘       | 键盘 Tab 会同时命中 `:focus` 与 `:focus-visible`，鼠标点击一般只命中 `:focus`（见 14.1）        |
+
+```css
+/* 状态样式的特殊度归零，便于业务层覆盖（见 2.6） */
+:where(a):hover { text-decoration-thickness: 2px; }
+```
+
 ---
 
 ## 三、盒模型、尺寸与单位
@@ -631,6 +662,84 @@ button, input, select, textarea { font: inherit; color: inherit; }
 - 变量是**继承**的，可写在任意选择器上做「局部主题」。
 - 深度用法（`@property` 注册类型、与 JS 交互、参与动画）见 11.1。
 
+### 3.10 块级、行内与行内块：盒模型差异
+
+`display` 的三种基础值决定了元素如何参与布局，其盒模型表现差异是面试与排错的高频考点。
+
+| 特性              | `block`            | `inline`（非替换元素）                         | `inline-block`             |
+| ----------------- | ------------------ | ---------------------------------------------- | -------------------------- |
+| `width` / `height` | 可设置             | ❌ 由内容决定，设置无效                         | 可设置                     |
+| 垂直 `margin`     | 生效，会折叠       | ❌ 不生效                                       | 生效                       |
+| 垂直 `padding` / `border` | 生效并撑开父级 | 可见但不撑开行盒高度，可能覆盖相邻行            | 生效并撑开父级             |
+| 换行              | 独占一行           | 与其它行内元素共行                             | 与其它行内元素共行         |
+| 默认典型元素      | `div`、`p`、`h1`   | `span`、`a`、`em`                              | `img`、`input`、`button`（可改） |
+
+```css
+/* 反例：给行内 a 加 padding，背景会压到上下行 */
+.tag {
+  padding: 8px 12px;
+  background: #eef2ff;
+}
+
+/* 正例：改成行内块，盒子真实占位 */
+.tag {
+  display: inline-block;
+  padding: 8px 12px;
+  background: #eef2ff;
+}
+```
+
+**替换元素（replaced element）**：`img`、`video`、`canvas`、`input`、`svg` 等即使 `display: inline`，也可以设置 `width` / `height`，因为内容不由 CSS 盒模型直接决定。
+
+**`img` 底部空隙**：图片作为行内替换元素默认与文字基线（baseline）对齐，基线下方会留下「下伸部」间隙 → 图片底部出现几 px 空隙。消除方法：
+
+```css
+img { display: block; }          /* 最常用 */
+img { vertical-align: bottom; }  /* 保留行内但改变对齐 */
+.parent { line-height: 0; }      /* 消除基线间隙 */
+```
+
+**`inline-block` 之间的空白间隙**：HTML 中的换行/空格会被渲染为文本节点，导致元素之间出现约 1/4 `font-size` 的间隙。修复：父级 `font-size: 0`（子元素恢复字号）、`display: flex`、或注释掉标签间空白。
+
+### 3.11 margin / padding 的取值规则：百分比、负值与 auto
+
+| 取值     | 基准/行为                                           | 注意点                                                              |
+| -------- | --------------------------------------------------- | ------------------------------------------------------------------- |
+| 百分比   | 相对**包含块的宽度**（水平和垂直方向都是）          | `padding-block-start: 56.25%` 是相对父级宽度，不是高度              |
+| 负值     | 仅 `margin` 允许负值，`padding` 不允许              | 负 margin 用于「拉宽/重叠/回拉」布局                                |
+| `auto`   | `width: auto` 填满可用空间；`margin-inline: auto` 居中需元素有确定宽度 | 普通流中 `margin-block: auto` 计算为 0（绝对定位 / Flex / Grid 除外） |
+
+**百分比的经典应用——旧版 16:9 占位**：
+
+```css
+.ratio {
+  position: relative;
+  block-size: 0;
+  padding-block-start: 56.25%;   /* 9 / 16 = 56.25% */
+}
+.ratio > iframe { position: absolute; inset: 0; }
+```
+
+现代写法：`aspect-ratio: 16 / 9`。
+
+**负 margin 的常见用法**：
+
+```css
+/* ① 元素向两侧破格拉宽 */
+.breakout { margin-inline: -24px; }
+
+/* ② 与相邻元素/父级边界产生压边效果 */
+.overlap { margin-block-start: -32px; }
+```
+
+> 负 margin 会真实改变布局（与 `translate` 只在视觉上偏移不同），可能引起父级高度塌陷或滚动区域变化，使用时要复核可点击区域与可访问性顺序。
+
+**`margin: auto` 居中的前提**：
+
+1. 元素必须有**确定的宽度**（否则块级元素 `width: auto` 会填满整行，auto 余量为 0）。
+2. 元素不能是浮动元素或行内非替换元素。
+3. 绝对定位元素配合 `inset: 0` 与 `margin: auto` 可同时实现水平垂直居中（见 6.7）。
+
 ---
 
 ## 四、文本、字体与列表
@@ -660,6 +769,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 | `text-align-last`  | 强制对齐最后一行（两端对齐时）                              |
 | `hyphens`          | 自动断词加连字符（需 `lang` 配合）                          |
 | `text-wrap`        | `wrap`（默认）/ `nowrap` / `balance`（标题）/ `pretty`      |
+
+> **文字描边（`-webkit-text-stroke`）**：CSS3 文字渲染特性，目前仍需 `-webkit-` 前缀实现空心或描边效果。
+
+```css
+/* 空心字 */
+.stroke-text {
+  -webkit-text-stroke: 2px #4f30e8;
+  color: transparent;
+}
+
+/* 描边 + 填充 */
+.stroke-fill {
+  -webkit-text-stroke: 1px #4f30e8;
+  -webkit-text-fill-color: #fff;
+}
+```
 
 ### 4.2 文本溢出与断行 ★ 高频
 
@@ -778,6 +903,158 @@ ul.custom {
 ```
 
 > **书写模式是逻辑属性的前提**：`writing-mode` 改变后，`inline` 轴与 `block` 轴互换，逻辑属性（`margin-inline-start` 等）会自动跟随，物理属性（`margin-left`）不会（见 11.7）。
+
+### 4.7 自定义字体全解：`@font-face`、字体格式与子集化
+
+自定义字体让网页使用品牌字体或特殊图标，但代价是**额外请求、FOUT/FOIT、CLS** 与授权问题，需要系统化处理。
+
+#### `@font-face` 描述符
+
+| 描述符                | 作用                                                                 | 常用值/说明                                           |
+| --------------------- | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| `font-family`         | 自定义族名                                                           | 引用时用同名，如 `font-family: 'BrandSans'`           |
+| `src`                 | 字体来源列表，按优先级回退                                           | `local('PingFang SC')`、`url(...)`、`format('woff2')` |
+| `font-style`          | 样式范围                                                             | `normal` / `italic` / `oblique`                       |
+| `font-weight`         | 字重范围                                                             | 可变字体可写 `100 900`                                |
+| `font-stretch`        | 宽度范围                                                             | `75% 125%`（可变字体）                                |
+| `font-display`        | 加载期间渲染策略                                                     | `swap` / `optional` / `fallback` / `block` / `auto`   |
+| `unicode-range`       | 生效码位区间                                                         | 分片懒加载、中文按字符集切片                          |
+| `size-adjust`         | 字体整体缩放                                                         | 用于与后备字体对齐，减少 CLS                          |
+| `ascent-override`     | 覆盖上升部度量                                                       | 与后备字体基线对齐                                    |
+| `descent-override`    | 覆盖下降部度量                                                       | 与后备字体基线对齐                                    |
+| `line-gap-override`   | 覆盖行距度量                                                         | 用于度量覆盖                                          |
+| `font-feature-settings` / `font-variation-settings` | 高级特性 / 可变字体轴                                    | `font-variation-settings: 'wght' 550`                 |
+
+#### 字体格式与浏览器支持
+
+| 格式  | 扩展名     | 特点                                | 现状                    |
+| ----- | ---------- | ----------------------------------- | ----------------------- |
+| WOFF2 | `.woff2`   | Brotli 压缩，体积最小               | **首选**，现代浏览器全支持 |
+| WOFF  | `.woff`    | zlib 压缩，兼容旧浏览器             | 第二顺位兜底            |
+| TTF   | `.ttf`     | 原始轮廓字体                        | 可省                    |
+| OTF   | `.otf`     | PostScript 轮廓字体                 | 可省                    |
+| EOT   | `.eot`     | IE 专用                             | **已淘汰**              |
+| SVG   | `.svg`     | 已废弃                              | 不用                    |
+
+#### 现代最简写法
+
+```css
+@font-face {
+  font-family: 'BrandSans';
+  src: local('BrandSans'), url('/fonts/brand-sans.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+4E00-9FFF;
+}
+```
+
+#### 历史兼容写法（Bulletproof @font-face）
+
+早期为了兼容 IE6–IE8，需要 `?#iefix` hack 让 IE 正确解析 `embedded-opentype`：
+
+```css
+@font-face {
+  font-family: 'BrandSans';
+  src: url('brand-sans.eot');
+  src: url('brand-sans.eot?#iefix') format('embedded-opentype'),
+       url('brand-sans.woff') format('woff'),
+       url('brand-sans.ttf') format('truetype'),
+       url('brand-sans.svg#BrandSans') format('svg');
+}
+```
+
+> 现代项目已无需 `eot` / `svg` 字体，**WOFF2 单格式即可覆盖所有现代浏览器**。
+
+#### 字体加载策略
+
+| 策略      | 行为                                             | 适用场景                  |
+| --------- | ------------------------------------------------ | ------------------------- |
+| `block`   | 短暂 invisible 期（最长 3s），超时 fallback      | 品牌字体必须显示          |
+| `swap`    | 0.1s 后立即用后备字体，加载完成再替换（FOUT）    | **推荐**，兼顾内容与品牌  |
+| `fallback` | 短暂 invisible 期后 swap                        | 折中方案                  |
+| `optional` | 100ms 内到达才用，否则下次访问再用               | 性能优先，品牌字体弱场景  |
+| `auto`    | 浏览器默认（多为 block）                         | 不推荐                    |
+
+#### 减少字体切换导致的 CLS
+
+字体文件与后备字体往往度量不同，切换时会造成布局偏移。三种治理手段：
+
+1. **预加载关键字体**：
+   ```html
+   <link rel="preload" href="/fonts/brand-sans.woff2" as="font" type="font/woff2" crossorigin>
+   ```
+   > 字体预加载**必须带 `crossorigin`**，否则浏览器会再次发起不带 credentials 的请求。
+
+2. **使用 `font-display: optional`** 或 **度量覆盖字体**：
+   ```css
+   @font-face {
+     font-family: 'BrandSans-fallback';
+     src: local('Arial');
+     size-adjust: 105.2%;
+     ascent-override: 92%;
+     descent-override: 24%;
+   }
+   body { font-family: 'BrandSans', 'BrandSans-fallback', sans-serif; }
+   ```
+
+3. **子集化与 `unicode-range` 分片**：只下载页面实际用到的字符，尤其是中文字体。
+
+#### 中文字体处理
+
+中文字体文件通常 3–10MB，不能整包下载。三种方案：
+
+1. **系统字体栈优先**（零下载，最稳），见 4.3。
+2. **子集化**：按项目字符集裁剪字体文件。
+   ```bash
+   # 用 fonttools 裁出「只用到的字符」子集
+   pyftsubset brand-cn.ttf --text-file=used-chars.txt --flavor=woff2 --output-file=brand-cn.subset.woff2
+   ```
+3. **按需分片 + `unicode-range`**：把字体按常用字、生僻字切成多片，浏览器只下载命中片。
+
+#### 字体托管方式
+
+| 方式       | 优点                          | 缺点                                            |
+| ---------- | ----------------------------- | ----------------------------------------------- |
+| 自托管     | 可控、无第三方依赖、长缓存    | 需要自己处理子集化、缓存、CDN                   |
+| 字体服务   | 自动优化、CDN 分发            | 额外 DNS/TLS、境外服务可能不稳定、需注意授权    |
+
+> 生产环境推荐自托管，文件名带哈希，配合 `Cache-Control: immutable`。
+
+### 4.8 图标字体（iconfont）与替代方案
+
+图标字体把图标做成字体里的字形，映射到 Unicode **私有使用区（PUA：U+E000–U+F8FF）**，用「字符」来显示图标。
+
+```css
+@font-face {
+  font-family: 'iconfont';
+  src: url('/fonts/iconfont.woff2') format('woff2');
+  font-display: block;
+}
+.icon {
+  font-family: 'iconfont';
+  font-style: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+}
+.icon-search::before { content: '\e601'; }   /* 对应字体里的码位 */
+```
+
+```html
+<span class="icon icon-search" aria-hidden="true"></span>
+```
+
+| 维度       | 图标字体                      | 内联 SVG / SVG Sprite                      |
+| ---------- | ----------------------------- | ------------------------------------------ |
+| 着色       | 单色（`color` 生效）          | 任意多色（`fill` / `stroke` 各自控制）     |
+| 缩放       | 矢量，但依赖字体渲染          | 矢量精确                                   |
+| 动画       | 只能整体改颜色/大小           | 可对路径做动画                             |
+| 体积       | 一个文件含全部图标            | 按需 pick，可 tree-shake                   |
+| 加载失败   | 显示方块/空白                 | 与文档同渲染                               |
+| 可访问性   | 需 `aria-hidden`              | 可控 `title` / `aria-label`                |
+| 推荐度     | 旧项目常见                    | **现代项目推荐**                           |
+
+> 结论：新项目优先使用 **内联 SVG / SVG Sprite / 图标组件库**；图标字体仅用于「已有资产、需在 `content` 里插入图标」的场景。
 
 ---
 
@@ -1117,6 +1394,70 @@ ul.custom {
 ```
 
 > **选型建议**：现代项目一律优先 `Flex`（布局语义清晰）或 `Grid`（`place-items: center` 最简洁）；`translate` 法适合「脱离文档流的浮层」；`margin: auto` 法在绝对定位下需要已知尺寸。
+
+### 6.8 绝对定位元素的行为特征
+
+`position: absolute` 不只是「相对于谁偏移」，它还会改变元素本身的盒模型行为。
+
+| 行为               | 说明                                                                     |
+| ------------------ | ------------------------------------------------------------------------ |
+| 脱离文档流         | 不占位、不影响兄弟元素；父级高度不会被子元素的 absolute 盒撑开            |
+| 块级化             | `display` 计算值按块级处理（`inline` / `inline-block` 都会变成 `block`） |
+| 宽度收缩           | 未设宽高时，宽度由内容撑开（shrink-to-fit），而不是像普通块级填满整行     |
+| `z-index` 生效     | 定位元素参与层叠上下文，`z-index` 按 6.3 规则生效                        |
+| 清除浮动对其无效   | `clear` 属性对 absolute 元素无意义                                       |
+
+```css
+/* 卡片角标：父级创建包含块，子级绝对定位 */
+.card { position: relative; }
+.card__badge {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+}
+
+/* 绝对定位元素用 margin:auto 居中（需已知尺寸） */
+.dialog {
+  position: absolute;
+  inset: 0;
+  inline-size: 400px;
+  block-size: 300px;
+  margin: auto;
+}
+```
+
+> 绝对定位元素的**包含块**是最近已定位祖先的**内边距框**（含 padding）。如果祖先同时有 `transform`、`filter`、`perspective` 等属性，也会成为包含块（见 6.4）。
+
+### 6.9 层叠顺序（Stacking Order）
+
+同一层叠上下文内，浏览器绘制顺序（从下到上）固定为以下七层：
+
+| 层级 | 内容                                              |
+| ---- | ------------------------------------------------- |
+| 1    | 层叠上下文根元素的背景与边框                      |
+| 2    | `z-index` 为负的定位后代（从小到大）              |
+| 3    | 普通流中的块级盒                                  |
+| 4    | 浮动盒                                            |
+| 5    | 行内 / 行内块 / 行内表格（非定位）                |
+| 6    | `z-index: auto` 或 `z-index: 0` 的定位后代        |
+| 7    | `z-index` 为正的定位后代（从小到大）              |
+
+```css
+/* 想让普通 div 盖住浮动元素？顺序上做不到，必须定位并给 z-index */
+.plain {
+  position: relative;
+  z-index: 1;
+}
+```
+
+**`z-index: auto` 与 `z-index: 0` 的关键区别**：
+
+| 值    | 是否创建层叠上下文 | 子元素 `z-index` 的参考系                     |
+| ----- | ------------------ | --------------------------------------------- |
+| `auto` | 否（默认）         | 由最近的层叠上下文决定，子元素可「穿透」出去  |
+| `0`   | 是                 | 只在本上下文内排序，无法压过外部元素          |
+
+> 排查 `z-index` 不生效时，先用 DevTools 的 **Layers / 3D 视图**找到「元素实际属于哪个层叠上下文」，再看它是不是被更高层的上下文整体盖住。
 
 ---
 
@@ -2350,6 +2691,64 @@ export default {
 | 控制体积             | 压缩、去重、移除未使用样式；不做无用前缀                   |
 | 命名稳定 / 长缓存     | 产物文件名带哈希，配合 `Cache-Control: immutable`         |
 
+### 12.7 样式书写顺序与命名规范细则
+
+团队规范的价值不在于「唯一正确顺序」，而在于「同一仓库内保持一致」。
+
+#### 属性书写顺序（通用分组）
+
+```css
+.card {
+  /* 1) 定位与层叠 */
+  position: relative;
+  inset-block-start: 0;
+  z-index: 1;
+  display: flex;
+  float: none;
+
+  /* 2) 尺寸与盒模型 */
+  inline-size: 320px;
+  block-size: 180px;
+  padding: 16px;
+  margin-block-end: 12px;
+
+  /* 3) 文字 */
+  font: 400 16px/1.6 var(--font-sans);
+  color: #1f2937;
+  text-align: start;
+
+  /* 4) 背景与边框 */
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+
+  /* 5) 其他：动画、过渡、滤镜、变换 */
+  transition: transform 0.2s ease;
+}
+```
+
+顺序本身不影响渲染结果，但影响可读性与 diff 审查。可用 `stylelint-order` 等插件自动约束（见 12.4）。
+
+#### 命名规则
+
+| 规则             | 正确示例                         | 不推荐示例                              |
+| ---------------- | -------------------------------- | --------------------------------------- |
+| 小写 + 连字符    | `.card-title`                    | `.card_title` / `.cardTitle`            |
+| 不以数字开头     | `.item-1`                        | `.1item`                                |
+| 语义优于位置/外观 | `.card-title` / `.btn-primary`   | `.left-top-red` / `.big-blue`           |
+| 避免无意义编号   | `.nav-item`                      | `.box1` / `.box2`                       |
+| 状态类加前缀     | `.is-active` / `.has-error`      | `.active`（易与组件基类冲突）           |
+| 作用域前缀       | `.l-header` / `.u-hidden`        | 无前缀通用名如 `.title`                 |
+| ID 不用于样式    | 仅用 `id` 做锚点 / JS 钩子       | `#header { ... }`                       |
+| JS 钩子用 `data-*` | `data-copy-trigger`             | `.js-copy` 类混在样式里                 |
+
+#### 与命名方法论的关系
+
+- **语义化命名**：`div` 是干什么的就起什么名，清晰但容易与 HTML 结构耦合。
+- **OOCSS**：把可复用的「皮肤」抽成独立 class，通过组合增加复用性（Bootstrap 即此思路）。
+- **BEM**：`.block__element--modifier`，适合组件化结构。
+
+实际项目中通常是「BEM 定结构 + 工具类管颜色间距」的混合方案，而非二选一。
+
 ---
 
 ## 十三、渲染原理与性能优化
@@ -2718,40 +3117,100 @@ mq.addEventListener('change', e => {
 ### 15.4 常见面试题（附要点）
 
 **1) 盒模型有哪几种？`box-sizing: border-box` 解决什么问题？**
-`content-box`（默认，`width` 只含内容）与 `border-box`（`width` 含 padding + border）。`border-box` 让「百分比宽度 + 内边距」不撑破容器，是响应式布局的常规底座。
+
+- 两种：`content-box`（默认，`width` 只含内容）与 `border-box`（`width` 含 padding + border）。
+- `border-box` 让「百分比宽度 + 内边距」不撑破容器，是响应式布局的常规底座。
 
 **2) 什么是 BFC？怎么触发？有什么用？**
-块级格式化上下文，是独立布局区域。触发方式：`display: flow-root`、`float` 非 none、绝对/固定定位、`overflow` 非 visible、`contain: layout/paint` 等。作用：清除浮动、阻止外边距折叠、隔离浮动环绕。
+
+- BFC（Block Formatting Context）是独立布局区域。
+- 触发：`display: flow-root`、`float` 非 none、绝对/固定定位、`overflow` 非 visible、`contain: layout/paint` 等。
+- 作用：清除浮动、阻止外边距折叠、隔离浮动环绕。
 
 **3) `position` 五个值的区别？`sticky` 失效的常见原因？**
-见 6.2；失效原因：无阈值、祖先 `overflow` 非 visible、元素高度等于容器、被 Flex 拉伸。
+
+- 五个值见 6.2：static / relative / absolute / fixed / sticky。
+- sticky 失效常见原因：无阈值、祖先 `overflow` 非 visible、元素高度等于容器、被 Flex 拉伸。
 
 **4) `z-index` 不生效怎么办？**
-先确认元素是否「已定位」或为 Flex/Grid 子项；再顺着祖先链找第一个创建层叠上下文的元素（`transform`、`opacity < 1`、`filter`、`isolation: isolate`、`container-type` 等）。
+
+- 先确认元素是否「已定位」或为 Flex/Grid 子项。
+- 再顺着祖先链找第一个创建层叠上下文的元素（`transform`、`opacity < 1`、`filter`、`isolation: isolate`、`container-type` 等）。
+- 最后用 DevTools 的 Layers / 3D 视图确认元素实际属于哪个上下文。
 
 **5) `flex: 1` 与 `flex: auto` 的区别？**
-`flex: 1` = `1 1 0%`（忽略内容宽，等分剩余空间）；`flex: auto` = `1 1 auto`（先按内容宽分配，再分剩余空间）。等分网格用前者。
+
+- `flex: 1` = `1 1 0%`：忽略内容宽，等分剩余空间。
+- `flex: auto` = `1 1 auto`：先按内容宽分配，再分剩余空间。
+- 等分网格用前者。
 
 **6) Flex 子项里 `text-overflow: ellipsis` 不生效？**
-因为 `min-width: auto` 的下限是「内容宽度」，需给该子项 `min-inline-size: 0`（或 `overflow: hidden`）。
+
+- 因为 `min-width: auto` 的下限是「内容宽度」，子项不会收缩。
+- 给该子项 `min-inline-size: 0`（或 `overflow: hidden`）即可。
 
 **7) `repeat(auto-fill, …)` 与 `repeat(auto-fit, …)` 的区别？**
-两者都按可用空间铺满轨道；区别在于「空间多余时」：`auto-fill` 保留空轨道，`auto-fit` 折叠空轨道让现有列拉伸填满。
+
+- 两者都按可用空间铺满轨道。
+- 空间多余时：`auto-fill` 保留空轨道；`auto-fit` 折叠空轨道，让现有列拉伸填满。
 
 **8) 如何实现「父元素根据子元素状态变样式」？**
-`:has()`，如 `.field:has(:invalid) { … }`；无 `:has` 支持时用 JS 加状态类降级。
+
+- 用 `:has()`，如 `.field:has(:invalid) { … }`。
+- 无 `:has` 支持时用 JS 加状态类降级。
 
 **9) 为什么要用 `@layer`？**
-显式声明级联层顺序，让「覆盖关系」由架构决定，而不是靠堆特殊度或 `!important`；尤其用于「工具类永远压过组件类」的场景。
+
+- 显式声明级联层顺序，让「覆盖关系」由架构决定。
+- 避免靠堆特殊度或 `!important` 打补丁，尤其适合「工具类永远压过组件类」的场景。
 
 **10) `transform` 动画为什么比 `left` 动画性能好？**
-`transform` 只走合成阶段（GPU），不触发布局与重绘；`left` 每次变化都要重新布局，可能引起整棵子树重排。
+
+- `transform` 只走合成阶段（GPU），不触发布局与重绘。
+- `left` 每次变化都要重新布局，可能引起整棵子树重排。
 
 **11) 外边距折叠（margin collapsing）什么时候发生？怎么避免？**
-相邻块级元素垂直外边距、父子上下边界、空元素自身；Flex/Grid 容器内、浮动与绝对定位元素不发生。避免方式：`display: flow-root`、加 `border`/`padding`、改用 Flex/Grid + `gap`。
+
+- 发生场景：相邻块级元素垂直外边距、父子上下边界、空元素自身。
+- Flex/Grid 容器内、浮动与绝对定位元素不发生。
+- 避免方式：`display: flow-root`、加 `border`/`padding`、改用 Flex/Grid + `gap`。
 
 **12) CSS 变量的作用域与继承规则？为什么不能 `var()` 拼选择器？**
-变量写在选择器上、沿继承树生效（`var()` 只在「引用处」解析，同一属性在不同元素可用不同变量值）。因为变量在「值」层面替换，无法参与「选择器/属性名」的语法结构。
+
+- 变量写在选择器上、沿继承树生效；`var()` 只在「引用处」解析。
+- 因为变量在「值」层面替换，无法参与「选择器/属性名」的语法结构。
+
+**13) 行内元素（inline）设 `padding-top` / `margin-top` 会怎样？**
+
+- 垂直方向 `margin` 不生效；垂直 `padding` / `border` 可见但不撑开行盒高度，可能与相邻行重叠。
+- 修复：改为 `display: inline-block` 或调整 `line-height`。
+
+**14) `margin` / `padding` 百分比相对谁计算？有什么经典应用？**
+
+- 无论水平还是垂直方向，百分比 `margin` / `padding` 都相对包含块的**宽度**。
+- 经典应用：`aspect-ratio` 出现前，用 `padding-block-start: 56.25%` 实现 16:9 占位容器。
+
+**15) 同一层叠上下文内的绘制顺序是什么？`z-index: auto` 与 `0` 有何不同？**
+
+- 从下到上：背景/边框 → 负 z-index 定位后代 → 普通流块级盒 → 浮动盒 → 行内/行内块 → z-index auto/0 定位后代 → 正 z-index 定位后代。
+- `z-index: auto` 不创建层叠上下文；`z-index: 0` 会创建层叠上下文，后代无法「穿透」到外部。
+
+**16) 为什么有时 `a:hover` 不生效？状态伪类应怎么排序？**
+
+- `:link`、`:visited`、`:hover`、`:active` 特殊度相同，后写者胜。
+- 应按 LVHA 顺序：`link → visited → hover → active`。
+- 另外 `:visited` 有安全限制，只能改颜色类属性。
+
+**17) `@font-face` 的 `src` 为什么要写 `local()` 和多个 `format()`？图标字体如何实现？**
+
+- `local('FontName')` 优先使用用户本地已安装字体，避免下载。
+- 多个 `format()` 让浏览器按需选择支持的格式（现代项目通常只给 `woff2`）。
+- 图标字体：把图标做成字体字形，映射到 PUA 码位，用 `font-family` + `::before { content: '\e601'; }` 显示；新项目更推荐内联 SVG / SVG Sprite。
+
+**18) `img` 底部为什么会有几 px 空隙？怎么消除？**
+
+- `img` 是行内替换元素，默认与文字基线（baseline）对齐，基线下方会留下「下伸部」间隙。
+- 消除：`display: block`、`vertical-align: bottom`、或父级 `line-height: 0`。
 
 ### 15.5 延伸阅读与学习路径
 

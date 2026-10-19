@@ -258,7 +258,7 @@ HTTPS 是 Google 的轻量排名信号，也是现代浏览器的「安全上下
 
 ### 4.2 Open Graph 与 Twitter Card
 
-社交分享卡片由 Open Graph（OG）与 Twitter Card 驱动，决定链接在微信 / Twitter / Slack 等场景的预览样式：
+社交分享卡片由 Open Graph（OG）与 Twitter Card 驱动，决定链接在微信 / Twitter / Slack 等场景的预览样式。关于 OG 完整属性、各平台差异与工程化注入的纵深展开，见 [Open Graph 协议知识手册](/fundamentals/seo/og/)。
 
 ```html
 <meta property="og:type" content="article" />

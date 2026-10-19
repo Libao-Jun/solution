@@ -48,12 +48,12 @@ Open Graph（开放图谱，简称 OG）协议是一套由 Facebook（现 Meta�
 
 OG 把每个网页建模成一个「图谱对象（Graph Object）」，四类基础属性描述它：
 
-| 维度     | 对应标签          | 含义                         |
-| -------- | ----------------- | ---------------------------- |
-| 标题     | `og:title`        | 卡片主标题                   |
-| 类型     | `og:type`         | 对象类型（网页 / 文章 / 视频） |
-| 图片     | `og:image`        | 卡片封面图                   |
-| 地址     | `og:url`          | 该对象的标准网址（规范化）   |
+| 维度 | 对应标签   | 含义                           |
+| ---- | ---------- | ------------------------------ |
+| 标题 | `og:title` | 卡片主标题                     |
+| 类型 | `og:type`  | 对象类型（网页 / 文章 / 视频） |
+| 图片 | `og:image` | 卡片封面图                     |
+| 地址 | `og:url`   | 该对象的标准网址（规范化）     |
 
 其余属性（描述、站点名、语言、图像尺寸等）都是对这四者的补充。
 
@@ -77,7 +77,10 @@ OG 把每个网页建模成一个「图谱对象（Graph Object）」，四类�
 ### 2.2 推荐补充字段
 
 ```html
-<meta property="og:description" content="从 LCP、INP、CLS 到资源加载与缓存，一篇讲透性能优化。" />
+<meta
+  property="og:description"
+  content="从 LCP、INP、CLS 到资源加载与缓存，一篇讲透性能优化。"
+/>
 <meta property="og:site_name" content="Example 技术博客" />
 <meta property="og:locale" content="zh_CN" />
 <meta property="og:locale:alternate" content="en_US" />
@@ -91,24 +94,24 @@ OG 把每个网页建模成一个「图谱对象（Graph Object）」，四类�
 
 ### 2.3 完整属性速查表
 
-| 属性                    | 说明                                       | 是否必填 |
-| ----------------------- | ------------------------------------------ | -------- |
-| `og:title`              | 对象标题                                   | 必填     |
-| `og:type`               | 对象类型                                   | 必填     |
-| `og:image`              | 封面图 URL                                 | 必填     |
-| `og:url`                | 对象规范 URL                               | 必填     |
-| `og:description`        | 对象描述                                   | 推荐     |
-| `og:site_name`          | 站点名称                                   | 推荐     |
-| `og:locale`             | 语言地区                                   | 推荐     |
-| `og:locale:alternate`   | 备用语言地区（可多个）                     | 可选     |
-| `og:determiner`         | 标题冠词                                   | 可选     |
-| `og:image:width`        | 图像宽（px）                               | 推荐     |
-| `og:image:height`       | 图像高（px）                               | 推荐     |
-| `og:image:alt`          | 图像替代文本（无障碍）                     | 推荐     |
-| `og:image:type`         | 图像 MIME（如 `image/png`）                | 可选     |
-| `og:image:secure_url`   | HTTPS 图像 URL                             | 可选     |
-| `og:video` / `og:audio` | 多媒体资源（见第五章）                     | 可选     |
-| `og:updated_time`       | 对象更新时间（ISO 8601）                    | 可选     |
+| 属性                    | 说明                        | 是否必填 |
+| ----------------------- | --------------------------- | -------- |
+| `og:title`              | 对象标题                    | 必填     |
+| `og:type`               | 对象类型                    | 必填     |
+| `og:image`              | 封面图 URL                  | 必填     |
+| `og:url`                | 对象规范 URL                | 必填     |
+| `og:description`        | 对象描述                    | 推荐     |
+| `og:site_name`          | 站点名称                    | 推荐     |
+| `og:locale`             | 语言地区                    | 推荐     |
+| `og:locale:alternate`   | 备用语言地区（可多个）      | 可选     |
+| `og:determiner`         | 标题冠词                    | 可选     |
+| `og:image:width`        | 图像宽（px）                | 推荐     |
+| `og:image:height`       | 图像高（px）                | 推荐     |
+| `og:image:alt`          | 图像替代文本（无障碍）      | 推荐     |
+| `og:image:type`         | 图像 MIME（如 `image/png`） | 可选     |
+| `og:image:secure_url`   | HTTPS 图像 URL              | 可选     |
+| `og:video` / `og:audio` | 多媒体资源（见第五章）      | 可选     |
+| `og:updated_time`       | 对象更新时间（ISO 8601）    | 可选     |
 
 > 注意：`og:url` 应填**规范化地址**（去掉跟踪参数、统一 https、统一结尾斜杠），它让平台把分享聚合到同一个对象，避免同页多条链接分散点赞与评论。
 
@@ -120,14 +123,14 @@ OG 把每个网页建模成一个「图谱对象（Graph Object）」，四类�
 
 ### 3.1 常用类型对照
 
-| 类型                  | 适用场景                                   | 额外推荐字段                                   |
-| --------------------- | ------------------------------------------ | ---------------------------------------------- |
-| `website`             | 首页、栏目页、工具页                       | `og:title` / `og:image`                        |
-| `article`             | 博客、新闻、教程（最常用）                 | `article:published_time` / `article:author` / `article:section` |
-| `book`                | 电子书、出版物                             | `book:isbn` / `book:author`                    |
-| `profile`             | 个人主页、作者页                           | `profile:username` / `profile:first_name`      |
-| `video.movie` / `video.episode` | 视频内容                          | `video:*` 系列（见 5.1）                        |
-| `music.song`          | 音乐单曲                                   | `music:*` 系列                                 |
+| 类型                            | 适用场景                   | 额外推荐字段                                                    |
+| ------------------------------- | -------------------------- | --------------------------------------------------------------- |
+| `website`                       | 首页、栏目页、工具页       | `og:title` / `og:image`                                         |
+| `article`                       | 博客、新闻、教程（最常用） | `article:published_time` / `article:author` / `article:section` |
+| `book`                          | 电子书、出版物             | `book:isbn` / `book:author`                                     |
+| `profile`                       | 个人主页、作者页           | `profile:username` / `profile:first_name`                       |
+| `video.movie` / `video.episode` | 视频内容                   | `video:*` 系列（见 5.1）                                        |
+| `music.song`                    | 音乐单曲                   | `music:*` 系列                                                  |
 
 ### 3.2 article 类型的典型写法
 
@@ -228,7 +231,10 @@ Twitter（X）在 OG 之外定义了自己的 `twitter:*` 卡片协议，但**�
 <meta name="twitter:site" content="@example" />
 <meta name="twitter:creator" content="@author" />
 <meta name="twitter:title" content="Open Graph 协议知识手册" />
-<meta name="twitter:description" content="前端高级工程师必须掌握的社交分享卡片知识。" />
+<meta
+  name="twitter:description"
+  content="前端高级工程师必须掌握的社交分享卡片知识。"
+/>
 <meta name="twitter:image" content="https://example.com/cover.png" />
 ```
 
@@ -242,12 +248,12 @@ Twitter（X）在 OG 之外定义了自己的 `twitter:*` 卡片协议，但**�
 
 OG 与 [JSON-LD](https://ogp.me/)（Schema.org 结构化数据）解决的是**不同问题**，不要混为一谈：
 
-| 维度         | Open Graph                    | JSON-LD（Schema.org）            |
-| ------------ | ----------------------------- | -------------------------------- |
-| 目标消费者   | 社交平台爬虫（分享卡片）      | 搜索引擎 / 语音助手（理解实体）  |
-| 数据形态     | `<meta>` 键值对               | `<script type="application/ld+json">` JSON |
-| 典型用途     | 微信 / Twitter / LinkedIn 卡片 | Google 富结果（评论星、面包屑）   |
-| 是否影响排名 | 不直接影响                    | 帮助理解页面实体，间接影响展现    |
+| 维度         | Open Graph                     | JSON-LD（Schema.org）                      |
+| ------------ | ------------------------------ | ------------------------------------------ |
+| 目标消费者   | 社交平台爬虫（分享卡片）       | 搜索引擎 / 语音助手（理解实体）            |
+| 数据形态     | `<meta>` 键值对                | `<script type="application/ld+json">` JSON |
+| 典型用途     | 微信 / Twitter / LinkedIn 卡片 | Google 富结果（评论星、面包屑）            |
+| 是否影响排名 | 不直接影响                     | 帮助理解页面实体，间接影响展现             |
 
 两者**共存不冲突**：OG 管「分享长什么样」，JSON-LD 管「搜索引擎怎么理解你」。本站文档页同时输出 `TechArticle` 的 JSON-LD 与页面级 OG（见 [SEO 全流程知识手册](/fundamentals/seo/)）。
 
@@ -272,15 +278,15 @@ OG 与 [JSON-LD](https://ogp.me/)（Schema.org 结构化数据）解决的是**�
 
 不同平台对 OG 的解读存在细节差异，统一写法难以 100% 覆盖，需针对重点平台取舍。
 
-| 平台       | 大图尺寸偏好        | 特殊点                                                       |
-| ---------- | ------------------- | ------------------------------------------------------------ |
-| Facebook   | 1200×630（1.91:1）  | 有 Sharing Debugger，缓存强，必须手动「抓取新副本」刷新      |
-| Twitter/X  | 1200×600（2:1）     | 优先 `twitter:*`；回退 OG；`summary_large_image` 才显示大图 |
-| LinkedIn   | 1200×627            | Post Inspector 可刷新；对 `og:image` 大小 / 比例较敏感       |
-| Slack      | 大图 + 标题 + 描述  | 读取 OG；机器人有缓存，更新后需等或重发                     |
-| Discord    | 大图卡片            | 同 OG；支持 `og:image` 多图候选                              |
-| Telegram   | 大图 + 标题         | 读取 OG；站內有链接预览缓存                                  |
-| 微信       | 缩略图（小）        | 公众号 / 小程序内分享走自有协议；普通网页分享预览依赖 OG，但部分场景只显示小图 |
+| 平台      | 大图尺寸偏好       | 特殊点                                                                         |
+| --------- | ------------------ | ------------------------------------------------------------------------------ |
+| Facebook  | 1200×630（1.91:1） | 有 Sharing Debugger，缓存强，必须手动「抓取新副本」刷新                        |
+| Twitter/X | 1200×600（2:1）    | 优先 `twitter:*`；回退 OG；`summary_large_image` 才显示大图                    |
+| LinkedIn  | 1200×627           | Post Inspector 可刷新；对 `og:image` 大小 / 比例较敏感                         |
+| Slack     | 大图 + 标题 + 描述 | 读取 OG；机器人有缓存，更新后需等或重发                                        |
+| Discord   | 大图卡片           | 同 OG；支持 `og:image` 多图候选                                                |
+| Telegram  | 大图 + 标题        | 读取 OG；站內有链接预览缓存                                                    |
+| 微信      | 缩略图（小）       | 公众号 / 小程序内分享走自有协议；普通网页分享预览依赖 OG，但部分场景只显示小图 |
 
 **适配策略**：以 1200×630 为通用封面基准，同时满足 Twitter 的 2:1 与 LinkedIn 的 627 高；有强运营诉求时，再用平台调试工具单独校验 Facebook / LinkedIn / Twitter。
 
@@ -303,15 +309,15 @@ VitePress 通过 `transformHead` 在构建期按页面生成 OG，无需手写�
 ```ts
 // .vitepress/config.mts（示意）
 const buildSeoHead = ({ pageData }) => {
-  const canonical = new URL(routePath, siteUrl).href
+  const canonical = new URL(routePath, siteUrl).href;
   return [
-    ['link', { rel: 'canonical', href: canonical }],
-    ['meta', { property: 'og:title', content: pageData.title }],
-    ['meta', { property: 'og:url', content: canonical }],
-    ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:image', content: siteOgImage }],
-  ]
-}
+    ["link", { rel: "canonical", href: canonical }],
+    ["meta", { property: "og:title", content: pageData.title }],
+    ["meta", { property: "og:url", content: canonical }],
+    ["meta", { property: "og:type", content: "website" }],
+    ["meta", { property: "og:image", content: siteOgImage }],
+  ];
+};
 ```
 
 要点：`og:url` 用**绝对地址的 canonical**（与 `base` 解耦，本地 `/`、CI `/solution/` 都正确），`og:image` 用绝对地址，避免相对路径。
@@ -323,13 +329,13 @@ const buildSeoHead = ({ pageData }) => {
 useHead({
   title: article.title,
   meta: [
-    { property: 'og:title', content: article.title },
-    { property: 'og:type', content: 'article' },
-    { property: 'og:image', content: article.cover },
-    { property: 'og:url', content: `https://example.com/p/${article.id}/` },
-    { property: 'article:published_time', content: article.createdAt },
+    { property: "og:title", content: article.title },
+    { property: "og:type", content: "article" },
+    { property: "og:image", content: article.cover },
+    { property: "og:url", content: `https://example.com/p/${article.id}/` },
+    { property: "article:published_time", content: article.createdAt },
   ],
-})
+});
 ```
 
 ### 10.4 本地自测脚本
@@ -349,12 +355,12 @@ curl -s http://localhost:4173/perf/ | grep -E 'og:(title|image|type|url)'
 
 ### 11.1 官方调试工具（必用）
 
-| 平台        | 工具                                                         |
-| ----------- | ------------------------------------------------------------ |
-| Facebook    | Sharing Debugger（开发者后台）                               |
-| Twitter/X   | Card Validator（需登录）                                     |
-| LinkedIn    | Post Inspector（postinspector.linkedinlabs.com）             |
-| 通用校验    | opengraph.dev、ogp.me 文档对照                               |
+| 平台      | 工具                                             |
+| --------- | ------------------------------------------------ |
+| Facebook  | Sharing Debugger（开发者后台）                   |
+| Twitter/X | Card Validator（需登录）                         |
+| LinkedIn  | Post Inspector（postinspector.linkedinlabs.com） |
+| 通用校验  | opengraph.dev、ogp.me 文档对照                   |
 
 ### 11.2 刷新缓存
 

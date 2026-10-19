@@ -40,9 +40,12 @@ Open Graph（开放图谱，简称 OG）协议是一套由 Facebook（现 Meta�
 
 ### 1.1 为什么前端必须懂它
 
-- **分享即门面**：用户在微信、钉钉、Slack、Discord、Twitter、LinkedIn 粘贴链接的瞬间，卡片质量直接决定点击率（CTR）。一张 1200×630 的清晰封面图，比纯文字链接的点击率高出一个数量级。
-- **它只认服务端 HTML**：绝大多数社交爬虫（Facebook 的 `facebookexternalhit`、Twitter 的 `Twitterbot`、LinkedIn 的 `LinkedInBot`）是**不执行 JavaScript** 的。SPA（单页应用）若只在客户端动态插入 `<meta>`，爬虫抓到的只是空 `<head>`，卡片必失败。
-- **它是 SEO 之外最容易被忽视的「前端可见收益」**：TDK 影响搜索排名，OG 影响社交分发——两者都是「在 `<head>` 写对标签」这种前端基本功，但 OG 的反馈最快、最可量化。
+- **分享即门面**
+> 用户在微信、钉钉、Slack、Discord、Twitter、LinkedIn 粘贴链接的瞬间，卡片质量直接决定点击率（CTR）。一张 1200×630 的清晰封面图，比纯文字链接的点击率高出一个数量级。
+- **它只认服务端 HTML**
+> 绝大多数社交爬虫（Facebook 的 `facebookexternalhit`、Twitter 的 `Twitterbot`、LinkedIn 的 `LinkedInBot`）是**不执行 JavaScript** 的。SPA（单页应用）若只在客户端动态插入 `<meta>`，爬虫抓到的只是空 `<head>`，卡片必失败。
+- **它是 SEO 之外最容易被忽视的「前端可见收益」**
+> TDK 影响搜索排名，OG 影响社交分发——两者都是「在 `<head>` 写对标签」这种前端基本功，但 OG 的反馈最快、最可量化。
 
 ### 1.2 协议的基本概念
 
@@ -231,14 +234,15 @@ Twitter（X）在 OG 之外定义了自己的 `twitter:*` 卡片协议，但**�
 <meta name="twitter:site" content="@example" />
 <meta name="twitter:creator" content="@author" />
 <meta name="twitter:title" content="Open Graph 协议知识手册" />
-<meta
-  name="twitter:description"
-  content="前端高级工程师必须掌握的社交分享卡片知识。"
-/>
+<meta name="twitter:description"  content="前端高级工程师必须掌握的社交分享卡片知识。"/>
 <meta name="twitter:image" content="https://example.com/cover.png" />
 ```
 
-`twitter:card` 取值：`summary`（小图）、`summary_large_image`（大图，推荐）、`app`（应用安装）、`player`（内嵌播放器）。
+`twitter:card` 取值
+- `summary`（小图）
+- `summary_large_image`（大图，推荐）
+- `app`（应用安装）
+- `player`（内嵌播放器）
 
 > 实践建议：OG 写全，Twitter 只补 `twitter:card` 与 `twitter:site` 即可，避免信息双份维护导致不一致。
 
@@ -265,12 +269,12 @@ OG 与 [JSON-LD](https://ogp.me/)（Schema.org 结构化数据）解决的是**�
 
 1. **用户复制链接**：在微信 / Slack / Twitter 粘贴 `https://example.com/perf/`。
 2. **平台发起抓取**：平台服务端用专属爬虫（如 `facebookexternalhit/1.1`）请求该 URL 的 HTML。这一步发生在**平台服务器**，与分享者的浏览器无关。
-3. **解析 `<head>`**：爬虫只读服务端返回的 HTML 文本，提取 `og:*` / `twitter:*` / `<title>` / `<meta name="description">`。
+3. **解析 `<head>`**：爬虫只读服务端返回的 HTML 文本，提取 `og:*`/`twitter:*`/`<title>`/`<meta name="description">`
 4. **生成卡片**：平台把解析结果渲染成预览卡片，缓存到「这条链接」上。
 5. **展示与聚合**：卡片展示给接收者；同 `og:url` 的多次分享聚合为同一对象（点赞 / 评论共享）。
 6. **更新与刷新**：内容变更后，需主动到平台调试工具刷新缓存（见第十一章），否则旧卡片会停留数小时到数天。
 
-> **关键结论**：卡片内容取决于「爬虫抓取那一刻的服务端 HTML」。SPA 若不在服务端渲染 `<head>`，爬虫拿不到 OG，卡片就废了——这是 OG 落地里最高频的线上事故。
+> **关键结论**：卡片内容取决于「爬虫抓取那一刻的服务端 HTML」。SPA 若不在服务端渲染 `<head>`，爬虫拿不到 OG，卡片就废了 — 这是 OG 落地里最高频的线上事故。
 
 ---
 
@@ -298,9 +302,12 @@ OG 与 [JSON-LD](https://ogp.me/)（Schema.org 结构化数据）解决的是**�
 
 无论用哪种框架，**OG 标签必须出现在服务端返回的 HTML `<head>` 里**。常见落地方式：
 
-- **SSR / SSG 框架**（Next.js、Nuxt、Astro、VitePress）：在页面级 `head` / `useHead` / `transformHead` 中按路由注入。
-- **静态站**：构建期为每个页面写入对应 `<meta>`。
-- **纯 CSR（如裸 React/Vue SPA）**：需加预渲染（prerender）或改成 SSG/SSR，否则社交爬虫拿不到 OG。
+- **SSR / SSG 框架**（Next.js、Nuxt、Astro、VitePress）
+> 在页面级 `head` / `useHead` / `transformHead` 中按路由注入。
+- **静态站**
+> 构建期为每个页面写入对应 `<meta>`。
+- **纯 CSR（如裸 React/Vue SPA）**
+> 需加预渲染（prerender）或改成 SSG/SSR，否则社交爬虫拿不到 OG。
 
 ### 10.2 以 VitePress 为例（本站做法）
 
@@ -376,10 +383,12 @@ curl -s http://localhost:4173/perf/ | grep -E 'og:(title|image|type|url)'
 ```bash
 # 1) 服务端 HTML 含 OG 四件套
 curl -s https://example.com/perf/ | grep -oE 'og:(title|type|image|url)' | sort -u
+
 # 2) 图像可访问且为 HTTPS
 curl -I https://example.com/cover.png | grep -iE 'HTTP/|content-type'
+
 # 3) 图像尺寸达标
-#    用图片工具读取 width/height，确认 ≥ 1200×630
+用图片工具读取 width/height，确认 ≥ 1200×630
 ```
 
 ---
@@ -388,10 +397,10 @@ curl -I https://example.com/cover.png | grep -iE 'HTTP/|content-type'
 
 ### 12.1 高频反模式
 
-- **SPA 客户端注入 OG**：爬虫不执行 JS，拿到空 `<head>` → 卡片失败。必须用 SSR/SSG。
+- **SPA 客户端注入 OG**：爬虫不执行 JS，拿到空 `<head>` → 卡片失败，必须用 SSR/SSG。
 - **`og:image` 用相对路径 / HTTP**：相对路径爬虫无法解析；HTTP 在 https 页被拦。
 - **`og:image` 指向 SVG**：社交爬虫不接受 SVG，卡片无图。
-- **漏写 `og:image:width/height`**：爬虫需二次测尺寸，卡片变慢、偶发不稳。
+- **`og:image:width/height` 漏写**：爬虫需二次测尺寸，卡片变慢、偶发不稳。
 - **`og:url` 带跟踪参数**：同页分散成多个对象，点赞 / 评论不聚合。
 - **`og:title` / `og:description` 过长**：被平台截断，关键信息丢失。
 - **OG 与 JSON-LD 信息冲突**（如标题不一致）：用户困惑，信任度下降。
@@ -411,9 +420,12 @@ curl -I https://example.com/cover.png | grep -iE 'HTTP/|content-type'
 
 ## 十三、相关协议与延伸：oEmbed 与 Schema.org
 
-- **oEmbed**：让平台「自动嵌入」富内容（如 YouTube 视频、Twitter 推文）的协议，与 OG 互补——OG 解决「链接预览卡片」，oEmbed 解决「把外部内容嵌进自己的页面」。它需要服务端提供 `oembed` 端点。
-- **Schema.org / JSON-LD**：面向搜索引擎的结构化数据（见第七章），与 OG 并行不悖。
-- **Microdata / RDFa**：更早的语义标注方案，现代站点更推荐 JSON-LD。
+- **oEmbed**
+> 让平台「自动嵌入」富内容（如 YouTube 视频、Twitter 推文）的协议，与 OG 互补 — OG 解决「链接预览卡片」，oEmbed 解决「把外部内容嵌进自己的页面」。它需要服务端提供 `oembed` 端点。
+- **Schema.org / JSON-LD**
+> 面向搜索引擎的结构化数据（见第七章），与 OG 并行不悖。
+- **Microdata / RDFa**
+> 更早的语义标注方案，现代站点更推荐 JSON-LD。
 
 OG 是「社交分发」这一环的最优解：成本极低（只在 `<head>` 写几个标签）、收益极高（直接提升分享点击）。把它纳入前端工程化的「页面元信息」标准流程，是高级前端的基本功。
 

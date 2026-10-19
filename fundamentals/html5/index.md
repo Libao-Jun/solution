@@ -174,6 +174,7 @@
 | `<span class="bold">`           | `<strong>` / `<b>` |
 
 **收益**
+
 - ① 更利于 SEO 与爬虫理解；
 - ② 屏幕阅读器等辅助设备可正确朗读；
 - ③ 代码可读、可维护；
@@ -746,13 +747,18 @@ URL 中特殊字符需编码：空格→`%20`、中文→UTF-8 百分号编码�
 | 5. 绘制 Paint     | **绘制指令**    | 填充颜色、文字、边框、阴影，即「重绘（Repaint）」                       |
 | 6. 合成 Composite | **图层上屏**    | 各图层交由 GPU 合成后显示；`transform` / `opacity` 只走这一步           |
 
-**三条与 HTML 写法直接相关的结论**：
+**三条与 HTML 写法直接相关的结论**
 
-1. **结构先行、脚本让路**：CSS 放 `head`（样式尽早就绪，避免白屏闪烁），JS 用 `defer` 或放 `body` 末尾（避免解析被阻塞）。
-2. **布局抖动（Layout Thrashing）**：读写交替（读取 `offsetHeight` → 改样式 → 再读）会让浏览器反复重排，务必**先批量读、再批量写**。
-3. **动画属性分级**：改 `width` / `top` / `left` 触发**重排 + 重绘 + 合成**（最贵）；改 `color` / `background` 触发**重绘 + 合成**；只改 `transform` / `opacity` 仅走**合成**（最便宜，可交给 GPU）。
+1. **结构先行、脚本让路**
+   > CSS 放 `head`（样式尽早就绪，避免白屏闪烁），JS 用 `defer` 或放 `body` 末尾（避免解析被阻塞）。
+2. **布局抖动（Layout Thrashing）**
+   > 读写交替（读取 `offsetHeight` → 改样式 → 再读）会让浏览器反复重排，务必**先批量读、再批量写**。
+3. **动画属性分级**
+   > - 改 `width` / `top` / `left` 触发**重排 + 重绘 + 合成**（最贵）；
+   > - 改 `color` / `background` 触发**重绘 + 合成**；
+   > - 只改 `transform` / `opacity` 仅走**合成**（最便宜，可交给 GPU）。
 
-> 渲染管线与关键渲染路径（CRP）的深入讲解见 [浏览器核心知识手册](/fundamentals/browser/)；LCP / INP / CLS 等体验指标的工程优化见 [前端性能优化知识手册](/fundamentals/front-end-performance/)；脚本加载策略的完整专题见 [脚本 Script 加载与执行指南](/fundamentals/script/)。
+渲染管线与关键渲染路径（CRP）的深入讲解见 [浏览器核心知识手册](/fundamentals/browser/)；LCP / INP / CLS 等体验指标的工程优化见 [前端性能优化知识手册](/fundamentals/front-end-performance/)；脚本加载策略的完整专题见 [脚本 Script 加载与执行指南](/fundamentals/script/)。
 
 ---
 
@@ -1048,10 +1054,10 @@ URL 中特殊字符需编码：空格→`%20`、中文→UTF-8 百分号编码�
 
 ### 5.1 Web Storage（本地存储）
 
-| API              | 生命周期         | 容量 | 说明                   |
-| ---------------- | ---------------- | ---- | ---------------------- |
-| `localStorage`   | 永久（手动清除） | ~5MB | 同源共享，永不自动过期 |
-| `sessionStorage` | 标签页会话       | ~5MB | 关闭标签页即清除       |
+| API              | 生命周期                     | 容量 | 说明                   |
+| ---------------- | ---------------------------- | ---- | ---------------------- |
+| `localStorage`   | 永久（手动清除）             | ~5MB | 同源共享，永不自动过期 |
+| `sessionStorage` | 标签页会话(关闭标签自动清除) | ~5MB | 关闭标签页即清除       |
 
 ```js
 localStorage.setItem("token", "abc");
@@ -1067,7 +1073,7 @@ const user = JSON.parse(localStorage.getItem("user") ?? "{}");
 | -------------- | -------- | --------------------------------------------------- |
 | Cookie         | ~4KB     | 随请求自动携带，可设 `HttpOnly`/`Secure`/`SameSite` |
 | localStorage   | ~5MB     | 同步、简单、字符串                                  |
-| sessionStorage | ~5MB     | 会话级                                              |
+| sessionStorage | ~5MB     | 标签级、会话级                                      |
 | IndexedDB      | 数百 MB+ | **异步**、可存二进制/大对象、支持索引与事务         |
 
 ### 5.2 拖放（Drag and Drop）

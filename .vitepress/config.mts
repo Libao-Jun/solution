@@ -184,6 +184,41 @@ const buildSeoHead = ({ pageData }: { pageData: PageData }): HeadConfig[] => {
   ]
 }
 
+/**
+ * 修复：编辑正文含行内 `<script>` 字样的 Markdown 时，dev 热更新弹出
+ * [vue/compiler-sfc] Missing semicolon 错误覆盖层（刷新后恢复正常）。
+ *
+ * 根因：VitePress 把 @vitejs/plugin-vue 配置成 include: /\.(?:vue|md)$/，
+ * 热更新时 plugin-vue 会绕过 VitePress 的 Markdown 编译链，直接把「原始 md
+ * 源码」当 Vue SFC 解析并 compileScript——正文行内代码里的 `<script>` 被其
+ * SFC 解析器误判为 script 块，babel 去编译这段伪 script 内容（实为 markdown
+ * 文本）即报 Missing semicolon (1:16)。冷加载 / 刷新走 VitePress 先渲染成
+ * HTML 的链路（`<script>` 已转义为实体），因此不受影响。
+ *
+ * 修复：在 configResolved 里拦截 plugin-vue 的热更新钩子，对 .md 文件直接
+ * 跳过——md 的热更新由 VitePress 自带的 vitepress:hmr-fix 插件负责，页面
+ * HMR 行为不变，仅去掉对原始 md 的错误 SFC 解析。
+ */
+const skipMdSfcHotUpdate = {
+  name: 'solution:skip-md-sfc-hot-update',
+  enforce: 'pre' as const,
+  configResolved(resolved: any) {
+    for (const plugin of resolved.plugins) {
+      if (plugin.name !== 'vite:vue') continue
+      for (const hookName of ['hotUpdate', 'handleHotUpdate'] as const) {
+        const original = plugin[hookName]
+        if (typeof original !== 'function') continue
+        plugin[hookName] = function (this: any, ctx: { file?: string }) {
+          if (typeof ctx?.file === 'string' && ctx.file.endsWith('.md')) {
+            return undefined
+          }
+          return original.call(this, ctx)
+        }
+      }
+    }
+  },
+}
+
 export default extendConfig(
   defineConfig({
     base,
@@ -323,6 +358,10 @@ export default extendConfig(
           },
         ],
       },
+    },
+    // dev HMR 修复：plugin-vue 不再把原始 Markdown 当 Vue SFC 解析（见上方 skipMdSfcHotUpdate）
+    vite: {
+      plugins: [skipMdSfcHotUpdate],
     },
     markdown: {
       lineNumbers: false,

@@ -4,3 +4,11 @@ node_modules
 .vitepress/.temp
 *.log
 .preview.err
+
+# 临时产物兜底（规范见 AGENTS.md §4.1.1）
+# 注意：被忽略 ≠ 允许存在。这些文件必须落在系统临时目录，仓库内出现即为违规，
+# 由 `pnpm run check:temp` 拦截并列出路径。
+.tmp-*
+tmp-*
+*.tmp
+*-profile/

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vitepress dev",
     "build": "vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "check:temp": "node scripts/check-temp-artifacts.mjs"
   },
   "dependencies": {
     "@vue-flow/core": "^1.48.2",

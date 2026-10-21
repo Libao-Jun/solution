@@ -15,6 +15,7 @@ import { Handle, Position, VueFlow, useVueFlow, type Edge, type Node } from '@vu
 import { useData } from 'vitepress'
 import { computed } from 'vue'
 import DecisionTreeLabelEdge from './DecisionTreeLabelEdge.vue'
+import DocFlowOrthEdge from './DocFlowOrthEdge.vue'
 
 /** 语义色相：节点只声明色相，明暗两套色值由 <style> 里的 hsl() 统一推导 */
 export type FlowTone = 'slate' | 'indigo' | 'sky' | 'emerald' | 'amber' | 'brand'
@@ -22,9 +23,10 @@ export type FlowTone = 'slate' | 'indigo' | 'sky' | 'emerald' | 'amber' | 'brand
  * 外形：
  * - card / start / process / decision / result：实体节点（有填充色，会盖住其下方的连线）
  * - frame：**只有虚线边框、不填充**的区域框（容器 / 分组用；必须不填充，否则框内的连线与连线标签会被它遮住）
+ * - panel：**浅色底漆 + 实线圆角的板块容器**（承载「一组同类节点」，比 frame 更强调分组，同为装饰层、不接收指针事件）
  * - ghost：透明锚点，只作连线端点，不可见
  */
-export type FlowShape = 'card' | 'start' | 'process' | 'decision' | 'result' | 'frame' | 'ghost'
+export type FlowShape = 'card' | 'start' | 'process' | 'decision' | 'result' | 'frame' | 'panel' | 'ghost'
 /** 入线、出线所在边 */
 export type FlowSide = 'top' | 'right' | 'bottom' | 'left'
 
@@ -62,6 +64,13 @@ export interface DocFlowEdge {
   sourcePos?: FlowSide
   /** 按条覆盖入线侧（默认取 target 节点的 targetPos） */
   targetPos?: FlowSide
+  /**
+   * 连线形状：默认 smoothstep（内置折线）；`orth` 为正交树线（拐点居中于两端、
+   * 同源多条线共用一条竖向干线、圆角统一），适合「一棵树多分支」的场景。
+   */
+  edgeType?: 'smoothstep' | 'orth'
+  /** 连线色相（默认 slate），树状图用父节点的色相区分分支 */
+  tone?: FlowTone
 }
 
 const props = withDefaults(
@@ -78,11 +87,25 @@ const props = withDefaults(
 const FIT_VIEW_PARAMS = computed(() => ({ padding: 0.06, minZoom: props.minZoom }))
 
 const LABELED_EDGE = 'labeled'
-const edgeTypes = { [LABELED_EDGE]: DecisionTreeLabelEdge }
+const ORTH_EDGE = 'orth'
+const edgeTypes = { [LABELED_EDGE]: DecisionTreeLabelEdge, [ORTH_EDGE]: DocFlowOrthEdge }
 
 const nodeById = new Map(props.nodes.map((node) => [node.id, node]))
 const sideOf = (id: string, key: 'sourcePos' | 'targetPos', fallback: FlowSide) =>
   nodeById.get(id)?.data[key] ?? fallback
+
+/**
+ * 边的方向 → 句柄 id 后缀。
+ * ★ 模板里的句柄 id 是缩写（`s-t` / `s-r` / `s-b` / `s-l`，target 同理），
+ * 若在这里直接拼 `s-${side}` 会得到 `s-right` 这类不存在的 id，
+ * Vue Flow 找不到句柄时会**静默退回默认的 bottom → top**——
+ * 表现就是「左→右的树，线却从节点底部爬出来」（JS 全貌图连线的真实乱源）。
+ * 任何新增方向都必须在 SIDE_TO_HANDLE 与模板句柄 id 之间保持一一对应。
+ */
+const SIDE_TO_HANDLE = { top: 't', right: 'r', bottom: 'b', left: 'l' } as const satisfies Record<FlowSide, string>
+
+/** 装饰层（区域框 / 板块容器）不接收指针事件，否则大面积容器会挡住画布平移 */
+const DECOR_SHAPES = new Set(['frame', 'panel'])
 
 const flowNodes = computed<Node[]>(() =>
   props.nodes.map((node) => ({
@@ -93,6 +116,7 @@ const flowNodes = computed<Node[]>(() =>
     draggable: false,
     connectable: false,
     selectable: false,
+    class: DECOR_SHAPES.has(node.data.shape ?? '') ? 'doc-node-wrap--decor' : undefined,
   })),
 )
 
@@ -101,13 +125,13 @@ const flowEdges = computed<Edge[]>(() =>
     id: `${props.flowId}-e-${index}`,
     source: edge.source,
     target: edge.target,
-    sourceHandle: `s-${edge.sourcePos ?? sideOf(edge.source, 'sourcePos', 'bottom')}`,
-    targetHandle: `t-${edge.targetPos ?? sideOf(edge.target, 'targetPos', 'top')}`,
-    type: edge.label ? LABELED_EDGE : 'smoothstep',
+    sourceHandle: `s-${SIDE_TO_HANDLE[edge.sourcePos ?? sideOf(edge.source, 'sourcePos', 'bottom')]}`,
+    targetHandle: `t-${SIDE_TO_HANDLE[edge.targetPos ?? sideOf(edge.target, 'targetPos', 'top')]}`,
+    type: edge.label ? LABELED_EDGE : (edge.edgeType ?? 'smoothstep'),
     data: { label: edge.label ?? '' },
     selectable: false,
     updatable: false,
-    class: 'doc-edge',
+    class: edge.tone ? `doc-edge doc-edge--tone-${edge.tone}` : 'doc-edge',
   })),
 )
 
@@ -298,6 +322,25 @@ const { isDark } = useData()
   padding-top: 8px;
 }
 
+/* ---- 板块容器（panel）：浅底漆 + 实线圆角，承载「一组同类节点」 ---- */
+.doc-canvas :deep(.doc-node--panel) {
+  border: 1px solid hsl(var(--doc-hue) 52% 88%);
+  border-radius: 14px;
+  background: hsl(var(--doc-hue) 68% 98% / 0.7);
+  color: hsl(var(--doc-hue) 58% 32%);
+}
+
+.doc-canvas.is-dark :deep(.doc-node--panel) {
+  border-color: hsl(var(--doc-hue) 40% 30%);
+  background: hsl(var(--doc-hue) 30% 15% / 0.65);
+  color: hsl(var(--doc-hue) 72% 84%);
+}
+
+/* 装饰层（区域框 / 板块容器）不接收指针事件：整块区域都能拖动平移 */
+.doc-canvas :deep(.doc-node-wrap--decor) {
+  pointer-events: none;
+}
+
 /* ---- 区域框：只画虚线边框、不填充，框内的连线与标签才能露出来 ---- */
 .doc-canvas :deep(.doc-node--frame) {
   border: 1.5px dashed hsl(var(--doc-hue) 58% 68%);
@@ -360,6 +403,32 @@ const { isDark } = useData()
   stroke: hsl(var(--doc-hue, 220) 40% 58%);
   stroke-width: 1.6;
   stroke-linecap: round;
+}
+
+/* 按分支着色：类挂在连线组上，色相经 --doc-hue 传给描边与分叉圆点 */
+.doc-canvas :deep(.doc-edge--tone-indigo) {
+  --doc-hue: 250;
+}
+
+.doc-canvas :deep(.doc-edge--tone-sky) {
+  --doc-hue: 214;
+}
+
+.doc-canvas :deep(.doc-edge--tone-emerald) {
+  --doc-hue: 160;
+}
+
+.doc-canvas :deep(.doc-edge--tone-amber) {
+  --doc-hue: 32;
+}
+
+.doc-canvas :deep(.doc-edge--tone-brand) {
+  --doc-hue: 258;
+}
+
+/* 正交树线的分叉口圆点 */
+.doc-canvas :deep(.doc-edge__port) {
+  fill: hsl(var(--doc-hue, 220) 45% 55%);
 }
 
 /* ---- 深色模式 ---- */

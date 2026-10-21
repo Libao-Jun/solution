@@ -51,7 +51,7 @@
 
 一句话定位：**JavaScript 是一门单线程、基于原型、运行时弱类型、异步非阻塞的脚本语言；其能力由「宿主环境」（浏览器 / Node / Deno / Bun）提供。**
 
-下面这张「全貌树」把 JS 的知识域按三级铺开（图示可拖拽平移、可缩放）：
+下面这张「全貌图」把 JS 的知识域按三级铺开——根（JS 全貌）→ 三大板块 → 板块内职责卡（图示可拖拽平移、可缩放）：
 
 <JsOverviewMap />
 
@@ -1146,7 +1146,7 @@ const permission = await navigator.permissions.query({ name: "clipboard-write" }
 - `screen.width` / `height` 是屏幕尺寸，`devicePixelRatio`（DPR）用于 1px 边框与 canvas 高清适配。
 - `window.matchMedia('(prefers-color-scheme: dark)')` 监听系统主题；`(prefers-reduced-motion)` 决定是否关闭动效。
 
-### 避坑
+### 24.5 避坑
 
 - 移动端与桌面端事件模型不同（`touch` / `mouse`），统一用 **Pointer Events**（`pointerdown` / `pointermove` / `pointerup`）少一半兼容代码。
 - `window.open` 非用户手势触发会被拦截，返回 `null`，必须判空。

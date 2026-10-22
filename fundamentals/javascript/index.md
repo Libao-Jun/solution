@@ -97,6 +97,57 @@
   - `structuredClone()`（现代浏览器/Node 17+）做深拷贝；
   - `JSON.parse(JSON.stringify())` 会丢 `undefined`/函数/`Symbol`/循环引用，切勿当通用深拷贝。
 
+### 类型判断方式
+
+一句话定位**先问「要判断什么」，再挑工具** 没有任何一种写法能通吃。
+- 原始类型用 `typeof`
+- 数组用 `Array.isArray`
+- 内置对象用 `Object.prototype.toString`
+- 类实例用 `instanceof`
+
+| 判断目标            | 推荐写法                                                                                  | 说明                                                                                                   |
+| ------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 原始类型            | `typeof x`                                                                                | 得 `'undefined'` / `'boolean'` / `'number'` / `'bigint'` / `'string'` / `'symbol'` / `'function'`；**`null` 与所有对象都返回 `'object'`** |
+| `null`              | `x === null`                                                                              | `typeof null === 'object'` 是历史 Bug，用 `typeof` 必然误判                                            |
+| `null` 或 `undefined` | `x == null`                                                                             | 同时匹配两者，是本指南唯一推荐的 `==` 用法                                                             |
+| 数组                | `Array.isArray(x)`                                                                        | 跨 `iframe` / 跨 realm 也可靠；`typeof []` 得 `'object'`                                               |
+| `NaN`               | `Number.isNaN(x)`                                                                         | 全局 `isNaN('abc')` 会先隐式转数字得 `true`，不能用                                                    |
+| 有限数 / 整数       | `Number.isFinite(x)` / `Number.isInteger(x)`                                              | 同样**不做**隐式转换（`Number.isInteger('1')` 为 `false`）                                             |
+| 内置对象细分        | `Object.prototype.toString.call(x)`                                                       | 得 `'[object Array]'` / `'[object Date]'` / `'[object RegExp]'` / `'[object Map]'` / `'[object Error]'` |
+| 类实例              | `x instanceof Fn`                                                                         | 沿原型链查找；跨 realm、`Symbol.hasInstance` 自定义时会失真                                            |
+| 函数                | `typeof x === 'function'`                                                                 | `class` 也是 `'function'`，但直接调用会抛错（见 26.1）                                                 |
+| thenable / 类 Promise | `typeof x?.then === 'function'`                                                         | `instanceof Promise` 对第三方 Promise 实现不成立                                                       |
+| 是否有某属性        | `'key' in obj`                                                                            | 含原型链；只查自有属性用 `Object.hasOwn(obj, key)`                                                     |
+| 可迭代对象          | `typeof x?.[Symbol.iterator] === 'function'`                                              | `for...of` / 展开语法成立的前提                                                                        |
+| 纯对象（plain object） | `Object.getPrototypeOf(x) === Object.prototype \|\| Object.getPrototypeOf(x) === null`  | 排除数组 / `Date` / 类实例                                                                             |
+
+`typeof` 分不清 `Date`、`RegExp`、`Map` 与普通对象，需要细分时统一用 `toString` 取标签：
+
+```js
+// 取「内置类型标签」：只依赖 Object.prototype.toString，可区分 typeof 分不出的内置对象
+function getTag(value) {
+  return Object.prototype.toString.call(value).slice(8, -1).toLowerCase();
+}
+
+getTag([]); // 'array'
+getTag(null); // 'null'（typeof 拿不到）
+getTag(new Date()); // 'date'
+getTag(/a/g); // 'regexp'
+getTag(new Map()); // 'map'
+```
+
+**陷阱（逐条对照）**：
+
+- `typeof` 能安全探测**未声明**变量（返回 `'undefined'` 不报错），但访问 `let`/`const` 的 TDZ 变量会直接抛 `ReferenceError`（见 3.1）。
+- `instanceof` 依赖「当前 realm 的原型链」：`iframe.contentWindow.Array` 造出的数组与主窗口 `Array` 不是同一构造函数，`arr instanceof Array` 为 `false` → **数组判断一律用 `Array.isArray`**。
+- `x.constructor === Fn` 最不可靠：原型被整体替换、`Object.create(null)` 造的无原型对象都会失败（见 26.1）。
+- `Object.prototype.toString` 会被 `Symbol.toStringTag` 改写（`class A { get [Symbol.toStringTag]() { return 'Foo' } }` 得 `'[object Foo]'`）→ 它适合「区分内置类型」，不能当安全校验依据。
+- `typeof document.all` 返回 `'undefined'`（为兼容旧代码的规范特例），不要用它判断 API 是否存在。
+- 判断「空对象」不能用 `!obj`：用 `Reflect.ownKeys(obj).length === 0`（`Object.keys` 会漏掉 `Symbol` 键）。
+- TypeScript 的类型守卫（`value is X`）在运行时**没有任何检查**，边界数据仍要写真实的运行时判断（见 14.8）。
+
+> 通用兜底：消费后端 / `JSON.parse` 的数据时，数组字段一律 `Array.isArray(x) ? x : []`（见第 15 章第 1 条）。
+
 ### 避坑
 
 - 用 `Array.isArray(x)` 判数组，不要用 `typeof x === 'array'`（返回 `'object'`）。
@@ -274,6 +325,108 @@ class Dog extends Animal {
 - **CommonJS（Node 遗留）**：`require` / `module.exports`，动态、运行时加载，不可被静态分析。
 - 浏览器原生 ESM 用 `<script type="module">`；默认严格模式；跨域需 CORS。
 - **方向**：新项目一律 ESM；`import` 静态写在顶层，不要写进 `if`；循环依赖用「延迟引用/注入」解耦。
+
+### 5.4 防抖与节流（debounce / throttle）
+
+一句话定位：**两者都是「闭包 + 定时器」把高频调用压成低频的高阶函数 — 防抖只保留「最后一次」，节流只保留「每个时间窗口的第一次」。**
+- 防抖：停止触发后间隔指定时间，然后执行回调（触发后重置定时器；最后一次有效）。
+- 节流：固定时间间隔内最多执行一次（可首执行，也可尾执行）。
+
+
+| 维度     | 防抖 debounce                                                    | 节流 throttle                                                              |
+| -------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 触发时机 | 停止触发 `wait` 毫秒后才执行一次                                 | 每 `wait` 毫秒最多执行一次（持续触发期间按窗口均匀执行）                   |
+| 执行次数 | 连续触发 N 次，只执行 1 次（末次）                               | 连续触发 N 次，约执行 `总时长 / wait` 次                                   |
+| 典型场景 | 搜索联想、表单校验、`resize` 后重算布局、自动保存                | 滚动加载 / 滚动上报、`mousemove` 跟随、拖拽、按钮限频                      |
+| 不适合   | 需要「过程中有反馈」的场景（滚动进度、拖拽跟随）                 | 必须拿到「最终输入」的场景（搜索框只在停止输入后查询）                     |
+
+**防抖（末次执行 + 可选立即执行）**：
+
+```js
+function debounce(fn, wait = 300, { immediate = false } = {}) {
+  let timer = null;
+
+  function debounced(...args) {
+    const isFirst = timer === null;
+    clearTimeout(timer);
+
+    timer = setTimeout(() => {
+      timer = null;
+      // 箭头函数继承 debounced 的 this，保证 fn 的调用上下文与参数不丢
+      if (!immediate) fn.apply(this, args);
+    }, wait);
+
+    // immediate：首次触发立即执行，之后的触发只重置计时，静默 wait 后才允许再次立即执行
+    if (immediate && isFirst) fn.apply(this, args);
+  }
+
+  // 组件卸载 / 路由切换时调用，避免定时器泄漏后仍执行已销毁的回调（见第 6 章）
+  debounced.cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+  };
+
+  return debounced;
+}
+```
+
+**节流（窗口首执行 + 末次补偿）**：
+
+```js
+function throttle(fn, wait = 300, { leading = true, trailing = true } = {}) {
+  let last = 0; // 上一次真正执行的时间戳；首次为 0 使 remain 为负，直接进入窗口起点
+  let timer = null;
+  let lastArgs;
+  let lastCtx;
+
+  function invoke(ctx, args) {
+    last = Date.now();
+    fn.apply(ctx, args);
+  }
+
+  function throttled(...args) {
+    lastArgs = args;
+    lastCtx = this;
+    const remain = wait - (Date.now() - last);
+
+    if (remain <= 0) {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (leading) invoke(lastCtx, lastArgs);
+      else last = Date.now(); // 禁用首执行时只推进窗口起点，交给 trailing 补最后一次
+    } else if (!timer && trailing) {
+      // 尾部补偿：窗口结束时用「最后一次」的 this 与参数执行，避免丢掉收尾动作
+      timer = setTimeout(() => {
+        timer = null;
+        invoke(lastCtx, lastArgs);
+      }, remain);
+    }
+  }
+
+  throttled.cancel = () => {
+    clearTimeout(timer);
+    timer = null;
+    last = 0;
+  };
+
+  return throttled;
+}
+```
+
+**选型与避坑**：
+
+- 二者都是闭包持有 `timer` / `last` 的典型应用（见 3.2）；返回的函数忘记 `cancel()` 就是定时器泄漏（见第 6 章）。
+- **不要在每次渲染里新建实例**：`onClick={debounce(handleSubmit, 300)}` 每次渲染都生成新闭包，防抖彻底失效 —— React 用 `useMemo` / `useRef` 缓存，Vue 放 `setup` 顶层变量，或在装饰阶段包一次。
+- 包裹对象方法时 `this` 会丢：调用方必须 `debounced.call(obj, ...)`，或直接用箭头函数在定义处绑定上下文（见 3.3）。
+- `wait` 不是精确值：定时器最小延迟约 4ms，后台标签页被节流到 ~1s；需要与渲染帧对齐的更新用 `requestAnimationFrame`（见 7.1）。
+- **搜索联想的正确组合是「防抖 + 取消过期请求」**：只防抖不取消，先发的慢请求仍可能覆盖后发的快请求 → 配合 `AbortController`（见 7.2）。
+- 节流会**丢弃中间参数**，只保留窗口内首次 / 末次；要求「每次触发都要处理」的场景应改队列或批处理，不能用节流。
+- 返回 Promise 的函数被防抖后，调用方拿到的是 `undefined`（结果被吞）→ 需要返回值时给防抖加上 `flush()` 语义，或改用「只保留最新一次调用」的状态机。
+- 滚动 / 触摸监听同时加 `{ passive: true }`，否则高频回调可能触发强制同步布局（见 23.3）。
+
+> 性能视角见第 12 章第 2 条；自查口径见第 13 章、第 16 章。
 
 ---
 
@@ -463,7 +616,7 @@ class Dog extends Animal {
 ## 12. 性能优化清单
 
 1. **减少重排重绘**：批量 DOM 读写；用 `transform`/`opacity` 做动画（走合成层，不触发 layout）。
-2. **防抖/节流**：`resize`/`scroll`/`input` 高频事件必加（`debounce`/`throttle`）。
+2. **防抖/节流**：`resize`/`scroll`/`input` 高频事件必加（`debounce`/`throttle`，实现与选型见 5.4）。
 3. **懒加载**：路由级 `import()`、图片 `loading="lazy"`、首屏外的重依赖延迟加载。
 4. **避免闭包/大数组长期驻留**；事件与定时器及时清理。
 5. **用高效数据结构**：查找多用 `Set`/`Map`（O(1)）替代数组 `includes/find`（O(n)）。

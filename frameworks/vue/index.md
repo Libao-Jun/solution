@@ -35,8 +35,9 @@
 22. [参考资料](#_22-参考资料)
 
 > **如何使用本文档（按角色取用）**
-> - **新手 · 快速上手路径**：按 `§0 选型 → §1.1/§1.5 脚手架与目录 → §2.1 代码组织骨架 → §4 选项式/组合式对照表 → §5/§6/§7 高频概念 → §13 路由 → §14 状态管理` 顺序通读；直接复制 §2.1 的骨架即可写出第一个规范组件。遇到差异以【Vue 3】示例为准。
-> - **高级 · 查漏 / 提效 / 避坑**：直接查标注 ⭐ 的章节（`§4.3` 对照表、`§5.4` v-model 变更、`§6.1` v-if/v-for 优先级、`§13.2/§13.3` 路由坑）、`§18` 性能、`§19` 安全、`§20` 风格清单、`§21` 迁移清单；用 `【Vue 2】/【Vue 3】` 标记核对自己的版本盲点，`§1.6` 生态库用于技术选型。
+>
+> - **新手 · 快速上手路径**：按 `0 选型 → 1.1/1.5 脚手架与目录 → 2.1 代码组织骨架 → 4 选项式/组合式对照表 → 5/6/7 高频概念 → 13 路由 → 14 状态管理` 顺序通读；直接复制 2.1 的骨架即可写出第一个规范组件。遇到差异以【Vue 3】示例为准。
+> - **高级 · 查漏 / 提效 / 避坑**：直接查标注 ⭐ 的章节（`4.3` 对照表、`5.4` v-model 变更、`6.1` v-if/v-for 优先级、`13.2/13.3` 路由坑）、`18` 性能、`19` 安全、`20` 风格清单、`21` 迁移清单；用 `【Vue 2】/【Vue 3】` 标记核对自己的版本盲点，`1.6` 生态库用于技术选型。
 
 ---
 
@@ -63,13 +64,15 @@
 ### 1.2 语言与类型
 
 - 优先 TypeScript，组件统一 `<script setup lang="ts">`。
-- 状态优先 `shallowRef()` 而非 `ref()`（见 §3.4）；对象优先 `ref()` 而非 `reactive()`（见 §3.3）。
-- 样式优先 UnoCSS / Tailwind；通用工具函数优先 VueUse（`@vueuse/core`）。
+- 状态优先 `shallowRef()` 而非 `ref()`（见 3.4）；
+- 对象优先 `ref()` 而非 `reactive()`（见 3.3）。
+- 样式优先 UnoCSS / Tailwind；
+- 通用工具函数优先 VueUse（`@vueuse/core`）。
 
 ### 1.3 代码检查（ESLint）
 
 - 必须启用 `eslint-plugin-vue`，继承 `plugin:vue/vue3-recommended`（Vue 2 用 `plugin:vue/recommended`）。
-- 关键强制规则：
+- 关键强制规则
   - `vue/no-use-v-if-with-v-for`（禁止 v-if 与 v-for 同元素）
   - `vue/multi-word-component-names`（组件名多单词）
   - `vue/require-default-prop`（非 required prop 需默认值）
@@ -94,12 +97,12 @@
 
 #### 1.4.3 不同场景下的组件名大小写（优先级 B）
 
-| 场景                       | 推荐命名                             | 说明                                                        |
-| -------------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| 单文件组件文件名           | PascalCase 或 kebab-case（保持一致） | 见 §1.4.1                                                   |
-| 模板中（SFC / 字符串模板） | **PascalCase**                       | 易与 HTML 原生元素区分，支持自动补全                        |
-| 模板中（DOM 模板）         | **kebab-case**                       | HTML 大小写不敏感，必须如此；或全局统一 kebab-case          |
-| JS / JSX 中                | **PascalCase**                       | 类 / 构造函数约定；仅极简全局注册场景可用 kebab-case 字符串 |
+| 场景                       | 推荐命名                 | 说明                                                        |
+| -------------------------- | ------------------------ | ----------------------------------------------------------- |
+| 单文件组件文件名           | PascalCase 或 kebab-case | 见 1.4.1，（保持一致）                                      |
+| 模板中（SFC / 字符串模板） | **PascalCase**           | 易与 HTML 原生元素区分，支持自动补全                        |
+| 模板中（DOM 模板）         | **kebab-case**           | HTML 大小写不敏感，必须如此；或全局统一 kebab-case          |
+| JS / JSX 中                | **PascalCase**           | 类 / 构造函数约定；仅极简全局注册场景可用 kebab-case 字符串 |
 
 #### 1.4.4 自闭合组件（优先级 B）
 
@@ -121,7 +124,8 @@
   - 例：`TheHeading.vue`、`TheSidebar.vue`
   - 一旦需要加 prop，说明它其实是可复用组件，应去掉 `The`。
 - **紧密耦合的组件名**：仅在某父组件场景下有意义的子组件，以**父组件名作为前缀**命名（不要靠多级嵌套目录解决）。
-  - 例：`TodoList.vue` + `TodoListItem.vue` + `TodoListItemButton.vue`；`SearchSidebar.vue` + `SearchSidebarNavigation.vue`
+  - `TodoList.vue` + `TodoListItem.vue` + `TodoListItemButton.vue`；
+  - `SearchSidebar.vue` + `SearchSidebarNavigation.vue`
 
 #### 1.4.7 组件名中的单词顺序（优先级 B）
 
@@ -130,8 +134,8 @@
 
 #### 1.4.8 组合式函数 / 其它文件
 
-- 组合式函数文件：`use` 前缀（`useFetch.ts`、`useMouse.ts`），见 §9。
-- 路由 / store：`kebab-case` 或 `camelCase`，与项目一致即可，但同一项目内统一。
+- 组合式函数文件：`use` 前缀（`useFetch.ts`、`useMouse.ts`），见 9。
+- 路由 / store：`kebab-case` 或 `camelCase`，与项目一致即可，但同一项目内命名必须统一。
 
 ### 1.5 推荐目录结构
 
@@ -144,13 +148,13 @@ my-vue-app/
 │   ├── api/                    # 接口请求层（按模块分文件：user.ts、order.ts）
 │   ├── assets/                 # 需构建处理的资源（图片、字体、全局样式）
 │   ├── components/             # 公共 / 业务组件（SFC）
-│   │   └── base/               # 基础组件（BaseButton 等，见 §1.4.6）
-│   ├── composables/            # 组合式函数（useXxx.ts，见 §10）
-│   ├── router/                 # 路由配置（index.ts + 路由守卫，见 §13）
-│   ├── stores/                 # Pinia 状态仓库（useUserStore.ts，见 §14）
+│   │   └── base/               # 基础组件（BaseButton 等，见 1.4.6）
+│   ├── composables/            # 组合式函数（useXxx.ts，见 10）
+│   ├── router/                 # 路由配置（index.ts + 路由守卫，见 13）
+│   ├── stores/                 # Pinia 状态仓库（useUserStore.ts，见 14）
 │   ├── styles/                 # 全局样式 / 变量 / mixin
 │   ├── types/                  # 全局 TS 类型声明（*.d.ts、接口定义）
-│   ├── utils/                  # 无状态纯工具函数（格式化、校验，见 §10.3）
+│   ├── utils/                  # 无状态纯工具函数（格式化、校验，见 10.3）
 │   ├── views/ 或 pages/        # 路由级页面组件（与路由表一一对应）
 │   ├── layouts/                # 布局组件（含 <router-view>，如 DefaultLayout）
 │   ├── plugins/                # 第三方插件注册（i18n、axios 实例等）
@@ -161,62 +165,72 @@ my-vue-app/
 ├── vite.config.ts              # Vite 配置
 ├── tsconfig.json               # TS 配置
 ├── package.json
-└── eslint.config.js            # 见 §1.3
+└── eslint.config.js            # 见 1.3
 ```
 
-**组织原则**（官方建议）：
-- **优先按功能（feature）聚合**：把同一业务相关的组件、composable、api、store 放在同一目录下（如 `features/checkout/`），避免所有文件平铺在 `components/` 下难以维护。
-- **公共与业务分离**：`components/` 放可复用公共组件；页面专属组件就近放在对应 `views/xxx/` 内。
-- **`composables/` 与 `utils/` 严格区分**：有状态的用 composable（`use` 前缀），纯函数放 `utils/`（见 §10.3）。
-- **`api/` 与 `stores/` 解耦**：store 调用 api 层，组件只依赖 store，不在组件中散落请求。
+**组织原则**（官方建议）
+
+- **优先按功能（feature）聚合**
+  > 把同一业务相关的组件、composable、api、store 放在同一目录下（如 `features/checkout/`），避免所有文件平铺在 `components` 下难以维护。
+- **公共与业务分离**
+  > `components` 放可复用公共组件；页面专属组件就近放在对应 `views/xxx/` 内。
+- **`composables` 与 `utils` 严格区分**
+  > 有状态的用 composable（`use` 前缀），纯函数放 `utils`（见 10.3）。
+- **`api` 与 `stores` 解耦**
+  > store 调用 api 层，组件只依赖 store，不在组件中散落请求。
 
 ### 1.6 常用生态库
 
-按开发链路分类，并标注 Vue 2 / Vue 3 兼容性：
+按开发链路分类，并标注 Vue 2 / Vue 3 兼容性
 
 **状态管理**
-| 库 | 适用版本 | 说明 |
-|----|---------|------|
-| Pinia | Vue 3（兼容 Vue 2.7） | 官方推荐，无 mutations、TS 友好、组合式写法，见 §14 |
-| Vuex | Vue 2（3.x）/ Vue 3（4.x） | 老项目存量；新项目用 Pinia |
-| pinia-plugin-persistedstate | Vue 3 | 状态持久化到 localStorage |
+
+| 库                          | 适用版本                   | 说明                                               |
+| --------------------------- | -------------------------- | -------------------------------------------------- |
+| Pinia                       | Vue 3（兼容 Vue 2.7）      | 官方推荐，无 mutations、TS 友好、组合式写法，见 14 |
+| Vuex                        | Vue 2（3.x）/ Vue 3（4.x） | 老项目存量；新项目用 Pinia                         |
+| pinia-plugin-persistedstate | Vue 3                      | 状态持久化到 localStorage                          |
 
 **UI 组件库**
-| 库 | 适用版本 | 特点 |
-|----|---------|------|
-| Element Plus | Vue 3 | 国内最常用，组件全 |
-| Element UI | Vue 2 | Element Plus 的 Vue 2 版 |
-| Ant Design Vue | Vue 3（4.x）/ Vue 2（1.x，已停更） | 企业中后台 |
-| Naive UI | Vue 3 | TS 一等公民、主题灵活、按需加载 |
-| Vuetify | Vue 3（3.x）/ Vue 2（2.x） | Material Design 风格 |
-| Arco Design Vue | Vue 3 | 字节出品 |
-| Vant | Vue 2 / Vue 3 | 移动端首选 |
-| Quasar | Vue 3 / Vue 2 | 含构建、移动/桌面一体的全栈 UI 框架 |
-| PrimeVue | Vue 3 | 丰富主题 |
-| Radix Vue / Reka UI | Vue 3 | 无样式（headless）原语，配合 Tailwind 自建 |
+
+| 库                  | 适用版本                           | 特点                                       |
+| ------------------- | ---------------------------------- | ------------------------------------------ |
+| Element Plus        | Vue 3                              | 国内最常用，组件全                         |
+| Element UI          | Vue 2                              | Element Plus 的 Vue 2 版                   |
+| Ant Design Vue      | Vue 3（4.x）/ Vue 2（1.x，已停更） | 企业中后台                                 |
+| Naive UI            | Vue 3                              | TS 一等公民、主题灵活、按需加载            |
+| Vuetify             | Vue 3（3.x）/ Vue 2（2.x）         | Material Design 风格                       |
+| Arco Design Vue     | Vue 3                              | 字节出品                                   |
+| Vant                | Vue 2 / Vue 3                      | 移动端首选                                 |
+| Quasar              | Vue 3 / Vue 2                      | 含构建、移动/桌面一体的全栈 UI 框架        |
+| PrimeVue            | Vue 3                              | 丰富主题                                   |
+| Radix Vue / Reka UI | Vue 3                              | 无样式（headless）原语，配合 Tailwind 自建 |
 
 **Hooks / 组合式函数库**
-| 库 | 说明 |
-|----|------|
+
+| 库                       | 说明                                                                |
+| ------------------------ | ------------------------------------------------------------------- |
 | VueUse（`@vueuse/core`） | 最常用，数百个即用 composable（鼠标、网络、传感器、组件生命周期等） |
-| VueUse Motion | 动画 composable |
-| VueRequest / `useFetch` | 数据请求类（也可自写，见 §10） |
+| VueUse Motion            | 动画 composable                                                     |
+| VueRequest / `useFetch`  | 数据请求类（也可自写，见 10）                                       |
 
 **构建 / 工程工具**
-| 库 / 工具 | 说明 |
-|-----------|------|
-| Vite | 官方推荐构建工具，冷启快、HMR 好，见 §1.1 |
-| Vue CLI | Vue 2 时代脚手架（已停止主版本更新），仅维护老项目 |
-| Nuxt | 基于 Vue 3 的 SSR/SSG 全栈框架，见 §0 |
-| `@vitejs/plugin-vue` | Vite 的 Vue SFC 插件（Vite 项目默认集成） |
-| unplugin-auto-import / unplugin-vue-components | 自动按需导入 API 与组件，减少样板代码 |
-| vite-plugin-vue-devtools | 集成 Vue DevTools |
-| Vitest | 基于 Vite 的单元测试（官方推荐） |
-| Webpack / Rspack | 非 Vite 的备选打包器（老项目 / 特殊需求） |
+
+| 库 / 工具                                      | 说明                                               |
+| ---------------------------------------------- | -------------------------------------------------- |
+| Vite                                           | 官方推荐构建工具，冷启快、HMR 好，见 1.1           |
+| Vue CLI                                        | Vue 2 时代脚手架（已停止主版本更新），仅维护老项目 |
+| Nuxt                                           | 基于 Vue 3 的 SSR/SSG 全栈框架，见 0               |
+| `@vitejs/plugin-vue`                           | Vite 的 Vue SFC 插件（Vite 项目默认集成）          |
+| unplugin-auto-import / unplugin-vue-components | 自动按需导入 API 与组件，减少样板代码              |
+| vite-plugin-vue-devtools                       | 集成 Vue DevTools                                  |
+| Vitest                                         | 基于 Vite 的单元测试（官方推荐）                   |
+| Webpack / Rspack                               | 非 Vite 的备选打包器（老项目 / 特殊需求）          |
 
 **其它常用**
-- 路由：Vue Router（见 §13）
-- 样式：Tailwind CSS / UnoCSS（原子化）、Sass（预处理）
+
+- 路由：Vue Router（见 13）
+- 样式：Tailwind CSS / UnoCSS（原子化）、Sass/Less（预处理）
 - 国际化：Vue I18n
 - 代码质量：ESLint + `eslint-plugin-vue`、Prettier、TypeScript
 
@@ -226,7 +240,7 @@ my-vue-app/
 
 ## 2. 单文件组件（SFC）结构
 
-推荐顺序（`<script setup>` → `<template>` → `<style>`），但团队约定优先：
+推荐顺序（`<script setup>` → `<template>` → `<style>`），但团队约定优先
 
 ```vue
 <script setup lang="ts">
@@ -280,12 +294,13 @@ lifecycle（onMounted、onUnmounted 等）
 defineExpose（暴露给父组件的 API，放最后，一眼看出对外接口）
 ```
 
-**要点**：
+**要点**
+
 - **先声明、后使用**：类型与契约（props/emits）在前，状态与逻辑在后，避免前向引用带来的阅读负担。
 - **`defineExpose` 放最后**：它定义的是组件对外暴露的接口，集中放在文件末尾，阅读者无需翻找即可看到「这个组件对外提供什么」。
 - **生命周期靠后**：生命周期回调通常依赖前面定义的状态 / 方法，放末尾保证依赖已就绪。
 
-**推荐骨架（可直接复制）**：
+**推荐骨架（可直接复制）**
 
 ```vue
 <script setup lang="ts">
@@ -298,7 +313,10 @@ import UserCard from "./UserCard.vue";
 defineOptions({ name: "UserPanel" });
 
 // 3. 局部类型
-interface User { id: number; name: string }
+interface User {
+  id: number;
+  name: string;
+}
 
 // 4. 组件契约
 const props = defineProps<{ id: string }>();
@@ -316,13 +334,23 @@ const localName = ref("");
 const fullName = computed(() => `${props.id}-${localName.value}`);
 
 // 8. functions
-function onSelect() { emit("select", props.id); }
+function onSelect() {
+  emit("select", props.id);
+}
 
 // 9. watch / watchEffect
-watch(() => props.id, (id) => { loading.value = true; userStore.load(id); });
+watch(
+  () => props.id,
+  (id) => {
+    loading.value = true;
+    userStore.load(id);
+  },
+);
 
 // 10. lifecycle
-onMounted(() => { userStore.load(props.id); });
+onMounted(() => {
+  userStore.load(props.id);
+});
 
 // 11. defineExpose（对外接口，放最后）
 defineExpose({ refresh: () => userStore.load(props.id) });
@@ -421,7 +449,7 @@ const map = markRaw(new ThirdPartyMap()); // 永不响应式
   // ✅ 确需比对象：toRaw 两侧
   toRaw(a) === toRaw(b);
   ```
-- 用 `readonly()` 包装后提供只读视图，任何写入会被告警拦截；跨组件提供数据时优先 `readonly(providedRef)`（见 §8.2）。
+- 用 `readonly()` 包装后提供只读视图，任何写入会被告警拦截；跨组件提供数据时优先 `readonly(providedRef)`（见 8.2）。
 
 ### 3.6 响应式批处理与 nextTick
 
@@ -447,9 +475,12 @@ await nextTick();
 
 ### 4.1 两种风格怎么选
 
-- **组合式 API（Composition API）**：Vue 3 **推荐**写法，配合 `<script setup>`；逻辑按「功能」聚合，类型推导好，复用靠组合式函数。Vue 2.7 也支持 `setup()`（但无 `<script setup>`）。
-- **选项式 API（Options API）**：Vue 2 **默认**写法；**Vue 3 同样完整支持**（适合习惯延续 / 渐进迁移 / 教学）。逻辑按「选项类型」（`data` / `methods` / `computed` / `watch`）聚合。
-- 二者可在 Vue 3 组件内**共存**：同一组件可同时写 `<script>`（选项式）与 `<script setup>`（组合式），生命周期按注册顺序执行。
+- **组合式 API（Composition API）**
+  > Vue 3 **推荐**写法，配合 `<script setup>`；逻辑按「功能」聚合，类型推导好，复用靠组合式函数。Vue 2.7 也支持 `setup()`（但无 `<script setup>`）。
+- **选项式 API（Options API）**
+  > Vue 2 **默认**写法；**Vue 3 同样完整支持**（适合习惯延续 / 渐进迁移 / 教学）。逻辑按「选项类型」（`data` / `methods` / `computed` / `watch`）聚合。
+- 二者可在 Vue 3 组件内**共存**
+  > 同一组件可同时写 `<script>`（选项式）与 `<script setup>`（组合式），生命周期按注册顺序执行。
 - 团队应**选定一种并统一**，避免在同一组件里混用两种心智模型。
 
 ### 4.2 版本 × API 支持矩阵
@@ -462,25 +493,25 @@ await nextTick();
 
 ### 4.3 选项式 ↔ 组合式 对照表（快速翻译）⭐
 
-日常从 Options 切换到 Composition（或反之）时直接查此表：
+日常从 Options 切换到 Composition（或反之）时直接查此表
 
-| Options API                          | Composition API（`<script setup>`）                  |
-| ------------------------------------ | ---------------------------------------------------- |
-| `data() { return { x: 1 } }`         | `const x = ref(1)` 或 `const s = reactive({ x: 1 })` |
-| `computed: { double() {…} }`         | `const double = computed(() => …)`                   |
-| `methods: { fn() {…} }`              | 顶层 `function fn() {…}`                             |
-| `watch: { x() {…} }` / `this.$watch` | `watch(x, …)` / `watchEffect(…)`                     |
-| `props: {…}`                         | `defineProps<{…}>()`                                 |
-| `emits: […]`                         | `defineEmits<{…}>()`                                 |
-| `created()`                          | `setup()` 顶层同步代码                               |
-| `mounted()`                          | `onMounted()`                                        |
-| `updated()`                          | `onUpdated()`                                        |
-| `beforeUnmount()`                    | `onBeforeUnmount()`                                  |
-| `this.$emit(...)`                    | `emit(...)`                                          |
-| `this.$refs` / `this.$el`            | `const el = ref(null)`（模板引用）                   |
-| `this.$attrs`                        | `useAttrs()`                                         |
-| `this.$slots`                        | `useSlots()`                                         |
-| `mixins: […]`                        | 组合式函数（`useXxx()`）                             |
+| Options API                          | Composition API（`<script setup>`）                        |
+| ------------------------------------ | ---------------------------------------------------------- |
+| `data() { return { x: 1 } }`         | `const x = ref(1)` 或 `const s = reactive({ x: 1 })`       |
+| `computed: { double() {…} }`         | `const double = computed(() => …)`                         |
+| `methods: { fn() {…} }`              | 顶层 `function fn() {…}`                                   |
+| `watch: { x() {…} }` / `this.$watch` | `watch(x, …)` / `watchEffect(…)`                           |
+| `props: {…}`                         | `defineProps<{…}>()`                                       |
+| `emits: […]`                         | `defineEmits<{…}>()`                                       |
+| `created()`                          | `setup()` 顶层同步代码                                     |
+| `mounted()`                          | `onMounted()`                                              |
+| `updated()`                          | `onUpdated()`                                              |
+| `beforeUnmount()`                    | `onBeforeUnmount()`                                        |
+| `this.$emit(...)`                    | `emit(...)`                                                |
+| `this.$refs` / `this.$el`            | `const el = ref(null)`（模板引用）/ `useTemplateRef()`3.5+ |
+| `this.$attrs`                        | `useAttrs()`                                               |
+| `this.$slots`                        | `useSlots()`                                               |
+| `mixins: […]`                        | 组合式函数（`useXxx()`）                                   |
 
 > **核心差异**：选项式通过 `this.xxx` 互相访问；组合式**没有 `this`**，所有状态都是顶层变量，直接引用即可。
 
@@ -505,7 +536,7 @@ onMounted(() => console.log("mounted"));
 
 ### 4.5 选项式模板（Vue 2 与 Vue 3 通用）
 
-选项式写法在两个大版本间**基本一致**，差异只在少数全局 API / 响应式细节（见 §21）。
+选项式写法在两个大版本间**基本一致**，差异只在少数全局 API / 响应式细节（见 21）。
 
 ```vue
 <script>
@@ -538,20 +569,22 @@ export default {
 ```
 
 - **【Vue 2.7+】** 可在选项对象内加 `setup()` 选项，混用组合式 API（无 `<script setup>` 宏）。
-- **【Vue 3】** 若需显式声明组件名 / 选项，可额外加一个 `<script>` 块，或改用 §4.6 的宏。
+- **【Vue 3】** 若需显式声明组件名 / 选项，可额外加一个 `<script>` 块，或改用 3.3+ 的宏。
 
 ### 4.6 `<script setup>` 编译宏（Vue 3.3+）
 
-除 `defineProps` / `defineEmits` / `defineModel`（见 §5）外，常用宏：
+除 `defineProps` / `defineEmits` / `defineModel`（见 5）外，常用宏
 
 | 宏                                      | 作用                                                    |
 | --------------------------------------- | ------------------------------------------------------- |
 | `defineExpose({ ... })`                 | 显式暴露属性给父组件 `ref`（组件默认「封闭」）          |
 | `defineOptions({ name, inheritAttrs })` | 在 `<script setup>` 内声明组件选项，无需额外 `<script>` |
-| `defineSlots<{ ... }>()`                | 为作用域插槽 props 提供类型（见 §9.2）                  |
+| `defineSlots<{ ... }>()`                | 为作用域插槽 props 提供类型（见 9.2）                   |
 | `generic="T"`                           | 泛型组件（SFC 上 `lang="ts" generic="T"`）              |
 
-```vue
+::: code-group
+
+```vue [DataList.vue]
 <script setup lang="ts" generic="T">
 defineOptions({ name: "DataList" });
 const props = defineProps<{ items: T[]; selected: T }>();
@@ -559,6 +592,35 @@ defineExpose({ reset });
 defineSlots<{ default(props: { item: T; index: number }): any }>();
 </script>
 ```
+
+```vue [父组件使用]
+<script setup lang="ts">
+import DataList from "./DataList.vue";
+import { ref } from "vue";
+
+interface User {
+  id: number;
+  name: string;
+}
+
+const users = ref<User[]>([
+  { id: 1, name: "Alice" },
+  { id: 2, name: "Bob" },
+]);
+const selected = ref<User>(users.value[0]);
+</script>
+
+<template>
+  <DataList :items="users" :selected="selected">
+    <template #default="{ item, index }">
+      <!-- item 会被推断为 User 类型，有完整的属性提示 -->
+      <span>{{ index }}: {{ item.name }}</span>
+    </template>
+  </DataList>
+</template>
+```
+
+:::
 
 ### 4.7 生命周期
 
@@ -611,20 +673,20 @@ const local = ref({ ...props.user }) watch(() => props.user, u => { local.value
 
 ### 5.2 组件事件不冒泡（与 DOM 事件不同）
 
-`emit()` 的事件**只到直接父组件**，不会像原生 DOM 事件那样向上冒泡。深层通信请使用：
+`emit()` 的事件**只到直接父组件**，不会像原生 DOM 事件那样向上冒泡。深层通信请使用
 
-1. 逐层 re-emit（1~2 层简单场景）；
-2. `provide / inject`（深层祖先通信，见 §8）；
-3. Pinia（跨组件 / 兄弟通信，见 §15）；
-4. 事件总线（如 `mitt`，谨慎使用，难追溯）。
+- 1. 逐层 re-emit（1~2 层简单场景）；
+- 2. `provide / inject`（深层祖先通信，见 8）；
+- 3. `Pinia`（跨组件 / 兄弟通信，见 15）；
+- 4. 事件总线（如 `mitt`，谨慎使用，难追溯）。
 
 > 注意：绑定在 DOM 元素上的原生事件（如 `@click`）**仍然会冒泡**；只有 `emit` 的组件事件不冒泡。
 
 ### 5.3 事件命名（kebab-case 监听）
 
-- 在 JS 中用 camelCase `emit('updateValue')`，在模板中用 kebab-case `@update-value` 监听——**Vue 3 模板内会自动转换**（`@update-value` 匹配 `emit('updateValue')`）。
+- 在 JS 中用 camelCase `emit('updateValue')`，在模板中用 kebab-case `@update-value` 监听 — **Vue 3 模板内会自动转换**（`@update-value` 匹配 `emit('updateValue')`）。
 - 该自动转换**仅在模板内生效**；渲染函数须用 `onUpdateValue`，编程式监听须用精确事件名。
-- v-model 的更新事件用冒号而非 kebab：`update:modelValue`（不是 `update-model-value`）。
+- `v-model` 的更新事件用冒号而非 kebab：`update:modelValue`（不是 `update-model-value`）。
 
 ### 5.4 v-model 重大变更（Vue 2 → Vue 3）⭐
 
@@ -643,7 +705,9 @@ const local = ref({ ...props.user }) watch(() => props.user, u => { local.value
 <script setup lang="ts">
 const model = defineModel<string>();
 </script>
-<template><input v-model="model" /></template>
+<template>
+  <input v-model="model" />
+</template>
 
 <!-- Vue 3 手动写法 -->
 <script setup lang="ts">
@@ -759,7 +823,7 @@ const doubled = computed(() => count.value * 2);
 ```
 
 - 计算属性返回**只读**，不要对其赋值（除非用 `get/set`）。
-- 需要传参请改用 `computed` 返回函数（或方法），但会失去缓存。
+- 需要传参请改用 `computed` 返回函数（或方法），但**会失去缓存功能**，需传参推荐使用方法。
 - 排序 / 反转数组应**返回新数组**，不要原地修改原数据。
 - **非响应式值（如 `Date.now()`）不要放 computed**：它只追踪响应式依赖，结果只算一次永不更新；用 `ref` + `setInterval` 代替。
 
@@ -782,13 +846,13 @@ const doubled = computed(() => count.value * 2);
 
 ### 7.3 watch vs watchEffect
 
-| 特性                 | `watch`              | `watchEffect`   |
-| -------------------- | -------------------- | --------------- |
-| 依赖声明             | 显式指定             | 自动收集        |
-| 默认立即执行         | 否（需 `immediate`） | 是              |
-| 获取旧值             | 支持                 | 不支持          |
-| 异步依赖（await 后） | 完全追踪             | 仅首个 await 前 |
-| 多源                 | 数组语法             | 自动            |
+| 特性                 | `watch`              | `watchEffect`            |
+| -------------------- | -------------------- | ------------------------ |
+| 依赖声明/源          | 显式指定             | 自动收集                 |
+| 默认立即执行         | 否（需 `immediate`） | 是（因为需要收集依赖项） |
+| 获取旧值             | 支持                 | 不支持                   |
+| 异步依赖（await 后） | 完全追踪             | 仅首个 await 前          |
+| 多源                 | 数组语法             | 自动                     |
 
 - 回调逻辑用的状态与触发源一致 → `watchEffect`。
 - 需要旧值 / 懒执行 / 异步后仍有依赖 → `watch`。
@@ -833,12 +897,12 @@ watch(() => state.users.length, cb);
 
 ## 8. 组件通信模式速查
 
-| 方式               | 适用        | Vue 2 / 3 差异                          |
-| ------------------ | ----------- | --------------------------------------- |
-| `props` + `emit`   | 父子        | v-model 命名变更（见 §5.4）             |
-| `provide / inject` | 跨层祖先    | 推荐 `InjectionKey<>` 类型化（见 §8.2） |
-| Pinia / Vuex       | 全局 / 兄弟 | Pinia 取代 Vuex（见 §15）               |
-| 事件总线           | 解耦组件    | 谨慎，推荐 `mitt`                       |
+| 方式               | 适用        | Vue 2 / 3 差异                         |
+| ------------------ | ----------- | -------------------------------------- |
+| `props` + `emit`   | 父子        | v-model 命名变更（见 5.4）             |
+| `provide / inject` | 跨层祖先    | 推荐 `InjectionKey<>` 类型化（见 8.2） |
+| Pinia / Vuex       | 全局 / 兄弟 | Pinia 取代 Vuex（见 15）               |
+| 事件总线           | 解耦组件    | 谨慎，推荐 `mitt`                      |
 
 ### 8.1 provide / inject 用 Symbol 键避免冲突
 
@@ -857,7 +921,7 @@ const user = inject(UserKey, ref({ name: "" })); // 带默认值则类型非 und
 
 当 prop 要穿过多层（≥2 层）中间组件才到达深层子组件时，改用 `provide / inject`，避免中间组件被无关 prop 污染、重构困难。
 
-- 1~2 层浅穿透用 props 即可；深层同组件树用 provide/inject；跨无关组件树用 Pinia。
+- 1~2 层浅穿透用 `props` 即可；深层同组件树用 `provide/inject`；跨无关组件树用 `Pinia`。
 - 提供方可用 `readonly(providedRef)` 防止后代误改；需要更新则额外提供一个方法。
 - 提供计算值：`provide('count', computed(() => items.value.length))` 保持响应。
 
@@ -948,7 +1012,7 @@ export function useCounter(initial = 0) {
 
 ### 10.3 与纯工具函数区分
 
-**不要用 `use` 前缀包裹无状态的纯函数**（格式化、校验、数学运算）——它们应作为普通工具函数放在 `utils/` 目录直接导出。
+**不要用 `use` 前缀包裹无状态的纯函数**（格式化、校验、数学运算） — 它们应作为普通工具函数放在 `utils/` 目录直接导出。
 
 - 用 Composable：管理响应式状态、用生命周期、设侦听器、需卸载清理。
 - 用 Utility：纯数据转换、无状态计算、字符串 / 数组操作、`Date.now()` 类。
@@ -978,10 +1042,10 @@ export function useFetch(url: MaybeRefOrGetter<string>) {
 
 ### 11.1 命名约定（`<script setup>`）
 
-局部指令变量以 `v` 前缀 + camelCase 命名，模板中自动识别为指令（去 `v` 前缀、转 kebab-case）。
+局部指令变量以 `v` 前缀 + PascalCase 命名，模板中自动识别为指令（去 `v` 前缀、转 kebab-case）。
 
 ```ts
-// ✅ v 前缀 + camelCase
+// ✅ v 前缀 + PascalCase
 const vFocus = { mounted: (el: HTMLElement) => el.focus() };
 const vClickOutside = {
   mounted(el, binding) {
@@ -1064,7 +1128,7 @@ const router = new VueRouter({ mode: "history", routes });
 
 ### 13.2 导航守卫弃用 next() ⭐
 
-Vue Router 4 中守卫第三个参数 `next()` **已弃用**，改用返回值：
+Vue Router 4 中守卫第三个参数 `next()` **已弃用**，改用返回值
 
 ```ts
 // ❌ 旧写法：易漏调用 / 多次调用导致卡死或死循环
@@ -1100,7 +1164,7 @@ watch(
 
 ### 13.4 重定向死循环
 
-守卫中务必**排除目标路由本身**，否则无限重定向（Vue Router 会告警但不会无限循环崩溃）：
+守卫中务必**排除目标路由本身**，否则无限重定向（Vue Router 会告警但不会无限循环崩溃）
 
 ```ts
 router.beforeEach((to) => {
@@ -1153,8 +1217,8 @@ export const useUserStore = defineStore("user", () => {
 
 ## 16. 样式规范
 
-- 组件样式默认 `scoped`，避免全局污染。
-- 深度选择器见 §2（Vue 2 `::v-deep` / Vue 3 `:deep()`）。
+- 组件样式默认 `scoped`(样式作用域：仅当前组件有效)，避免全局污染。
+- 深度选择器见 2（Vue 2 `::v-deep` / Vue 3 `:deep()`）。
 - 覆盖子组件根元素样式：Vue 3 下 scoped 可直接命中子根（因默认 `:deep` 放宽），如需精确控制用 `:deep()`。
 - 动态主题：Vue 3 支持 `<style>` 内 `v-bind()` 绑定响应式值。
 - 内联样式绑定属性名用 **camelCase**（` :style="{ backgroundColor: x }"`）。
@@ -1198,28 +1262,28 @@ const child = ref<InstanceType<typeof ChildComp> | null>(null);
 ```
 
 - 通过 `defineExpose` 暴露的成员，父组件 `ref` 类型需与之对应声明。
-- 作用域插槽类型见 §9.2（`defineSlots`）。
+- 作用域插槽类型见 9.2（`defineSlots`）。
 
 ---
 
 ## 18. 性能优化
 
 - **大型列表（>50~100 项）必须虚拟化**：`vue-virtual-scroller` 或 `@tanstack/vue-virtual`，容器需固定高度。
-- 大数据 / 第三方实例用 `shallowRef` / `markRaw`（见 §3.4）。
-- 昂贵的静态 / 低频更新子树用 `v-once` / `v-memo`（见 §12.5）。
+- 大数据 / 第三方实例用 `shallowRef` / `markRaw`（见 3.4）。
+- 昂贵的静态 / 低频更新子树用 `v-once` / `v-memo`（见 12.5）。
 - 向子组件传递**稳定引用**（避免父重渲染时生成新对象 / 新函数导致子无谓更新）。
 - computed 返回对象 / 数组时注意引用稳定性（缓存），避免触发下游 effect。
 - 能用 SSR / SSG 提升首屏的用 Nuxt。
-- 避免深层 `watch` 与在 `onUpdated` 里做重活（见 §5.6 / §7.5）。
+- 避免深层 `watch` 与在 `onUpdated` 里做重活（见 5.6 / 7.5）。
 
 ---
 
 ## 19. 安全
 
-- `v-html` 仅用于可信内容，用户内容必须经 `DOMPurify` 等净化（见 §6.3）。
+- `v-html` 仅用于可信内容，用户内容必须经 `DOMPurify` 等净化（见 6.3）。
 - 不要在前端硬编码密钥；接口鉴权走后端。
 - `provide / inject` 注入的回调需校验，避免被任意消费方误用。
-- 组件事件不冒泡，敏感操作不要依赖 DOM 事件冒泡做全局监听（见 §5.2）。
+- 组件事件不冒泡，敏感操作不要依赖 DOM 事件冒泡做全局监听（见 5.2）。
 
 ---
 
@@ -1227,10 +1291,26 @@ const child = ref<InstanceType<typeof ChildComp> | null>(null);
 
 按优先级（来自 [Vue 2 风格指南](https://v2.cn.vuejs.org/v2/style-guide/)）：
 
-- **A 级（必要）**：多单词组件名；`data` 必须是个函数；`prop` 定义尽量详细（类型 / 默认值）；`v-for` 必须带 `:key`；禁止同元素 `v-if` + `v-for`；组件名大小写一致（PascalCase 或 kebab-case，自闭合用 PascalCase）。
-- **B 级（强烈推荐）**：单文件组件；组件名完整单词而非缩写；`this` 上暴露的内容命名清晰；组件目录按特性组织；避免 `this.$parent`；单组件原则（功能单一）；见 §1.4 全套命名规范。
-- **C 级（推荐）**：组件文件 / 基础组件（ui- 前缀）命名规范；紧密耦合组件用父级目录就近放置；自闭合组件；模板中简单表达式，复杂逻辑放 computed / methods；属性 / 事件名风格一致（attribute 用 kebab-case）。
-- **D 级（谨慎使用）**：`v-if` 与 `v-for` 同元素（已禁用）、`scoped` 中的元素选择器（性能差）、`this.$refs` 在模板中、`watch` 中深度监听大量数据。
+- **A 级（必要）**
+  > - 多单词组件名；
+  > - `data` 必须是个函数；
+  > - `prop` 定义尽量详细（类型 / 默认值）；
+  > - `v-for` 必须带 `:key`；
+  > - 禁止同元素使用 `v-if` + `v-for`；
+  > - 组件名大小写一致（`PascalCase` 或 `kebab-case`，自闭合用 `PascalCase`）。
+- **B 级（强烈推荐）**
+  > - 单文件组件；组件名完整单词而非缩写；
+  > - `this` 上暴露的内容命名清晰；
+  > - 组件目录按特性组织；
+  > - 避免 `this.$parent`；
+  > - 单组件原则（功能单一）；见 1.4 全套命名规范。
+- **C 级（推荐）**
+  > - 组件文件 / 基础组件（ui- 前缀）命名规范；
+  > - 紧密耦合组件用父级目录就近放置；
+  > - 模板中简单表达式，复杂逻辑放 computed / methods；
+  > - 属性 / 事件名风格一致（attribute 用 kebab-case）。
+- **D 级（谨慎使用）**
+  > `v-if` 与 `v-for` 同元素（已禁用）、`scoped` 中的元素选择器（性能差）、`this.$refs` 在模板中、`watch` 中深度监听大量数据。
 
 ---
 
@@ -1240,7 +1320,7 @@ const child = ref<InstanceType<typeof ChildComp> | null>(null);
 | ------------------------------ | ------------------------- | -------------------------------------- |
 | v-model prop/event             | `value` / `input`         | `modelValue` / `update:modelValue`     |
 | `.sync`                        | `v-bind.sync`             | `v-model:prop`                         |
-| `v-if` / `v-for` 优先级        | `v-for` 高                | `v-if` 高                              |
+| `v-if` / `v-for` 优先级        | `v-for` 高于 `v-if`       | `v-if` 高于 `v-for`                    |
 | 自定义组件 `v-model` 多绑定    | 不支持                    | 支持                                   |
 | 事件 `.native` 修饰符          | 支持                      | 移除（`$listeners` 并入 `$attrs`）     |
 | `$listeners`                   | 存在                      | 移除，合并进 `$attrs`                  |

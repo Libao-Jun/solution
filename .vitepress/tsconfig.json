@@ -14,6 +14,9 @@
     "paths": {
       "@components/*": [
         "./node_modules/@voidzero-dev/vitepress-theme/src/components/*"
+      ],
+      "@voidzero-dev/vitepress-theme/config": [
+        "../node_modules/@voidzero-dev/vitepress-theme/config.d.ts"
       ]
     }
   },

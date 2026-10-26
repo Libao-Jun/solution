@@ -1114,6 +1114,8 @@ const vClickOutside = {
 
 ## 13. 路由（Vue Router 3 vs 4）
 
+> 本章只做写法速查；路由模式与 history 部署回退、导航守卫完整链路、参数变化与组件复用、动态路由与权限、TypeScript 类型、Vue Router 3 与 4 迁移清单与高频坑点，见 **[Vue Router 路由完全指南](/frameworks/vue/router/)**。
+
 ### 13.1 创建与注册
 
 ```ts
@@ -1179,6 +1181,8 @@ router.beforeEach((to) => {
 ---
 
 ## 14. 状态管理（Vuex vs Pinia）
+
+> 本节只给结论与最小示例；**选型对照、坑点与工程规范见独立手册 [Vue 状态管理实战手册（Vuex / Pinia）](/frameworks/stores/)**。
 
 - **新项目用 Pinia**（Vue 3 官方推荐，无 mutations、类型友好、支持组合式写法）。
 - **存量 Vue 2 项目**可继续用 Vuex 3，但新模块建议 Pinia（Pinia 兼容 Vue 2）。

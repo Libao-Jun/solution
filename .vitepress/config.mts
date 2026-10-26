@@ -35,11 +35,13 @@ const sidebar = [
     items: [
       { text: 'React 开发规范', link: '/frameworks/react/' },
       { text: 'Vue 开发规范', link: '/frameworks/vue/' },
+      { text: 'Vue Router 路由完全指南', link: '/frameworks/vue/router/' },
       { text: 'Svelte 开发规范与指南', link: '/frameworks/svelte/' },
       { text: 'JS 框架语法对比', link: '/frameworks/js-framework-comparison/' },
       { text: 'Taro 4.x 小程序开发指导', link: '/frameworks/taro/' },
       { text: '微信小程序开发指南', link: '/frameworks/wechat-miniprogram/' },
       { text: 'App 开发完全指南', link: '/frameworks/app-development/' },
+      { text: 'Vue 状态管理实战手册', link: '/frameworks/stores/' },
     ],
   },
   {
@@ -334,6 +336,7 @@ export default extendConfig(
               { text: 'Svelte', link: withBase('/frameworks/svelte/') },
               { text: '微信小程序', link: withBase('/frameworks/wechat-miniprogram/') },
               { text: 'App 开发', link: withBase('/frameworks/app-development/') },
+              { text: '状态管理', link: withBase('/frameworks/stores/') },
             ],
           },
           {

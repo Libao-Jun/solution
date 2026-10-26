@@ -19,7 +19,7 @@ export interface StatItem {
   label: string
 }
 
-export const docCount = 33
+export const docCount = 35
 export const roadmapCount = 47
 export const categoryCount = 5
 
@@ -53,11 +53,13 @@ export const categories: CategoryCard[] = [
     chips: [
       { text: 'React', link: '/frameworks/react/' },
       { text: 'Vue', link: '/frameworks/vue/' },
+      { text: 'Vue Router', link: '/frameworks/vue/router/' },
       { text: 'Svelte', link: '/frameworks/svelte/' },
       { text: '语法对比', link: '/frameworks/js-framework-comparison/' },
       { text: 'Taro', link: '/frameworks/taro/' },
       { text: '微信小程序', link: '/frameworks/wechat-miniprogram/' },
       { text: 'App 开发', link: '/frameworks/app-development/' },
+      { text: '状态管理', link: '/frameworks/stores/' },
     ],
   },
   {

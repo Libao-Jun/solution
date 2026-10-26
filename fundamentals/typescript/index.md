@@ -47,7 +47,7 @@ function add(a: number, b: number): number {
 }
 ```
 
-一句话概括差异：
+一句话概括差异
 
 | 维度         | JavaScript        | TypeScript                            |
 | ------------ | ----------------- | ------------------------------------- |
@@ -58,7 +58,7 @@ function add(a: number, b: number): number {
 
 ### 1.2 核心心智模型：类型只在编译期存在
 
-这是新手最容易误解、也是理解一切 TS 现象的钥匙：
+这是新手最容易误解、也是理解一切 TS 现象的钥匙
 
 > **TypeScript 的类型信息在编译后会被完全擦除（Type Erasure），运行时不存在任何类型。**
 
@@ -79,7 +79,7 @@ console.log(user instanceof User); // ❌ 编译报错：接口只存在于类�
 
 ### 1.3 结构化类型系统（"鸭子类型"）
 
-TypeScript 采用**结构化类型（Structural Typing）**：只要两个类型的**结构兼容**，就认为它们相等——不看名字，只看“形状”。
+TypeScript 采用**结构化类型（Structural Typing）**：只要两个类型的**结构兼容**，就认为它们相等 — 不看名字，只看“形状”。
 
 ```ts
 interface Point {
@@ -91,7 +91,7 @@ const p = { x: 1, y: 2, z: 3 };
 const q: Point = p; // ✅ 结构兼容：p 至少有 x、y（多余属性在非字面量场景是允许的）
 ```
 
-这与其他语言（如 Java/C#）的**名义类型（Nominal Typing）**不同——后者需要显式声明 `implements`。理解这一点，就能解释为什么两个毫不相干的 `interface` 可以互相赋值。
+这与其他语言（如 Java/C#）的**名义类型（Nominal Typing）**不同 — 后者需要显式声明 `implements`。理解这一点，就能解释为什么两个毫不相干的 `interface` 可以互相赋值。
 
 ### 1.4 为什么用 TypeScript
 
@@ -102,10 +102,20 @@ const q: Point = p; // ✅ 结构兼容：p 至少有 x、y（多余属性在非
 
 ### 1.5 TypeScript 与 JavaScript 的版本演进
 
-TS 通过 `target` 编译选项决定「降级」到哪个 JS 版本，由 `lib` 决定可用的内置类型库。常见组合：
+TS 通过 `target` 编译选项决定「降级」到哪个 JS 版本，由 `lib` 决定可用的内置类型库。
+
+常见组合：
 
 - 现代浏览器/Vite 项目：`target: "ES2020"` 甚至 `ESNext`；
 - 需兼容老环境：调低 `target`，由 `tsc` 或 Babel/esbuild 降级。
+
+⚠️ Babel
+- 1️⃣ Babel 是一个 JavaScript 编译器。
+- 2️⃣ Babel 是一个广泛使用的 ES6 转码器，可以将 ES6 代码转为 ES5 代码，从而在老版本的浏览器执行。
+- 3️⃣ Babel 的作用（转译）
+  - 语法转换
+  - Polyfill 与特性补全
+  - 处理扩展语法
 
 ---
 
@@ -180,20 +190,22 @@ npx ts-node index.ts      # 或更快更现代：npx tsx index.ts
     "forceConsistentCasingInFileNames": true,
 
     /* ---- 路径 ---- */
-    "baseUrl": ".",
+    "baseUrl": ".", // 设置一个基础目录，用于解析裸的规范符模块名称。
     "paths": {
       "@/*": ["src/*"], // 路径别名，需同步配置打包器
     },
-    "outDir": "dist",
+    "outDir": "dist", // 输出目录
     "declaration": true, // 生成 .d.ts
-    "sourceMap": true,
+    "sourceMap": true, // 开启生成源码地图
   },
+  /* 指定程序中包含的文件名或模式数组。这些文件名是相对于包含 tsconfig.json 文件的目录解析的。*/
   "include": ["src"],
+  /*指定解析 include 时应跳过的文件名或模式数组。*/ 
   "exclude": ["node_modules", "dist"],
 }
 ```
 
-关键选项一句话记忆：
+关键选项一句话记忆
 
 | 选项               | 作用                 | 建议                           |
 | ------------------ | -------------------- | ------------------------------ |
@@ -297,7 +309,7 @@ function area(s: Shape) {
 }
 ```
 
-> **最佳实践**：默认用 `unknown`，而不是 `any`。`any` 会“传染”——一旦某个值是 `any`，基于它的运算结果也全是 `any`。
+> **最佳实践**：默认用 `unknown`，而不是 `any`。`any` 会“传染” — 一旦某个值是 `any`，基于它的运算结果也全是 `any`。
 
 ### 3.4 字面量类型（Literal Types）
 
@@ -331,7 +343,9 @@ const enum Color {
 const c = Color.Red; // 编译后直接变成 "RED"
 ```
 
-> ⚠️ 数字枚举有两个“坑”：① 反向映射（会生成 `Direction[0] === "Up"` 的运行时对象）；② 任意数字都能赋值（`let d: Direction = 99` 不报错，除非用字符串枚举）。**新项目优先考虑用 `as const` 对象 + 联合类型**（见 11.3）。
+⚠️ 数字枚举有两个“坑”
+- ① 反向映射（会生成 `Direction[0] === "Up"` 的运行时对象）；
+- ② 任意数字都能赋值（`let d: Direction = 99` 不报错，除非用字符串枚举）。**新项目优先考虑用 `as const` 对象 + 联合类型**（见 11.3）。
 
 ### 3.6 object / Object / {}
 
@@ -346,8 +360,8 @@ let c: {} = 1; // ✅ 表示“非 null/undefined”，能接受数字字符串�
 ### 3.7 类型注解 vs 类型推断
 
 ```ts
-let a = 1; // 推断为 number（推荐：简单值让 TS 推断）
-let b: number = 1; // 显式注解
+let a = 1; //（类型推断） 推断为 number（推荐：简单值让 TS 推断）
+let b: number = 1; //（类型注解）显式注解
 
 function add(x: number, y: number) {
   return x + y;
@@ -409,7 +423,7 @@ interface User {
 }
 ```
 
-**interface vs type 对比**：
+**interface vs type 对比**
 
 | 能力                           | `interface`  | `type`            |
 | ------------------------------ | ------------ | ----------------- |
@@ -420,7 +434,9 @@ interface User {
 | 实现类                         | `implements` | 也可 `implements` |
 | 性能（大项目）                 | 略优         | 略差              |
 
-**选择建议**：描述对象/类的结构、需要被扩展或声明合并 → 用 `interface`；需要联合类型、工具类型、给复杂类型起名 → 用 `type`。
+**选择建议**
+- 描述对象/类的结构、需要被扩展或声明合并 → 用 `interface`；
+- 需要联合类型、工具类型、给复杂类型起名 → 用 `type`。
 
 ### 4.4 索引签名与 Record
 
@@ -448,7 +464,7 @@ interface Mixed {
 ```ts
 const el = document.getElementById("app") as HTMLDivElement; // 断言为具体元素
 
-// 双重断言（先 unknown 再 as）——只在真的很确定时用
+// 双重断言（先 unknown 再 as） — 只在真的很确定时用
 const x = "hello" as unknown as number;
 
 // 非空断言：告诉编译器“这个值一定不是 null/undefined”
@@ -460,11 +476,11 @@ class C {
 }
 ```
 
-> ⚠️ **断言是“绕过检查”，不是“类型转换”**。运行时不会做任何转换，断错了照样崩。能用类型守卫就别用 `as`。**禁止用 `as any` 来消除报错**——那只是掩盖了真正的类型问题。
+> ⚠️ **断言是“绕过检查”，不是“类型转换”**。运行时不会做任何转换，断错了照样崩。能用类型守卫就别用 `as`。**禁止用 `as any` 来消除报错** — 那只是掩盖了真正的类型问题。
 
-### 4.6 类型收窄（Narrowing）——TS 最核心的能力之一
+### 4.6 类型收窄（Narrowing） — TS 最核心的能力之一
 
-TypeScript 会根据运行时判断**自动把宽类型收窄为窄类型**：
+TypeScript 会根据运行时判断**自动把宽类型收窄为窄类型**
 
 ```ts
 function format(x: string | number | Date) {
@@ -474,7 +490,7 @@ function format(x: string | number | Date) {
 }
 ```
 
-常用收窄手段：
+常用收窄手段
 
 | 手段         | 示例                                         |
 | ------------ | -------------------------------------------- |
@@ -486,7 +502,7 @@ function format(x: string | number | Date) {
 | 判别联合     | 见下                                         |
 | 自定义守卫   | 见下                                         |
 
-**判别联合（Discriminated Union）**——最实用的模式：
+**判别联合（Discriminated Union）** — 最实用的模式
 
 ```ts
 type Result = { ok: true; data: string } | { ok: false; error: string };
@@ -500,7 +516,7 @@ function handle(r: Result) {
 }
 ```
 
-**自定义类型守卫（Type Predicate）**：
+**自定义类型守卫（Type Predicate）**
 
 ```ts
 function isString(v: unknown): v is string {
@@ -575,7 +591,7 @@ function handler(this: HTMLElement, e: Event) {
 element.addEventListener("click", handler);
 ```
 
-### 5.5 泛型（Generics）——类型层面的“参数”
+### 5.5 泛型（Generics） — 类型层面的“参数”
 
 泛型让类型可以**被“传入”并复用**，而不是丢失信息。
 
@@ -604,7 +620,7 @@ function create<T = string>(): T {
 }
 ```
 
-**泛型接口 / 泛型类 / 泛型别名**：
+**泛型接口 / 泛型类 / 泛型别名**
 
 ```ts
 interface Box<T> {
@@ -631,7 +647,7 @@ type ApiResponse<T> = {
 type UserResp = ApiResponse<{ id: number; name: string }>;
 ```
 
-**泛型 + keyof 的经典组合**：
+**泛型 + keyof 的经典组合**
 
 ```ts
 function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
@@ -712,7 +728,7 @@ class Data implements Serializable {
 }
 ```
 
-> ⚠️ `private` / `protected` 是**编译期约束**，运行时并不真正私有；要运行时私有请用 **ES2022 的 `#` 私有字段**：
+> ⚠️ `private` / `protected` 是**编译期约束**，运行时并不真正私有；要运行时私有请用 **ES2022 的 `#` 私有字段**
 
 ```ts
 class Counter {
@@ -725,7 +741,7 @@ class Counter {
 
 ### 6.4 严格属性初始化
 
-开启 `strictPropertyInitialization` 后，类属性必须在构造函数中初始化，否则需要：
+开启 `strictPropertyInitialization` 后，类属性必须在构造函数中初始化，否则需要
 
 ```ts
 class A {
@@ -740,7 +756,7 @@ class A {
 
 ### 6.5 装饰器（Decorators）
 
-装饰器是**给类/方法/属性/参数附加元编程逻辑**的语法。TS 5.0 起支持**标准 ES 装饰器**（不再需要 `experimentalDecorators`）。
+装饰器是**给类/方法/属性/参数附加元编程逻辑**的语法。TS 5.0 起支持**标准 ES 装饰器**(不再需要 `experimentalDecorators`)。
 
 ```ts
 // 标准装饰器（TS 5.0+ / ES 提案）
@@ -808,7 +824,7 @@ type A = IsString<"a">; // true
 type B = IsString<1>; // false
 ```
 
-**分发条件类型（Distributive）**：当条件类型作用于**裸类型参数**且传入联合类型时，会分发给每个成员：
+**分发条件类型（Distributive）**：当条件类型作用于**裸类型参数**且传入联合类型时，会分发给每个成员
 
 ```ts
 type ToArray<T> = T extends any ? T[] : never;
@@ -863,7 +879,7 @@ type HandlerName = `on${Capitalize<EventName>}`; // "onClick" | "onFocus"
 type T = Capitalize<"hello">; // "Hello"
 ```
 
-### 7.8 内置工具类型（Utility Types）——日常最高频
+### 7.8 内置工具类型（Utility Types） — 日常最高频
 
 | 工具类型                                        | 作用                | 示例结果                                       |
 | ----------------------------------------------- | ------------------- | ---------------------------------------------- |
@@ -920,7 +936,7 @@ type Paths<T> = {
 }[keyof T];
 ```
 
-> 类型体操能提升库的作者能力，但**业务代码不要过度炫技**——可读性优先。复杂类型可用注释或拆解成中间类型。
+> 类型体操能提升库的作者能力，但**业务代码不要过度炫技** — 可读性优先。复杂类型可用注释或拆解成中间类型。
 
 ---
 
@@ -950,7 +966,7 @@ import * as utils from "./utils";
 
 ### 8.2 命名空间 namespace
 
-`namespace` 是 TS 早期的模块组织方式，现代项目**基本被 ES Module 取代**，仅在声明文件或全局脚本中见到：
+`namespace` 是 TS 早期的模块组织方式，现代项目**基本被 ES Module 取代**，仅在声明文件或全局脚本中见到
 
 ```ts
 namespace Validation {
@@ -962,7 +978,7 @@ namespace Validation {
 
 ### 8.3 声明文件 .d.ts
 
-给「没有类型的 JS 库」补类型，或声明全局变量：
+给「没有类型的 JS 库」补类型，或声明全局变量
 
 ```ts
 // types/global.d.ts
@@ -988,7 +1004,7 @@ declare global {
 export {}; // 有 import/export 时，需此写法才能让 declare global 生效
 ```
 
-安装第三方类型：
+安装第三方类型
 
 ```bash
 npm i -D @types/lodash @types/node
@@ -1115,7 +1131,7 @@ window.localStorage.getItem("token"); // string | null（strictNullChecks 下必
 
 如果时间有限，先吃透这 15 条，就能应对 80% 的日常开发。
 
-1. **类型注解**：`let x: number = 1;`——先会标注，再学推断。
+1. **类型注解**：`let x: number = 1;` — 先会标注，再学推断。
 2. **接口描述对象**：`interface User { id: number; name?: string }`。
 3. **联合类型**：`string | number`，用 `typeof` 收窄。
 4. **字面量联合替代枚举**：`type Status = "on" | "off"`。
@@ -1129,7 +1145,7 @@ window.localStorage.getItem("token"); // string | null（strictNullChecks 下必
 12. **工具类型**：`Partial` / `Pick` / `Omit` / `Record` / `ReturnType`。
 13. **`strictNullChecks`**：空值必须处理（`?.` 和 `??` 是好帮手）。
 14. **类型守卫**：`typeof` / `instanceof` / `in` / `is`。
-15. **`tsc --noEmit`**：提交前跑一次类型检查。
+15. **`npx tsc --noEmit`**：提交前跑一次类型检查。
 
 ```ts
 // 综合小例子
@@ -1192,7 +1208,7 @@ type Status = (typeof STATUS)[keyof typeof STATUS]; // "idle" | "loading"
 
 ### 11.5 空值严格检查带来的连锁问题
 
-`strictNullChecks` 开启后：
+`strictNullChecks` 开启后
 
 ```ts
 const el = document.querySelector(".box");
@@ -1206,7 +1222,7 @@ el?.innerHTML = "..."; // ✅ 可选链
 
 ### 11.6 函数参数的双变（协变/逆变）
 
-`strictFunctionTypes` 开启后，**函数参数是逆变的**：
+`strictFunctionTypes` 开启后，**函数参数是逆变的**
 
 ```ts
 type Handler = (e: MouseEvent) => void;
@@ -1214,7 +1230,7 @@ let h: Handler = (e: Event) => {}; // ✅ 参数更宽，兼容（逆变）
 // let h2: (e: Event) => void = (e: MouseEvent) => {}; // ❌ 参数更窄，不兼容
 ```
 
-方法（method）参数是双变的，函数属性参数是逆变的——这是很多“为什么这里能过、那里不能过”的原因。
+方法（method）参数是双变的，函数属性参数是逆变的 — 这是很多“为什么这里能过、那里不能过”的原因。
 
 ### 11.7 对象字面量的“多余属性检查”
 
@@ -1353,7 +1369,7 @@ prettier --write .  # 格式化
 
 ### 12.4 与运行时校验搭配
 
-类型只在编译期有效，**外部数据（接口返回、localStorage、URL 参数）必须在运行时校验**：
+类型只在编译期有效，**外部数据（接口返回、localStorage、URL 参数）必须在运行时校验**
 
 ```ts
 import { z } from "zod";

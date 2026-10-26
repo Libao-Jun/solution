@@ -1,11 +1,11 @@
-# Vue 状态管理实战手册（Vuex / Pinia）
+# Vue 状态管理实战手册
 
 > 参考资料：
 >
 > - [Pinia 官方中文文档](https://pinia.vuejs.org/zh/)
 > - [Vuex 官方中文指南](https://vuex.vuejs.org/zh/guide/)
 >
-> 面向角色：从「刚学会组件通信」的初中级前端，到「要设计一套长期可维护数据层」的高级前端 / 前端负责人。本文把 **store 的选型、两种写法、Vuex 与 Pinia 的逐项差异、不易发现的坑、工程规范** 放在一份文档里；新手可顺着 `一 → 二 → 三` 抄骨架起步，高级开发者可直接跳到 `五`（坑点）与 `六`（规范）。
+> 面向角色：从「刚学会组件通信」的初中级前端，到「要设计一套长期可维护数据层」的高级前端 / 前端负责人。本文把 **两套库的核心概念与概念映射、store 的选型、两种写法、逐项差异、不易发现的坑、工程规范** 放在一份文档里；新手可顺着 `一 → 二 → 三` 抄骨架起步，高级开发者可直接看 `四`（核心概念与异同）、`五`（坑点）、`六`（规范）。
 >
 > 文中示例默认 **Vue 3 + TypeScript + Pinia**；涉及 Vuex 4（配 Vue 3）与 Vuex 3（配 Vue 2）的差异会显式标注。标注 ⭐ 的小节是**高频踩坑点**，建议优先掌握。
 
@@ -16,7 +16,7 @@
 1. [状态管理解决什么问题](#一、状态管理解决什么问题)
 2. [Pinia 快速上手](#二、pinia-快速上手)
 3. [Vuex 4 的传统写法](#三、vuex-4-的传统写法)
-4. [Vuex 与 Pinia 的异同](#四、vuex-与-pinia-的异同) ⭐
+4. [Vuex 与 Pinia 的核心概念与异同](#四、vuex-与-pinia-的核心概念与异同) ⭐
 5. [不易发现的坑点](#五、不易发现的坑点) ⭐
 6. [开发注意事项与工程规范](#六、开发注意事项与工程规范)
 7. [常见问题速查](#七、常见问题速查)
@@ -25,7 +25,7 @@
 > **按角色取用**
 >
 > - **新手 · 起步路径**：`一（判断要不要 store）→ 二.1/二.2（建 store）→ 二.3（组件里读写）→ 五.1（解构丢响应性）→ 七（报错速查）`。跑通这五段就能写日常业务。
-> - **高级 · 设计数据层**：直接看 `四.1` 对照表定选型、`四.3` 迁移步骤、`五` 全部坑点、`六` 的目录 / 类型 / 异步 / 持久化 / 性能规范。
+> - **高级 · 设计数据层**：先看 `四.1` 对照图 + `四.2` 速查表把概念对齐，再用 `四.3` 的五条差异定边界、`四.4` 定选型、`四.5` 迁移，最后过一遍 `五` 全部坑点与 `六` 的目录 / 类型 / 异步 / 持久化 / 性能规范。
 
 ---
 
@@ -64,6 +64,8 @@
 ---
 
 ## 二、Pinia 快速上手
+
+本章只给最小可用骨架（先跑起来），**两套概念的全景对照见 4.1（图）与 4.2（速查表）**。
 
 ### 2.1 安装与挂载
 
@@ -224,7 +226,7 @@ async function checkout() {
 
 ## 三、Vuex 4 的传统写法
 
-Vuex 4 是配 Vue 3 的版本（Vuex 3 只能配 Vue 2）；它仍然保留 `mutation` 这一层，所有状态变更必须经过 `commit`。
+Vuex 4 是配 Vue 3 的版本（Vuex 3 只能配 Vue 2）；它仍然保留 `mutation` 这一层，所有状态变更必须经过 `commit`。本章偏用法速查，**5 个核心概念与 Pinia 的对照见 4.1（图）与 4.2（速查表）**。
 
 ### 3.1 安装与单文件仓库
 
@@ -354,38 +356,64 @@ export default {
 
 ---
 
-## 四、Vuex 与 Pinia 的异同
+## 四、Vuex 与 Pinia 的核心概念与异同
 
-### 4.1 逐项对照表
+两套库各自官方文档都只给了「核心概念」清单，**清单本身就是最好的对照表**：Vuex 5 个（State / Getter / Mutation / Action / Module），Pinia 6 个（定义 Store / State / Getter / Action / 插件 / 组件外的 Store）。少的那一个 `Mutation`、多的那两个，正好解释了它们全部的行为差异。
+
+### 4.1 一张图看懂两套概念
+
+<StoreConceptMapping />
+
+三条读图结论：
+
+1. **同名即同义**：`State` / `Getter` / `Action` 在两边含义基本一致，迁移时几乎一对一搬过去。
+2. **Vuex 多一层 `Mutation`，Pinia 把它并进 `Action`**——这是两者最本质的差别（见 4.3 第 1 条）。
+3. **`Module` 换成「定义 Store」**：组织单位从「一棵树里的子树」变成「一个文件一个 store 实例」，「命名空间 / root 参数 / 动态注册」这一整类概念随之消失。
+
+> 读图细节：① 两块浅蓝节点（Vuex 的「插件」「组件外使用」）官方清单里没单列，是为了和 Pinia 对齐才补的对照项；② 其余词都是概念的使用细节——Vuex 的 `mapState` / `strict`、Pinia 的 `$patch` / `$subscribe` 都属于「围绕上述概念的用法」，不用当成新概念记。
+
+### 4.2 核心概念速查（一表读完）
+
+| 关注点 | Vuex 4 | Pinia | 一句话记住 |
+| --- | --- | --- | --- |
+| 定义 / 组织 | `Module`：`modules` + `namespaced` 命名空间 | `定义 Store`：`defineStore(id, …)`，一文件一 store | 都在解决「怎么切分、怎么隔离」 |
+| 状态 | `State`：模块内写成函数返回对象 | `State`：`state()` 或 `ref` / `reactive` | 唯一数据源，其余都从它派生 |
+| 派生 | `Getter`：带缓存，跨模块用 `rootState` / `rootGetters` | `Getter`：或组合式里直接 `computed` | 派生值不存第二份 |
+| 改状态 | `Mutation`：**必须同步**，唯一合法入口，`commit('SET_X')` | **没有 Mutation**，`Action` 里直接赋值 / `$patch` | Vuex 的 mutation 是「事务」，Pinia 认为这层是样板 |
+| 业务动作 | `Action`：异步编排，`context` 里 `commit` 落地 | `Action`：同步 / 异步都行，`this` 即 store | 组件只调 action，不直接改状态 |
+| 扩展 | `plugins` 选项 + `store.subscribe` | `pinia.use()` 插件 + `$subscribe` / `$onAction` | 持久化、日志、埋点都挂这里 |
+| 组件外使用 | `import { store }` 单例，随处可用 | `useStore(pinia)`，或先 `setActivePinia(createPinia())` | Pinia 多一步「拿到容器」，换来 SSR / 测试隔离 |
+
+> 表外两条隐含约定：Vuex 的 `strict: true` 把「只能 commit」变成运行时约束；Pinia 没有 strict，只能靠团队约定（见 4.3）。
+
+### 4.3 核心异同（5 条，够用了）
+
+| # | 差异点 | Vuex 4 | Pinia | 影响 |
+| --- | --- | --- | --- | --- |
+| 1 | 变更入口 | `Action` → `commit` → `Mutation`（两段式，`strict` 兜底） | `Action` 直接改（一段式，无强制） | Pinia 少一半样板；代价是「变更意图」从框架强制变成团队约定 |
+| 2 | 组织方式 | 一棵树 + `namespaced` 字符串寻址（`user/SET_TOKEN`） | 一组独立 store，互调即 `useUserStore()` | Vuex 重构靠搜字符串；Pinia 靠类型系统，且天然按 import 懒加载 |
+| 3 | 单例范围 | 应用级单例，所有模块状态都在里面 | pinia 容器单例 + store 惰性缓存 | Pinia 在 SSR / 单测 / 多 App 下更安全：`createPinia()` 就能重置一整套 |
+| 4 | 扩展与观察 | `plugins` 选项 + `subscribe`（mutation 粒度） | `pinia.use()` + `$subscribe`（state 粒度）/ `$onAction`（能拿参数、返回值、异常） | Pinia 做统一 loading、错误上报、持久化更顺手 |
+| 5 | 约束与类型 | `strict: true` 强约束；`declare module 'vuex'` 手工补类型 | 无 strict；类型由 `defineStore` 自动推导 | Pinia 类型即文档，但要靠 code review 守住「只走 action」 |
+
+> **一句话记住**：Vuex = 「一棵树 + 事务（Mutation）」；Pinia = 「一组带缓存的响应式 store」。差别不在 API 数量，而在**谁有资格改状态、状态怎么被组织、观察者看到什么粒度**。
+
+### 4.4 选型速查
 
 | 维度 | Vuex 4（配 Vue 3） | Pinia |
 | --- | --- | --- |
-| 官方定位 | 维护模式（不再加新特性），存量项目继续用 | Vue 官方推荐的默认方案（Vue 2/3 都能用） |
-| 心智模型 | `state → mutation（同步改）→ action（异步编排）` 两段式 | `state + getter + action` 一段式，action 里直接改 |
-| 改状态 | 只能 `commit`；strict 模式下一旦在组件里直接改就报错 | 直接赋值 / `$patch`；**没有 strict 模式**，靠约定和 code review |
-| 模块 | `modules` + `namespaced` 字符串前缀（`user/SET_TOKEN`） | 一个 store 一个文件，天然隔离，互调直接 `useXxxStore()` |
-| 代码分割 | 需手动 `store.registerModule` + `unregisterModule` | import 到才创建，路由懒加载天然分片 |
-| TypeScript | 需 `declare module 'vuex'` 扩展根 State，`useStore()` 默认 `Store<unknown>` | 完整推导，无需手动扩展 |
-| 复用组合逻辑 | 弱（只能 action 互调） | 强（组合式 store 可直接用 composable / `watch` / `effectScope`） |
-| 派生数据 | `getters`（带缓存） | `getters` 或组合式里的 `computed`（同样带缓存） |
-| Devtools | mutation 粒度时间线，**可时间旅行**（逐条 mutation 回放） | action 粒度时间线 + 状态快照；时间旅行能力弱于 Vuex |
-| 严格模式 | `strict: true`（深度 watch state，越大越慢） | 无（官方认为成本与收益不划算） |
-| `$reset` | `store.replaceState(初始值)` | 选项式自带 `$reset()`；组合式需自写 |
-| 体积 / 运行时开销 | 相对更大，响应式依赖 Vuex 封装 | 更小更轻，直接基于 Vue 响应式 |
-| 适配 Vue 版本 | Vuex 3 → Vue 2；Vuex 4 → Vue 3 | Pinia 2 → Vue 3；Pinia 兼容 Vue 2（配合 `@vue/composition-api`） |
-| 官方插件生态 | `store.subscribe` / `subscribeAction` | `pinia.use()` 插件体系 + `$subscribe` / `$onAction`（持久化生态更活跃） |
-
-### 4.2 为什么 Pinia 成为官方默认
-
-1. **少一层抽象**：`mutation` 的初衷是让 devtools 能拍到「每次变更的意图」，但 Pinia 直接用 action 名 + 变更快照达成了同样效果，中间层成了纯样板代码。
-2. **类型推导天然正确**：`defineStore` 返回的 hook 就是普通函数，`store.count` 是 `number` 而非 `unknown`；Vuex 要靠模块增强才能拿到类型。
-3. **模块即文件**：Vuex 的 `namespaced` 把所有模块塞进一棵树，跨模块调用要拼字符串；Pinia 的 store 是独立实例，互相引用是普通 import，重构时 IDE 能直接改名。
-4. **组合式复用**：Pinia 的 setup store 本质是「带缓存的 composable」，可以像普通 composable 一样拆分、组合、单测。
-5. **按需加载自然分片**：没人 `import` 的 store 不会进包；Vuex 需要 `registerModule` 手工处理。
+| 官方定位 | 维护模式（不再加新特性） | Vue 官方推荐的默认方案 |
+| 新项目 | 不建议 | ✅ 首选 |
+| 存量 Vue 2（Vuex 3） | 可继续保留 | 可渐进替换（Pinia 兼容 Vue 2） |
+| 代码分割 | 需 `registerModule` 手工处理 | import 到即创建，天然分块 |
+| Devtools | mutation 粒度时间线，可时间旅行 | action 时间线 + 状态快照 |
+| 体积 / 运行时 | 相对更大 | 更小更轻，直接用 Vue 响应式 |
+| 团队纪律要求 | 低（`strict` 兜底） | 高（无 strict，靠约定 + review） |
+| 类型成本 | 要手工 `declare module` | 零成本自动推导 |
 
 结论：**新项目一律 Pinia**；Vuex 只用于存量维护，且不建议在 Vuex 项目里新增复杂模块——把新模块写成 Pinia store 反而是更平滑的过渡。
 
-### 4.3 从 Vuex 迁移到 Pinia
+### 4.5 从 Vuex 迁移到 Pinia
 
 | Vuex 写法 | Pinia 对应写法 |
 | --- | --- |

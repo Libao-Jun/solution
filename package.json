@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev",
+    "dev": "vitepress dev --port 5177",
     "build": "vitepress build",
     "preview": "vitepress preview",
     "check:temp": "node scripts/check-temp-artifacts.mjs"

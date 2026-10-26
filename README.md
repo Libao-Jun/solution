@@ -44,7 +44,7 @@ pnpm install
 ## 使用
 
 ```bash
-pnpm run dev      # 本地开发（默认 http://localhost:5173）
+pnpm run dev      # 本地开发（默认 http://localhost:5177）
 pnpm run build    # 构建静态站点到 .vitepress/dist
 pnpm run preview  # 预览构建产物
 ```

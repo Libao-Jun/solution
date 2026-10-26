@@ -44,6 +44,8 @@ import FlexGridChoiceFlow from './components/FlexGridChoiceFlow.vue'
 // 1.4 元素 / 标签 / 属性 / 内容拆解图（代码 token + 区间括号 + 中文标签，坐标由 DOM 实测得出，
 // 取代原先写在 ```html 代码块里、靠数空格对齐的 ASCII 箭头图）
 import HtmlElementAnatomy from './components/HtmlElementAnatomy.vue'
+// Vuex 与 Pinia 核心概念对照图（左 Vuex 5 概念 / 右 Pinia 6 概念，正文 frameworks/stores 第 4 章使用）
+import StoreConceptMapping from './components/StoreConceptMapping.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -359,6 +361,9 @@ export default {
 
     // 1.4 元素、标签、属性、内容拆解图（标签名 / 属性 / 内容 / 结束标签）
     ctx.app.component('HtmlElementAnatomy', HtmlElementAnatomy)
+
+    // Vuex 与 Pinia 核心概念对照图（正文 frameworks/stores 第 4 章）
+    ctx.app.component('StoreConceptMapping', StoreConceptMapping)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

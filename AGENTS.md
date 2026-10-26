@@ -22,7 +22,7 @@
 
 ```bash
 pnpm install     # 安装依赖
-pnpm run dev     # 本地开发，http://localhost:5173
+pnpm run dev     # 本地开发，http://localhost:5177
 pnpm run build   # 构建校验：md 语法、花括号插值、死链等在此暴露 —— 任何改动结束前必须能通过
 pnpm run preview # 预览构建产物
 ```

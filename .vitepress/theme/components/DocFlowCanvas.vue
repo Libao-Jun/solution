@@ -11,7 +11,7 @@
  *
  * 本文件只被 DocFlow.vue 在浏览器端动态加载（@vue-flow/core 依赖 d3-zoom，需要 DOM），不参与 SSR。
  */
-import { Handle, Position, VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
+import { Handle, MarkerType, Position, VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
 import { useData } from 'vitepress'
 import { computed } from 'vue'
 import DecisionTreeLabelEdge from './DecisionTreeLabelEdge.vue'
@@ -71,6 +71,10 @@ export interface DocFlowEdge {
   edgeType?: 'smoothstep' | 'orth'
   /** 连线色相（默认 slate），树状图用父节点的色相区分分支 */
   tone?: FlowTone
+  /** 连线末端加箭头（默认不加，与站内其他示意图一致；回路 / 门槛线需要提示方向时打开） */
+  arrow?: boolean
+  /** 虚线（表达「门槛 / 非必经」等弱连接） */
+  dashed?: boolean
 }
 
 const props = withDefaults(
@@ -120,6 +124,20 @@ const flowNodes = computed<Node[]>(() =>
   })),
 )
 
+/**
+ * 箭头填充色：与 .doc-edge 描边同为 hsl(hue 40% 58%)，这里换算成十六进制。
+ * ★ 必须用无空格的色值：Vue Flow 用 marker 对象各字段拼 `<marker id>`，
+ * 传 hsl(...) 这类带空格的颜色会拼出非法 id，箭头直接失效。
+ */
+const ARROW_COLOR: Record<FlowTone, string> = {
+  slate: '#6a86bf',
+  indigo: '#7769bf',
+  sky: '#698ebf',
+  emerald: '#69bfa2',
+  amber: '#bf9769',
+  brand: '#8369bf',
+}
+
 const flowEdges = computed<Edge[]>(() =>
   props.edges.map((edge, index) => ({
     id: `${props.flowId}-e-${index}`,
@@ -131,7 +149,16 @@ const flowEdges = computed<Edge[]>(() =>
     data: { label: edge.label ?? '' },
     selectable: false,
     updatable: false,
-    class: edge.tone ? `doc-edge doc-edge--tone-${edge.tone}` : 'doc-edge',
+    class: [
+      'doc-edge',
+      edge.tone ? `doc-edge--tone-${edge.tone}` : '',
+      edge.dashed ? 'doc-edge--dashed' : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+    markerEnd: edge.arrow
+      ? { type: MarkerType.ArrowClosed, color: ARROW_COLOR[edge.tone ?? 'slate'], width: 14, height: 14 }
+      : undefined,
   })),
 )
 
@@ -403,6 +430,11 @@ const { isDark } = useData()
   stroke: hsl(var(--doc-hue, 220) 40% 58%);
   stroke-width: 1.6;
   stroke-linecap: round;
+}
+
+/* 虚线：弱连接（门槛 / 可选步骤），与实线主流程区分 */
+.doc-canvas :deep(.doc-edge--dashed .vue-flow__edge-path) {
+  stroke-dasharray: 6 4;
 }
 
 /* 按分支着色：类挂在连线组上，色相经 --doc-hue 传给描边与分叉圆点 */

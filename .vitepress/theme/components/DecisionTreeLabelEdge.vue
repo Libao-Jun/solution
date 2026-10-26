@@ -28,6 +28,12 @@ const props = defineProps<{
   targetY: number
   sourcePosition: Position
   targetPosition: Position
+  /**
+   * 末端箭头（Vue Flow 透传的 `url('#marker-id')`）。
+   * 多根节点组件无法自动继承透传属性，必须显式声明并交给 BaseEdge，
+   * 否则带标签的连线永远画不出箭头。
+   */
+  markerEnd?: string
   /** 分支条件（HTML 片段，可用 <br> 精确控制断行） */
   data?: { label?: string }
 }>()
@@ -54,7 +60,7 @@ const labelStyle = computed(() => ({
 </script>
 
 <template>
-  <BaseEdge :id="id" :path="path" />
+  <BaseEdge :id="id" :path="path" :marker-end="markerEnd" />
   <EdgeLabelRenderer>
     <div v-if="data?.label" class="dt-edge-label" :style="labelStyle" v-html="data.label" />
   </EdgeLabelRenderer>

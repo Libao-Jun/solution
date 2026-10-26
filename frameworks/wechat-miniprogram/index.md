@@ -299,25 +299,9 @@
 
 ### 5.1 双线程模型
 
-```mermaid
-flowchart LR
-    subgraph View["视图层 View"]
-      V1["WebView / Skyline"]
-      V2["WXML + WXSS"]
-      V3["多个页面 = 多个 WebView"]
-    end
-    subgraph Logic["逻辑层 AppService"]
-      L1["JSCore / V8"]
-      L2["JS (App / Page)"]
-      L3["单线程，全局唯一 App"]
-    end
-    subgraph Native["Native (微信)"]
-      N1["转发 / API 能力"]
-    end
-    View <-->|Native 中转| Logic
-    View -->|Native 中转| Native
-    Logic -->|Native 中转| Native
-```
+小程序不是「一个线程干所有事」：渲染（视图层 View）和逻辑（逻辑层 AppService）被拆成两个线程，中间隔着 Native。两层之间没有任何直连的线，任何一次交互都要经 Native 中转，所以通信必然是异步的。
+
+<MiniprogramDualThreadFlow />
 
 **关键推论（必考）**：
 

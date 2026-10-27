@@ -82,6 +82,8 @@
 
 本节综合 [Vue 2 风格指南 · 单文件组件文件名的大小写](https://v2.cn.vuejs.org/v2/style-guide/#单文件组件文件名的大小写) 及各命名相关条目。其中的「模板 / DOM 模板」差异源于 Vue 2 时代 HTML 大小写不敏感；Vue 3 项目若全部使用 SFC / 字符串模板，可统一 PascalCase，但仍建议保持团队一致。
 
+跨语言与跨框架的完整命名规则（HTML / CSS / JS / TS / React / Svelte / Java / Python / MySQL、词形对照与工具链约束）见 [命名规范完全指南](/engineering/naming-guide/)。
+
 #### 1.4.1 单文件组件文件名大小写（优先级 B：强烈推荐）
 
 - 文件名**要么始终是 PascalCase，要么始终是 kebab-case**，两者皆可，但**同一项目内必须保持一致**。

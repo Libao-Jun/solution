@@ -26,6 +26,7 @@ const sidebar = [
       { text: '超长列表优化处理', link: '/fundamentals/long-list-optimization/' },
       { text: '文件上传处理', link: '/fundamentals/file-upload/' },
       { text: 'SEO 全流程知识手册', link: '/fundamentals/seo/' },
+      { text: 'Open Graph 协议', link: '/fundamentals/seo/og/' },
       { text: 'CSS / CSS3 从入门到精通指南', link: '/fundamentals/css-css3/' },
     ],
   },
@@ -34,11 +35,13 @@ const sidebar = [
     items: [
       { text: 'React 开发规范', link: '/frameworks/react/' },
       { text: 'Vue 开发规范', link: '/frameworks/vue/' },
+      { text: 'Vue Router 路由完全指南', link: '/frameworks/vue/router/' },
       { text: 'Svelte 开发规范与指南', link: '/frameworks/svelte/' },
       { text: 'JS 框架语法对比', link: '/frameworks/js-framework-comparison/' },
       { text: 'Taro 4.x 小程序开发指导', link: '/frameworks/taro/' },
       { text: '微信小程序开发指南', link: '/frameworks/wechat-miniprogram/' },
       { text: 'App 开发完全指南', link: '/frameworks/app-development/' },
+      { text: 'Vue 状态管理实战手册', link: '/frameworks/stores/' },
     ],
   },
   {
@@ -51,6 +54,7 @@ const sidebar = [
       { text: 'H5 唤起 APP 与跳转应用商店', link: '/engineering/h5-app-invoke/' },
       { text: 'Git 入门、避坑与速查指南', link: '/engineering/git/' },
       { text: '微前端从入门到精通', link: '/engineering/micro-frontend/' },
+      { text: '命名规范完全指南', link: '/engineering/naming-guide/' },
       { text: '最全开发者资源宝典', link: '/engineering/developer-resources/' },
     ],
   },
@@ -183,6 +187,41 @@ const buildSeoHead = ({ pageData }: { pageData: PageData }): HeadConfig[] => {
   ]
 }
 
+/**
+ * 修复：编辑正文含行内 `<script>` 字样的 Markdown 时，dev 热更新弹出
+ * [vue/compiler-sfc] Missing semicolon 错误覆盖层（刷新后恢复正常）。
+ *
+ * 根因：VitePress 把 @vitejs/plugin-vue 配置成 include: /\.(?:vue|md)$/，
+ * 热更新时 plugin-vue 会绕过 VitePress 的 Markdown 编译链，直接把「原始 md
+ * 源码」当 Vue SFC 解析并 compileScript——正文行内代码里的 `<script>` 被其
+ * SFC 解析器误判为 script 块，babel 去编译这段伪 script 内容（实为 markdown
+ * 文本）即报 Missing semicolon (1:16)。冷加载 / 刷新走 VitePress 先渲染成
+ * HTML 的链路（`<script>` 已转义为实体），因此不受影响。
+ *
+ * 修复：在 configResolved 里拦截 plugin-vue 的热更新钩子，对 .md 文件直接
+ * 跳过——md 的热更新由 VitePress 自带的 vitepress:hmr-fix 插件负责，页面
+ * HMR 行为不变，仅去掉对原始 md 的错误 SFC 解析。
+ */
+const skipMdSfcHotUpdate = {
+  name: 'solution:skip-md-sfc-hot-update',
+  enforce: 'pre' as const,
+  configResolved(resolved: any) {
+    for (const plugin of resolved.plugins) {
+      if (plugin.name !== 'vite:vue') continue
+      for (const hookName of ['hotUpdate', 'handleHotUpdate'] as const) {
+        const original = plugin[hookName]
+        if (typeof original !== 'function') continue
+        plugin[hookName] = function (this: any, ctx: { file?: string }) {
+          if (typeof ctx?.file === 'string' && ctx.file.endsWith('.md')) {
+            return undefined
+          }
+          return original.call(this, ctx)
+        }
+      }
+    }
+  },
+}
+
 export default extendConfig(
   defineConfig({
     base,
@@ -286,6 +325,7 @@ export default extendConfig(
               { text: '超长列表优化', link: withBase('/fundamentals/long-list-optimization/') },
               { text: '文件上传处理', link: withBase('/fundamentals/file-upload/') },
               { text: 'SEO 全流程', link: withBase('/fundamentals/seo/') },
+              { text: 'Open Graph 协议', link: withBase('/fundamentals/seo/og/') },
               { text: 'CSS / CSS3', link: withBase('/fundamentals/css-css3/') },
             ],
           },
@@ -297,6 +337,7 @@ export default extendConfig(
               { text: 'Svelte', link: withBase('/frameworks/svelte/') },
               { text: '微信小程序', link: withBase('/frameworks/wechat-miniprogram/') },
               { text: 'App 开发', link: withBase('/frameworks/app-development/') },
+              { text: '状态管理', link: withBase('/frameworks/stores/') },
             ],
           },
           {
@@ -308,6 +349,7 @@ export default extendConfig(
               { text: 'H5 唤起 APP', link: withBase('/engineering/h5-app-invoke/') },
               { text: 'Git 速查指南', link: withBase('/engineering/git/') },
               { text: '微前端', link: withBase('/engineering/micro-frontend/') },
+              { text: '命名规范', link: withBase('/engineering/naming-guide/') },
               { text: '开发者资源宝典', link: withBase('/engineering/developer-resources/') },
             ],
           },
@@ -321,6 +363,10 @@ export default extendConfig(
           },
         ],
       },
+    },
+    // dev HMR 修复：plugin-vue 不再把原始 Markdown 当 Vue SFC 解析（见上方 skipMdSfcHotUpdate）
+    vite: {
+      plugins: [skipMdSfcHotUpdate],
     },
     markdown: {
       lineNumbers: false,

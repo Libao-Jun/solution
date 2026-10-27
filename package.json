@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vitepress dev",
+    "dev": "vitepress dev --port 5177",
     "build": "vitepress build",
-    "preview": "vitepress preview"
+    "preview": "vitepress preview",
+    "check:temp": "node scripts/check-temp-artifacts.mjs"
   },
   "dependencies": {
     "@vue-flow/core": "^1.48.2",
@@ -15,6 +16,7 @@
     "reka-ui": "^2.7.0"
   },
   "devDependencies": {
+    "@types/node": "^26.6.5",
     "@voidzero-dev/vitepress-theme": "4.8.4",
     "tailwindcss": "^4.1.18",
     "vitepress": "2.0.0-alpha.17",

@@ -44,7 +44,7 @@ pnpm install
 ## 使用
 
 ```bash
-pnpm run dev      # 本地开发（默认 http://localhost:5173）
+pnpm run dev      # 本地开发（默认 http://localhost:5177）
 pnpm run build    # 构建静态站点到 .vitepress/dist
 pnpm run preview  # 预览构建产物
 ```
@@ -91,8 +91,8 @@ solution/
 | 目录            | 分类                                                                           |
 | --------------- | ------------------------------------------------------------------------------ |
 | `fundamentals/` | Web 基础（HTML5、脚本 Script、浏览器、HTTP、JavaScript、ECMAScript 6、TypeScript、前端性能、浏览器存储、前端安全防护、WebSocket、超长列表优化处理、文件上传处理、SEO 全流程、CSS / CSS3） |
-| `frameworks/`   | 框架与端（React、Vue、Svelte、框架对比、Taro、微信小程序、App 开发）           |
-| `engineering/`  | 工程化与适配（打包构建工具、Emmet、响应式与自适应、数据大屏适配、H5 唤起 APP、Git、微前端） |
+| `frameworks/`   | 框架与端（React、Vue、Vue Router、状态管理 Vuex / Pinia、Svelte、框架对比、Taro、微信小程序、App 开发） |
+| `engineering/`  | 工程化与适配（打包构建工具、Emmet、响应式与自适应、数据大屏适配、H5 唤起 APP、Git、微前端、命名规范） |
 | `roadmaps/`     | 学习路线图索引页（PDF 原件位于 `public/roadmaps/`，随站点原样发布）            |
 | `career/`       | 职业成长（开源许可证、求职与职场）                                             |
 

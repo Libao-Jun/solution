@@ -19,7 +19,7 @@ export interface StatItem {
   label: string
 }
 
-export const docCount = 32
+export const docCount = 36
 export const roadmapCount = 47
 export const categoryCount = 5
 
@@ -42,6 +42,7 @@ export const categories: CategoryCard[] = [
       { text: '超长列表优化', link: '/fundamentals/long-list-optimization/' },
       { text: '文件上传', link: '/fundamentals/file-upload/' },
       { text: 'SEO 全流程', link: '/fundamentals/seo/' },
+      { text: 'Open Graph 协议', link: '/fundamentals/seo/og/' },
       { text: 'CSS / CSS3', link: '/fundamentals/css-css3/' },
     ],
   },
@@ -52,11 +53,13 @@ export const categories: CategoryCard[] = [
     chips: [
       { text: 'React', link: '/frameworks/react/' },
       { text: 'Vue', link: '/frameworks/vue/' },
+      { text: 'Vue Router', link: '/frameworks/vue/router/' },
       { text: 'Svelte', link: '/frameworks/svelte/' },
       { text: '语法对比', link: '/frameworks/js-framework-comparison/' },
       { text: 'Taro', link: '/frameworks/taro/' },
       { text: '微信小程序', link: '/frameworks/wechat-miniprogram/' },
       { text: 'App 开发', link: '/frameworks/app-development/' },
+      { text: '状态管理', link: '/frameworks/stores/' },
     ],
   },
   {
@@ -71,6 +74,7 @@ export const categories: CategoryCard[] = [
       { text: 'H5 唤起 APP', link: '/engineering/h5-app-invoke/' },
       { text: 'Git', link: '/engineering/git/' },
       { text: '微前端', link: '/engineering/micro-frontend/' },
+      { text: '命名规范', link: '/engineering/naming-guide/' },
       { text: '开发者资源宝典', link: '/engineering/developer-resources/' },
     ],
   },

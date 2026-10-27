@@ -1,117 +1,122 @@
 <script setup lang="ts">
 /**
- * 小程序「从 0 到 1」开通流程图 —— @vue-flow/core 实现。
+ * 小程序「从 0 到 1」完整上线流程图 —— @vue-flow/core 实现。
  * 由同目录的 MiniprogramSetupFlow.vue 在浏览器端动态加载。
  *
- * ★ 为什么替换原 ```mermaid flowchart TD：原 12 节点单列纵排在一屏内被压得
- *   极长、可读性差；改为三行蛇形（boustrophedon）布局，节点位置与连线走向由
- *   代码显式控制，支持拖拽平移与按钮缩放，并随深色模式同步切换配色。
+ * ★ 版式：11 个步骤按「三行蛇形（boustrophedon）」排布，顺序即阅读顺序：
+ *   行 1（左 → 右）：① 注册账号 → ② 主体信息 → ③ 小程序信息 → ④ AppID
+ *   行 2（右 → 左）：⑤ 小程序备案 → ⑥ 开发者工具 → ⑦ 创建项目 → ⑧ 编译预览
+ *   行 3（左 → 右）：⑨ 上传代码 → ⑩ 提交审核 → ⑪ 发布上线
  *
- * ★ 内容（与原 2.1 节 mermaid 逐条对应，只换版式、不改语义）：
- *   行 1（左→右）：① 注册账号 → mp.weixin.qq.com 选择「小程序」类型 →
- *                  ② 填写主体信息 → 个人：身份证+扫码 / 企业：营业执照+认证
- *   行 2（右→左）：后台→开发→开发设置 ← ④ 获取 AppID ← 名称/头像/简介/服务类目 ← ③ 完善小程序信息
- *   行 3（左→右）：⑤ 安装开发者工具 → ⑥ 创建项目 → 填入 AppID 选云服务 →
- *                  ⑦ 编译预览 → 模拟器 / 扫码真机预览
+ * ★ 连线与句柄「由顺序推导」，不手写边表：
+ *   STEPS 数组顺序 = 流程顺序，第 i 项连第 i+1 项；句柄方向按两节点的
+ *   (row, col) 关系算出——换行落到上/下边，同行落到左/右边。
+ *   早前手写边表 + 手写句柄曾把「③ 完善小程序信息」和「⑤ 安装开发者工具」
+ *   直接连起来（漏掉 ④），此处逻辑切勿改回手工维护。
  */
-import { Handle, Position, VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
-import { useData } from 'vitepress'
+import { Handle, MarkerType, Position, VueFlow, useVueFlow, type Edge, type Node } from '@vue-flow/core'
 
 /* ------------------------------------------------------------------ *
- * §1 版式常量（节点固定宽高，蛇形三行，坐标按中心点计算）
+ * §1 版式常量（节点固定宽高，坐标按中心点计算）
  * ------------------------------------------------------------------ */
-const STEP_W = 150
-const STEP_H = 48
-const DETAIL_W = 190
-const DETAIL_H = 58
-const COL_STEP = 220
-const ROW_STEP = 150
+const NODE_W = 200
+const NODE_H = 84
+const COL_STEP = 240
+const ROW_STEP = 148
+/** 连线与箭头颜色：深浅两套背景都清晰可见 */
+const EDGE_COLOR = '#94a3b8'
 const FIT_PADDING = 0.05
-const MIN_FIT_ZOOM = 0.5
+const MIN_FIT_ZOOM = 0.35
 
 const FLOW_ID = 'miniprogram-setup-flow'
 const FIT_VIEW_PARAMS = { padding: FIT_PADDING, minZoom: MIN_FIT_ZOOM }
 
 /* ------------------------------------------------------------------ *
- * §2 图内容（唯一真相源）
+ * §2 图内容（唯一真相源：数组顺序 = 流程顺序）
  * ------------------------------------------------------------------ */
-type NodeKind = 'step' | 'detail'
+/** 阶段配色：account 建号与合规 / dev 开发自测 / review 上传审核 / live 发布上线 */
+type Tone = 'account' | 'dev' | 'review' | 'live'
 
-type FlowNodeSpec = {
+type FlowStep = {
   id: string
-  label: string
-  kind: NodeKind
+  title: string
+  caption: string
+  tone: Tone
   /** 所在行（0/1/2）与所在列（中心点横向序号） */
   row: 0 | 1 | 2
-  col: number
-  /** 连线进出方向，决定横向 / 纵向蛇形走向 */
-  source: Position
-  target?: Position
+  col: 0 | 1 | 2 | 3
 }
 
-const NODES: FlowNodeSpec[] = [
-  // 行 1：左 → 右
-  { id: 's1', label: '① 注册账号', kind: 'step', row: 0, col: 0, source: Position.Right },
-  { id: 's1d', label: 'mp.weixin.qq.com\n选择「小程序」类型', kind: 'detail', row: 0, col: 1, source: Position.Right, target: Position.Left },
-  { id: 's2', label: '② 填写主体信息', kind: 'step', row: 0, col: 2, source: Position.Right, target: Position.Left },
-  { id: 's2d', label: '个人：身份证 + 扫码\n企业：营业执照 + 认证', kind: 'detail', row: 0, col: 3, source: Position.Bottom, target: Position.Left },
+const STEPS: FlowStep[] = [
+  // 行 1（左 → 右）：开账号与配置
+  { id: 's1', title: '① 注册账号', caption: 'mp.weixin.qq.com → 立即注册 → 小程序', tone: 'account', row: 0, col: 0 },
+  { id: 's2', title: '② 填写主体信息', caption: '个人：身份证 + 扫码；企业：营业执照 + 认证', tone: 'account', row: 0, col: 1 },
+  { id: 's3', title: '③ 完善小程序信息', caption: '名称 / 头像 / 简介 / 服务类目', tone: 'account', row: 0, col: 2 },
+  { id: 's4', title: '④ 获取 AppID', caption: '后台 → 开发 → 开发设置', tone: 'account', row: 0, col: 3 },
 
-  // 行 2：右 → 左（s2d ↓ s4d，再向左折返）
-  { id: 's4d', label: '后台 → 开发\n→ 开发设置', kind: 'detail', row: 1, col: 3, target: Position.Top, source: Position.Left },
-  { id: 's4', label: '④ 获取 AppID', kind: 'step', row: 1, col: 2, target: Position.Right, source: Position.Left },
-  { id: 's3d', label: '名称 / 头像 / 简介\n/ 服务类目', kind: 'detail', row: 1, col: 1, target: Position.Right, source: Position.Left },
-  { id: 's3', label: '③ 完善小程序信息', kind: 'step', row: 1, col: 0, target: Position.Right, source: Position.Bottom },
+  // 行 2（右 → 左）：备案（可与开发并行）+ 本地开发自测
+  { id: 's5', title: '⑤ 小程序备案', caption: '设置 → 基本设置 → 小程序备案', tone: 'account', row: 1, col: 3 },
+  { id: 's6', title: '⑥ 安装开发者工具', caption: '微信开发者工具（稳定版）', tone: 'dev', row: 1, col: 2 },
+  { id: 's7', title: '⑦ 创建项目', caption: '填入 AppID，选择是否使用云开发', tone: 'dev', row: 1, col: 1 },
+  { id: 's8', title: '⑧ 编译预览', caption: '模拟器调试 →「预览」扫码真机', tone: 'dev', row: 1, col: 0 },
 
-  // 行 3：左 → 右（s3 ↓ s5）
-  { id: 's5', label: '⑤ 安装开发者工具', kind: 'step', row: 2, col: 0, target: Position.Top, source: Position.Right },
-  { id: 's6', label: '⑥ 创建项目', kind: 'step', row: 2, col: 1, target: Position.Left, source: Position.Right },
-  { id: 's6d', label: '填入 AppID\n选云服务 / 云开发', kind: 'detail', row: 2, col: 2, target: Position.Left, source: Position.Right },
-  { id: 's7', label: '⑦ 编译预览', kind: 'step', row: 2, col: 3, target: Position.Left, source: Position.Right },
-  { id: 's7d', label: '模拟器 / 扫码\n真机预览', kind: 'detail', row: 2, col: 4, target: Position.Left },
-]
-
-const EDGES: Array<[string, string]> = [
-  ['s1', 's1d'],
-  ['s1d', 's2'],
-  ['s2', 's2d'],
-  ['s2d', 's4d'],
-  ['s4d', 's4'],
-  ['s4', 's3d'],
-  ['s3d', 's3'],
-  ['s3', 's5'],
-  ['s5', 's6'],
-  ['s6', 's6d'],
-  ['s6d', 's7'],
-  ['s7', 's7d'],
+  // 行 3（左 → 右）：上传、审核与发布
+  { id: 's9', title: '⑨ 上传代码', caption: '「上传」→ 版本号 + 项目备注', tone: 'review', row: 2, col: 0 },
+  { id: 's10', title: '⑩ 提交审核', caption: '版本管理 → 提交审核（测试账号 / 路径）', tone: 'review', row: 2, col: 1 },
+  { id: 's11', title: '⑪ 发布上线', caption: '全量发布 / 分阶段灰度，可回退', tone: 'live', row: 2, col: 2 },
 ]
 
 /* ------------------------------------------------------------------ *
- * §3 建图
+ * §3 句柄方向推导
+ * ------------------------------------------------------------------ */
+/** from 指向 to 时，连线应落在 from 的哪一侧 */
+const sideOf = (from: FlowStep, to: FlowStep): Position => {
+  if (to.row > from.row) return Position.Bottom
+  if (to.row < from.row) return Position.Top
+  return to.col > from.col ? Position.Right : Position.Left
+}
+
+/** 每个节点的入边 / 出边句柄方向（首节点无入边、末节点无出边） */
+const HANDLES = STEPS.map((step, i) => ({
+  target: i > 0 ? sideOf(step, STEPS[i - 1]) : undefined,
+  source: i < STEPS.length - 1 ? sideOf(step, STEPS[i + 1]) : undefined,
+}))
+
+/* ------------------------------------------------------------------ *
+ * §4 建图
  * ------------------------------------------------------------------ */
 const buildGraph = () => {
-  const nodes: Node[] = NODES.map((n) => {
-    const width = n.kind === 'step' ? STEP_W : DETAIL_W
-    const height = n.kind === 'step' ? STEP_H : DETAIL_H
-    return {
-      id: n.id,
-      type: n.kind,
-      position: { x: n.col * COL_STEP - width / 2, y: n.row * ROW_STEP - height / 2 },
-      data: { label: n.label, width, height, source: n.source, target: n.target },
-      draggable: false,
-      connectable: false,
-      selectable: false,
-    }
-  })
+  const nodes: Node[] = STEPS.map((step, i) => ({
+    id: step.id,
+    type: 'card',
+    position: { x: step.col * COL_STEP - NODE_W / 2, y: step.row * ROW_STEP - NODE_H / 2 },
+    data: {
+      title: step.title,
+      caption: step.caption,
+      tone: step.tone,
+      width: NODE_W,
+      height: NODE_H,
+      source: HANDLES[i].source,
+      target: HANDLES[i].target,
+    },
+    draggable: false,
+    connectable: false,
+    selectable: false,
+    focusable: false,
+  }))
 
-  const edges: Edge[] = EDGES.map(([source, target], index) => ({
-    id: `e-${index}`,
-    source,
-    target,
+  const edges: Edge[] = STEPS.slice(1).map((step, i) => ({
+    id: `e-${STEPS[i].id}-${step.id}`,
+    source: STEPS[i].id,
+    target: step.id,
     type: 'smoothstep',
+    class: 'mp-edge',
+    markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color: EDGE_COLOR },
+    style: { stroke: EDGE_COLOR, strokeWidth: 1.6 },
     selectable: false,
     updatable: false,
-    class: 'mp-edge',
-    pathOptions: { borderRadius: 10 },
+    focusable: false,
+    pathOptions: { borderRadius: 12 },
   }))
 
   return { nodes, edges }
@@ -120,17 +125,15 @@ const buildGraph = () => {
 const { nodes, edges } = buildGraph()
 
 /* ------------------------------------------------------------------ *
- * §4 视图控制
+ * §5 视图控制
  * ------------------------------------------------------------------ */
 const { zoomIn, zoomOut, fitView } = useVueFlow(FLOW_ID)
 const fitAll = () => fitView({ ...FIT_VIEW_PARAMS })
 defineExpose({ zoomIn, zoomOut, fitView: fitAll })
-
-const { isDark } = useData()
 </script>
 
 <template>
-  <div class="mp-flow" :class="{ 'is-dark': isDark }">
+  <div class="mp-flow">
     <VueFlow
       :id="FLOW_ID"
       :nodes="nodes"
@@ -149,19 +152,16 @@ const { isDark } = useData()
       :prevent-scrolling="false"
       :auto-pan-on-node-drag="false"
     >
-      <template #node-step="{ data }">
-        <div class="mp-node mp-node--step" :style="{ width: `${data.width}px`, height: `${data.height}px` }">
-          <Handle v-if="data.source" class="mp-handle" type="source" :position="data.source" />
+      <template #node-card="{ data }">
+        <div
+          class="mp-node"
+          :class="`mp-node--${data.tone}`"
+          :style="{ width: `${data.width}px`, height: `${data.height}px` }"
+        >
           <Handle v-if="data.target" class="mp-handle" type="target" :position="data.target" />
-          <span class="mp-node__text">{{ data.label }}</span>
-        </div>
-      </template>
-
-      <template #node-detail="{ data }">
-        <div class="mp-node mp-node--detail" :style="{ width: `${data.width}px`, height: `${data.height}px` }">
           <Handle v-if="data.source" class="mp-handle" type="source" :position="data.source" />
-          <Handle v-if="data.target" class="mp-handle" type="target" :position="data.target" />
-          <span v-for="(line, i) in data.label.split('\n')" :key="i" class="mp-node__text">{{ line }}</span>
+          <span class="mp-node__title">{{ data.title }}</span>
+          <span class="mp-node__caption">{{ data.caption }}</span>
         </div>
       </template>
     </VueFlow>
@@ -197,33 +197,47 @@ const { isDark } = useData()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
+  gap: 5px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
   border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.3;
+  color: #fff;
   text-align: center;
 }
 
-.mp-flow :deep(.mp-node__text) {
-  display: block;
+.mp-flow :deep(.mp-node__title) {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
-/* 主步骤节点 */
-.mp-flow :deep(.mp-node--step) {
-  border: 1px solid transparent;
+.mp-flow :deep(.mp-node__caption) {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+/* ---- 阶段配色（饱和底 + 白字，深浅主题通用） ---- */
+.mp-flow :deep(.mp-node--account) {
   background: linear-gradient(135deg, #4f30e8 0%, #7b6bf5 100%);
-  color: #fff;
-  font-weight: 600;
-  white-space: nowrap;
   box-shadow: 0 10px 24px -12px rgba(79, 48, 232, 0.65);
 }
 
-/* 材料 / 说明节点 */
-.mp-flow :deep(.mp-node--detail) {
-  border: 1px solid hsl(250 58% 74%);
-  background: hsl(250 80% 97%);
-  color: hsl(250 45% 35%);
+.mp-flow :deep(.mp-node--dev) {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  box-shadow: 0 10px 24px -12px rgba(30, 64, 175, 0.6);
+}
+
+.mp-flow :deep(.mp-node--review) {
+  background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+  box-shadow: 0 10px 24px -12px rgba(180, 83, 9, 0.6);
+}
+
+.mp-flow :deep(.mp-node--live) {
+  background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+  box-shadow: 0 10px 24px -12px rgba(4, 120, 87, 0.6);
 }
 
 /* 句柄仅用于连线定位 */
@@ -234,28 +248,5 @@ const { isDark } = useData()
   min-height: 0;
   border: 0;
   background: transparent;
-}
-
-/* 连线 */
-.mp-flow :deep(.mp-edge .vue-flow__edge-path) {
-  stroke: var(--vp-c-text-3);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-}
-
-/* ---- 深色模式 ---- */
-.mp-flow.is-dark :deep(.mp-node--step) {
-  background: linear-gradient(135deg, #5a3cf0 0%, #897bff 100%);
-  box-shadow: 0 10px 24px -12px rgba(90, 60, 240, 0.55);
-}
-
-.mp-flow.is-dark :deep(.mp-node--detail) {
-  border-color: hsl(250 40% 48%);
-  background: hsl(250 30% 19%);
-  color: hsl(250 70% 85%);
-}
-
-.mp-flow.is-dark :deep(.mp-edge .vue-flow__edge-path) {
-  stroke: var(--vp-c-text-3);
 }
 </style>

@@ -21,6 +21,10 @@ import ResponsiveAdaptiveDecisionTree from './components/ResponsiveAdaptiveDecis
 import DataScreenSelectionDecisionTree from './components/DataScreenSelectionDecisionTree.vue'
 // 微前端 HTML Entry 加载流程（加载主链 + 路由离开卸载分支，正文 `engineering/micro-frontend/` 6.3 节使用）
 import MicroFrontendHtmlEntryFlow from './components/MicroFrontendHtmlEntryFlow.vue'
+// 小程序「发布全流程（六步）」（主列 + 被拒支线 + 备案门槛），正文 wechat-miniprogram 23.2 节使用
+import MiniprogramReleaseFlow from './components/MiniprogramReleaseFlow.vue'
+// 小程序「双线程模型」（视图层 / 逻辑层 / Native 三层容器 + 中转连线），正文 wechat-miniprogram 5.1 节使用
+import MiniprogramDualThreadFlow from './components/MiniprogramDualThreadFlow.vue'
 // 前端打包构建工具「流程 / 依赖 / 生态 / 选型」四张图（正文 `engineering/build-tools/` 1.2 / 1.3 / 1.6 / 11.1 节使用）
 import BuildToolsFlow from './components/BuildToolsFlow.vue'
 // 以下 3 个组件共用 DocFlow（外层骨架）+ DocFlowCanvas（@vue-flow/core 画布）：
@@ -37,6 +41,11 @@ import CssBoxModelDiagram from './components/CssBoxModelDiagram.vue'
 import CssFlexContainerDiagram from './components/CssFlexContainerDiagram.vue'
 // 9.7 Flex 与 Grid 如何选型（决策树，分支到共识的连线按条覆盖出线侧）
 import FlexGridChoiceFlow from './components/FlexGridChoiceFlow.vue'
+// 1.4 元素 / 标签 / 属性 / 内容拆解图（代码 token + 区间括号 + 中文标签，坐标由 DOM 实测得出，
+// 取代原先写在 ```html 代码块里、靠数空格对齐的 ASCII 箭头图）
+import HtmlElementAnatomy from './components/HtmlElementAnatomy.vue'
+// Vuex 与 Pinia 核心概念对照图（左 Vuex 5 概念 / 右 Pinia 6 概念，正文 frameworks/stores 第 4 章使用）
+import StoreConceptMapping from './components/StoreConceptMapping.vue'
 import Layout from './Layout.vue'
 import './styles.css'
 
@@ -298,6 +307,14 @@ export default {
     // 小程序「从 0 到 1」开通流程图（@vue-flow/core 实现，三行蛇形布局），供 wechat-miniprogram 2.1 节使用
     ctx.app.component('MiniprogramSetupFlow', MiniprogramSetupFlow)
 
+    // 小程序「发布全流程（六步）」（@vue-flow/core 实现，主列 + 被拒支线 + 备案门槛），
+    // 供 wechat-miniprogram 23.2 节使用（原 mermaid 图）
+    ctx.app.component('MiniprogramReleaseFlow', MiniprogramReleaseFlow)
+
+    // 小程序「双线程模型」（@vue-flow/core 实现，三层板块容器 + Native 中转连线），
+    // 供 wechat-miniprogram 5.1 节使用（原 mermaid 图）
+    ctx.app.component('MiniprogramDualThreadFlow', MiniprogramDualThreadFlow)
+
     // 前端打包构建工具「流程 / 依赖 / 生态 / 选型」四张图（@vue-flow/core 实现，variant 切换），
     // 供 engineering/build-tools 1.2 / 1.3 / 1.6 / 11.1 节使用
     ctx.app.component('BuildToolsFlow', BuildToolsFlow)
@@ -341,6 +358,12 @@ export default {
     ctx.app.component('CssFlexContainerDiagram', CssFlexContainerDiagram)
     // 9.7 Flex 与 Grid 如何选型（决策树）
     ctx.app.component('FlexGridChoiceFlow', FlexGridChoiceFlow)
+
+    // 1.4 元素、标签、属性、内容拆解图（标签名 / 属性 / 内容 / 结束标签）
+    ctx.app.component('HtmlElementAnatomy', HtmlElementAnatomy)
+
+    // Vuex 与 Pinia 核心概念对照图（正文 frameworks/stores 第 4 章）
+    ctx.app.component('StoreConceptMapping', StoreConceptMapping)
 
     // 启用 mermaid 客户端渲染
     setupMermaid(ctx.router)

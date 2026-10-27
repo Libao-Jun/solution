@@ -6,6 +6,7 @@
 >
 > **铁律一**：改样式、补内容、加需求，都不得影响既有正常功能；已修复过的 bug 不得被覆盖或回退（§2.4 / §2.5）。
 > **铁律二**：每次任务 / 对话收尾必须执行一次收尾 Code Review（§4.6），发现问题就修复并复验，不得带问题收尾。
+> **铁律三（临时产物零残留）**：任何临时脚本 / 日志 / 截图 / 浏览器 profile / 缓存副本**一律不得落在工作区**，只能放系统临时目录（`$env:TEMP` / `$TMPDIR`）并在任务内删除；收尾必须跑 `pnpm run check:temp` 且退出码为 0，`git status --porcelain` 只剩本次预期改动。一次误把浏览器 `--user-data-dir` 指向仓库就会产生上千个文件——此类污染**严格禁止**（§4.1.1）。
 >
 > **★ 对话与任务要求（每次会话 / 任务必做）**：① **每次对话开始**与**每次任务收尾**，都必须**重新读取本文件（`AGENTS.md`，即 `@e:/monorepo/solution/AGENTS.md`）并逐条执行其规范与约束**，严禁依赖记忆或单次读取的残留印象；② 本要求覆盖**每一次对话与任务**，务必确保不遗漏、不违背 `@e:/monorepo/solution/AGENTS.md` 的规范与约束。
 
@@ -21,7 +22,7 @@
 
 ```bash
 pnpm install     # 安装依赖
-pnpm run dev     # 本地开发，http://localhost:5173
+pnpm run dev     # 本地开发，http://localhost:5177
 pnpm run build   # 构建校验：md 语法、花括号插值、死链等在此暴露 —— 任何改动结束前必须能通过
 pnpm run preview # 预览构建产物
 ```
@@ -99,6 +100,7 @@ pnpm run preview # 预览构建产物
 | `base` + 资源引用          | CI 切换 + 一律 `withBase()`                                           | 写死 `/` 或裸 `/xxx`，404                |
 | 页头 Logo 根链接           | `transformHtml` + `fixThemeLogoLink()`                                | 删除（子路径跳域名根）                   |
 | SEO 三件套                 | `head` / `transformHead` / `lastUpdated` / sitemap / robots.txt       | 删减（TDK / canonical / 结构化数据丢失） |
+| `DocFlowCanvas.vue` 连线句柄 | `SIDE_TO_HANDLE`（`right → r`）必须与模板里的句柄 id `s-t` / `s-r` / `s-b` / `s-l` 一一对应（`t-*` 同理） | 改回 `s-${side}`（拼出 `s-right` 这类不存在的 id，Vue Flow 静默退回 `bottom → top`：左→右树图的连线会从节点底部爬出、在节点间横生枝节） |
 
 > 各条目的完整「现状」说明见 `.agent-reference/agent-guide-details.md` 六。遇到「新需求要求推翻清单中某项」时：**先停下来说明冲突并征询用户**，不要自行判断「这次可以例外」。
 
@@ -236,6 +238,28 @@ flowchart TD
 - **只用 pnpm**；命令见 §0。
 - ★ **脚本一律后台运行（最高优先级铁律，每次会话 / 任务必须遵循）**：任何可能耗时或长时间驻留的命令 / 脚本（`pnpm run dev`、`pnpm run build`、`pnpm run preview`、无头浏览器 / CDP 探测脚本、轮询健康检查、日志巡检等）都必须**以后台方式启动**——发起后立即返回，不阻塞后续的编辑、分析与任务推进；**禁止前台阻塞等待**（典型反例：`Start-Sleep -Seconds N; Get-Content xxx.out` 前台占住执行通道等人）。需要结果时改为后台运行 + 轮询读取输出文件 / 日志，或在收尾统一核对，绝不为了拿一次输出而卡住主流程。本规则优先级最高，凌驾于其他一切约定。
 
+### 4.1.1 ★ 临时产物边界（严格禁止污染工作区）
+
+> 复盘（2026-10-21）：为截图校验页面，把无头浏览器的 `--user-data-dir` 指向仓库根目录 `.tmp-edge-profile`，单个 profile 目录即产生上千个文件，`git status` 立刻多出 1447 个未跟踪条目，并在工作区持续增长。**「随手在仓库里建临时文件」是能力滥用，与需求无关的一切磁盘写入都必须被约束**，无论事后是否删除。
+
+**红线（违反任意一条 = 任务未完成，须立即清理 + 复验）**
+
+1. **临时产物只能落在系统临时目录**：Windows 用 `$env:TEMP\<统一前缀>-<唯一后缀>`，类 Unix 用 `$TMPDIR`。仓库内（含任意子目录、含已被 gitignore 的目录）**严禁创建**：临时脚本（`.ps1` / `.cmd` / `.mjs` / `.bat`）、日志、截图（`.png` / `.jpg`）、JSON 采集结果、`--user-data-dir`、浏览器 / 自动化工具 profile、缓存或产物副本。
+2. **禁止把工具的数据目录指向工作区**：`--user-data-dir`、`PLAYWRIGHT_BROWSERS_PATH`、`CHROME_*`、CDP user-data 目录等一律用系统临时目录。**一次误指 = 上千个文件**，是本仓库发生过的最大一次污染。
+3. **一次任务只用一套临时目录**，命名带统一前缀（如 `vtdocs-check-<时间戳>`），收尾**整目录删除**（不是逐个删文件），并确认无残留进程仍持有句柄。
+4. **收尾必须清零**，按顺序执行：
+   - 结束本次拉起的浏览器 / 脚本 / dev / build 进程（用 `Get-CimInstance Win32_Process` 按命令行过滤，逐个 `Stop-Process`）；
+   - 递归扫描并清空：`Get-ChildItem -Recurse -Force | ? { $_.Name -like '.tmp*' -or $_.Name -like 'tmp-*' -or $_.Name -like '*.tmp' }`（排除 `node_modules` / `.vitepress/cache` / `.vitepress/dist`）；
+   - 运行 `pnpm run check:temp`，**必须退出码 0**；
+   - `git status --porcelain` 只允许出现本次任务的预期改动（新增 / 修改的正文、配置、组件）。
+5. **视觉校验同样适用**：截图、CDP 采集文件一律写 `$env:TEMP`；需要长期展示的图片才进 `public/`（正式资源），绝不留在仓库根目录。
+6. **不得以「已写进 .gitignore」为借口**：被忽略 ≠ 允许存在，文件还在磁盘上就算污染。
+
+| 命令                     | 作用                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------- |
+| `pnpm run check:temp`    | 扫描仓库内 `.tmp-*` / `tmp-*` / `*.tmp` / 浏览器 profile 目录（`Local State`、`Crashpad` 特征），命中即列出路径并以退出码 1 结束 |
+| `git status --porcelain` | 收尾核对：除预期改动外不得出现任何未跟踪条目                                           |
+
 ### 4.2 ★ 新增 `xx.md`（新增主题文档）标准流程
 
 **Step 1 定位置**：确认分类（`fundamentals/` `frameworks/` `engineering/` `career/` 或新分类）与主题目录名（小写 kebab-case）。新分类先按 §2.3 与用户确认。
@@ -313,6 +337,7 @@ flowchart TD
 - [ ] `{{PLACEHOLDER}}` 仍正常渲染，`README.md` 仍未生成页面，页内目录锚点仍可跳转。
 - [ ] `pnpm run build` 通过。
 - [ ] **所有命令 / 脚本均以后台方式运行，未阻塞后续任务的继续执行（最高优先级铁律 · §4.1）。**
+- [ ] **§4.1.1 临时产物边界：仓库内无任何临时脚本 / 日志 / 截图 / 浏览器 profile，`pnpm run check:temp` 通过，`git status --porcelain` 只剩预期改动。**
 - [ ] **已按 §4.6 完成收尾 Code Review（三轴），发现的问题均已修复并复验。**
 - [ ] 提交信息符合 §3.5，且一次提交只做一件事。
 - [ ] 每次完成任务或者结束对话，必须关闭或者停止后台测试启动的 dev 或者 build。

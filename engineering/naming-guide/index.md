@@ -6,7 +6,7 @@
 - **日常做业务的中级前端** — 需要跨 HTML / CSS / JS / Vue / React / Svelte 的一致约定。
 - **负责规范落地的高级前端与架构师** — 需要跨语言映射、工具链约束与遗留系统迁移策略。
 
-2️⃣ 本文把「词形（camelCase / PascalCase / kebab-case / kebab_case / …）」与「语义（名字该说什么）」拆成两层来讲
+2️⃣ 本文把「词形（camelCase / PascalCase / snake_case / kebab-case / …）」与「语义（名字该说什么）」拆成两层来讲
 
 - 前两章建立判断标准，第三到十五章按语言与场景给出完整规则
 - 第十六到十九章讲团队怎么把规范变成不会腐烂的约束。
@@ -35,8 +35,10 @@
 - [十七、工具链强制约束](#十七、工具链强制约束)
 - [十八、反例与重命名流程](#十八、反例与重命名流程)
 - [十九、分层速查与进阶路线](#十九、分层速查与进阶路线)
+- [参考资料](#参考资料)
 - [附录 A 命名风格转换对照表](#附录-a-命名风格转换对照表)
 - [附录 B 交付前检查清单](#附录-b-交付前检查清单)
+- [附录 C 文件命名速查矩阵](#附录-c-文件命名速查矩阵)
 
 ---
 
@@ -339,7 +341,11 @@ const canSubmit = isValid && !isSubmitting
 | `created`       | 布尔「是否已创建」         | `boolean`，语义弱，建议 `isCreated` |
 | `createTime`    | Java / 数据库常见写法      | 与 `createdAt` **必须二选一**       |
 
-**时态规则**：`xxxing` 表示进行中（`isSaving`），`xxxed` 表示已完成（`savedAt`），动词原形只用于函数名（`save`）。混用会直接导致 UI 状态判断出错。
+**时态规则**
+- `xxxing` 表示进行中（`isSaving`）
+- `xxxed` 表示已完成（`savedAt`）
+- 动词原形只用于函数名（`save`）。
+- 混用会直接导致 UI 状态判断出错。
 
 ### 3.6 对称词表
 
@@ -505,6 +511,27 @@ console.log(el.dataset.orderCount); // "3"
 | `alt` 描述内容而非文件名  | 装饰图用 `alt=""`（空字符串，不是 `alt="image"`）                                    |
 | `role` 用标准值           | 自定义 `role` 无效；优先用语义标签替代 `role`                                        |
 | 不要用 `title` 当唯一说明 | 触屏无法 hover，且对读屏不友好                                                       |
+
+### 4.6 HTML 文件命名
+
+```text
+index.html                      # 单页应用入口（静态服务器默认文档）
+
+about/index.html                # 多页站点：目录 + index，与路由 /about 对应
+pricing/index.html
+
+user-profile.html               # 与路由 /user-profile 对应的单页文件
+order-detail.html
+```
+
+| 规则                  | 说明                                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| 文件名 kebab-case 全小写 | `user-profile.html`，不要 `UserProfile.html`、`user_profile.html`                     |
+| 入口固定 `index.html` | 静态托管 / Nginx 的默认文档名，改名会 404                                              |
+| 与路由一一对应        | `/user-profile` ↔ `user-profile/index.html`（或 `user-profile.html`，全站只用一种）       |
+| 不用空格与中文        | 空格在 URL 里要转义成 `%20`，中文名在部分静态服务器上编码不一致                            |
+| 模板片段分开存放      | 公共片段放 `partials/`、`layouts/`，不要与页面文件混在同一层                              |
+| 扩展名全小写          | `.html` 而不是 `.HTML`（Linux 静态服务器区分大小写）                                      |
 
 ---
 
@@ -722,6 +749,7 @@ class OrderManagerImpl {}
 - 抽象类 / 基类加前缀：`BaseStore`、`AbstractValidator`。
 - 缩写在类名里保持一致：`HttpClient` 或 `HTTPClient`，别两种都出现。
 - 不要用 `new` 前缀或 `Cls` 后缀标注「这是个类」 — 语法已经写了 `new`。
+- 类内静态常量用 `UPPER_SNAKE_CASE`（`static readonly MAX_RETRY_COUNT = 3`）；类属性与方法用 camelCase，与实例成员的命名保持一致。
 
 ### 6.4 私有成员
 
@@ -1110,6 +1138,95 @@ const vFocus = {
 | 事件声明             | camelCase           | `emit('rowSelect')`                         |
 | 事件监听             | kebab               | `@row-select="…"`                           |
 
+### 8.7 组件目录结构
+
+**没有子文件的组件不要建目录**；有测试 / 样式 / 子组件时才建同名目录。目录与文件必须整体采用同一套方案，二选一、不混用：
+
+```text
+# 方案一：kebab-case 全小写
+components/
+├─ base/                     # 基础组件：纯展示、无 store、无请求
+│  ├─ base-button.vue
+│  ├─ base-input.vue
+│  └─ base-modal.vue
+├─ user/                     # 业务组件：按领域分目录
+│  └─ user-avatar.vue
+├─ order/
+│  ├─ order-card.vue
+│  └─ order-list.vue
+└─ user-profile/             # 有子文件的组件：同名目录
+   ├─ user-profile.vue
+   ├─ user-profile.module.css
+   └─ user-profile.test.ts
+```
+
+```text
+# 方案二：PascalCase
+components/
+├─ Base/
+│  ├─ BaseButton.vue
+│  ├─ BaseInput.vue
+│  └─ BaseModal.vue
+├─ User/
+│  └─ UserAvatar.vue
+├─ Order/
+│  ├─ OrderCard.vue
+│  └─ OrderList.vue
+└─ UserProfile/
+   ├─ UserProfile.vue
+   ├─ UserProfile.module.css
+   └─ UserProfile.test.ts
+```
+
+| 规则                   | 说明                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
+| 基础组件单独目录       | `base/`（或 `Base/`、`ui/`），无业务逻辑、无 store、无请求                 |
+| 业务组件按领域分目录   | `user/`、`order/`；不要几百个组件平铺在 `components/` 根下                 |
+| 有子文件才建目录       | 目录名与组件名相同，组件文件与目录同名                                     |
+| 一套方案用到底         | `user/UserCard.vue`（目录 kebab、文件 Pascal）是最典型的混用，检索与自动导入都会失效 |
+| 目录与文件大小写一致   | macOS / Windows 不敏感、CI 敏感（见 11.3），混用必然在某台机器上失效       |
+| 全局注册只留给基础组件 | 业务组件一律局部引入，避免打包体积失控与来源不明                           |
+
+### 8.8 组件名的单词顺序
+
+组件名以**高级别（一般化）的词开头、以描述性修饰词结尾**，同族组件才会在文件树与自动补全里排在一起：
+
+| ✅ 推荐                               | ❌ 不推荐                            | 理由                             |
+| ------------------------------------- | ------------------------------------ | -------------------------------- |
+| `SearchButtonClear`                   | `ClearSearchButton`                  | 所有 `SearchButton*` 聚在一起    |
+| `SearchButtonRun`                     | `RunSearchButton`                    | 同上                             |
+| `SearchInputQuery`                    | `QuerySearchInput`                   | 先「是什么」，再「做什么」       |
+| `SettingsCheckboxTerms`               | `TermsSettingsCheckbox`              | 设置类组件按 `Settings*` 归类    |
+| `SettingsCheckboxLaunchOnStartup`     | `LaunchOnStartupSettingsCheckbox`    | 修饰词可以长，核心名词必须在前面 |
+
+### 8.9 自闭合与模板写法
+
+- 单文件组件、字符串模板、JSX：没有子内容时用自闭合 `<UserAvatar />`。
+- **DOM 模板里永远不要自闭合**：HTML 规范不认识自闭合的自定义元素，`<user-avatar />` 会把后面的兄弟节点吃成它的子节点。
+
+```html
+<!-- ✅ SFC / 字符串模板 / JSX：自闭合 -->
+<UserAvatar :user-id="userId" />
+
+<!-- ✅ 直接写在 index.html 里的 DOM 模板：必须完整闭合 -->
+<user-avatar user-id="42"></user-avatar>
+```
+
+### 8.10 组件名要用完整单词
+
+缩写让写的人省三个字符、读的人多花三十秒，而编辑器补全早已抵消了省下来的成本：
+
+| ❌ 缩写         | ✅ 完整单词                     |
+| --------------- | ------------------------------- |
+| `SdSettings`    | `StudentDashboardSettings`      |
+| `UProfOpts`     | `UserProfileOptions`            |
+| `BtnGroup`      | `ButtonGroup`                   |
+| `ImgUploader`   | `ImageUploader`                 |
+| `MsgToast`      | `MessageToast`                  |
+| `UsrCard`       | `UserCard`                      |
+
+行业通用缩写（`API`、`URL`、`ID`、`HTTP`、`JSON`）不受此限，但同一项目里的大小写必须统一（见 2.3）。
+
 ---
 
 ## 九、React 命名规范
@@ -1265,6 +1382,68 @@ src/
 | 测试与源文件同目录               | `OrderTable.test.tsx`；或统一放 `__tests__/`，二选一    |
 | 桶文件（`index.ts`）谨慎         | 会造成循环依赖与 tree-shake 失效；只在包对外出口使用    |
 
+### 9.6 样式、类型与测试文件
+
+| 文件类型                | 命名                                        | 示例                         |
+| ----------------------- | ------------------------------------------- | ---------------------------- |
+| 全局样式入口            | kebab                                       | `globals.css`、`global.css`（全仓只保留一个入口） |
+| 组件样式（CSS Modules） | 与组件同名 + `.module.css`                  | `UserProfile.module.css`     |
+| 组件样式（普通 CSS）    | 与组件同名                                  | `UserProfile.css`            |
+| 样式组件（CSS-in-JS）   | Pascal + 语义后缀                           | `StyledButton`、`UserProfileWrapper` |
+| 组件专属类型            | 组件名 + `.types.ts`                        | `UserProfile.types.ts`       |
+| 通用类型                | kebab                                       | `types/api-response.ts`      |
+| 单元测试                | 与源文件同名 + `.test.tsx` / `.spec.tsx`    | `UserProfile.test.tsx`       |
+| E2E 测试                | kebab（与路由一致）+ `.cy.ts` / `.spec.ts`  | `user-profile.cy.ts`         |
+| Storybook               | 与组件同名 + `.stories.tsx`                 | `UserProfile.stories.tsx`    |
+
+三条说明：
+
+- CSS 类名通过 `className` 指定（不是 `class`）；CSS Modules 建议配 `localsConvention: 'camelCaseOnly'`，代码里写 `styles.userCard`。
+- E2E 文件用 kebab-case 是为了与路由路径一一对应，排查「某个页面挂了」时能按 URL 直接找到测试。
+- 测试 / 样式 / 类型统一用**点号后缀**接在组件名后，排序后天然与源文件相邻。
+
+### 9.7 组件目录模式
+
+```text
+# 无子文件：平铺，不建目录
+components/
+├─ BaseButton.tsx
+└─ OrderTable.tsx
+
+# 有子文件：同名目录，一个目录只对外暴露一个组件
+components/
+└─ UserProfile/
+   ├─ UserProfile.tsx            # 对外组件
+   ├─ UserProfile.module.css
+   ├─ UserProfile.types.ts
+   ├─ UserProfile.test.tsx
+   └─ UserProfileAvatar.tsx      # 仅供本组件使用的子组件
+```
+
+| 规则                     | 说明                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| 目录名与组件名完全一致   | `UserProfile/UserProfile.tsx`，import 路径写 `./UserProfile` |
+| 子组件以父组件名开头     | `UserProfileAvatar`、`OrderTableRow`                         |
+| 一个目录一个对外组件     | 其余文件是实现细节，不从目录外引用                           |
+| 不用 `index.tsx` 当组件文件 | 会让真实文件名在 import 里消失；桶文件只用于包对外出口     |
+| 基础组件与业务组件分目录 | `components/base/`（或 `ui/`）与 `features/order/`            |
+
+### 9.8 路由路径与动态段
+
+| 场景                        | 命名                                                                     | 示例                             |
+| --------------------------- | ------------------------------------------------------------------------ | -------------------------------- |
+| 静态路径                    | kebab-case                                                               | `/user-profile`、`/order-detail` |
+| 动态段                      | 方括号 + camelCase 参数名                                                | `[userId]`、`[productSlug]`      |
+| Next.js App Router 保留文件 | `page` / `layout` / `loading` / `error` / `not-found` / `route` / `template` / `default` | `app/orders/[orderId]/page.tsx` |
+| 路由组                      | 圆括号包裹，不进入 URL                                                   | `app/(marketing)/about/page.tsx` |
+| 私有目录                    | `_` 前缀，不参与路由                                                     | `app/_components/Header.tsx`     |
+| 通配段                      | 方括号内加 `...`                                                          | `app/docs/[...slug]/page.tsx`    |
+
+两个要点：
+
+1. 动态段名用 camelCase，因为它会原样变成代码里的 `params.userId`；**路径本身仍是 kebab-case**，两者不冲突。
+2. 保留文件名不能改（改了路由就失效），这与「命名要语义化」无关，属于框架契约。
+
 ---
 
 ## 十、Svelte 命名规范
@@ -1403,7 +1582,7 @@ my-app/
 | 声明              | 固定名                     | `env.d.ts`、`global.d.ts`              |
 | 文档              | kebab-case                 | `getting-started.md`                   |
 
-**大小写敏感陷阱（很容易踩）**：macOS 与 Windows 的默认文件系统**大小写不敏感**，Linux 与 CI 容器**敏感**。在本地把 `UserCard.tsx` 改名成 `usercard.tsx`，Git 可能认为「没有变化」，推到 Linux CI 后 import 就找不到文件。规避方式
+**大小写敏感陷阱（很容易踩）**：macOS 与 Windows 的默认文件系统**大小写不敏感**，Linux 与 CI 容器**敏感**。在本地把 `UserCard.tsx` 改名成 `usercard.tsx`，Git 可能认为「没有变化」，推到 Linux CI 后 import 就找不到文件。规避方式：
 
 ```bash
 # 需要只改大小写时，用两段式 git mv
@@ -1439,6 +1618,147 @@ DATABASE_MAX_POOL_SIZE=20
 | 单位写进名字                                    | `DATABASE_TIMEOUT_MS`、`CACHE_TTL_SECONDS`                                                                                          |
 | 不要 `VITE_API_URL` 与 `VITE_API_BASE_URL` 并存 | 二选一，否则总有人读错                                                                                                              |
 | 配置文件的键与代码里的字段同名                  | `vite.config.ts` 里的 `server.port` 不要另造 `serverPort`                                                                           |
+
+### 11.6 页面与视图目录
+
+页面目录的层级就是路由层级，命名必须与 URL 一一对应，否则「按 URL 找文件」这件事就失效了：
+
+| 对象                 | 规则                        | 示例                                                |
+| -------------------- | --------------------------- | --------------------------------------------------- |
+| 页面目录             | kebab-case 全小写           | `pages/user-profile/`、`views/order-detail/`         |
+| 页面入口文件         | `index`                     | `pages/home/index.vue`、`views/about/index.vue`      |
+| 页面内的子模块文件   | kebab-case + 语义           | `pages/auth/menu-auth.ts`、`pages/auth/btn-auth.ts`  |
+| 表格 / 表单类页面    | 名词 + 类型后缀             | `pages/super-table/form-table.vue`                  |
+| 目录深度             | 与路由一致，不超过 3 层     | `pages/order/detail/index.vue` ↔ `/order/detail`     |
+| 页面组件与目录同名   | 有子文件时才建目录          | `pages/order/detail/detail.vue`                     |
+
+两条经验：
+
+- **`pages/` 与 `views/` 二选一**。两者语义相同（都是路由级页面），同时存在只会让新人每次都要猜「这个页面该放哪」。
+- **页面目录里不放通用逻辑**。请求封装进 `api/`，可复用的状态逻辑进 `composables/` / `hooks/`，页面目录只留「这一页独有」的东西。
+
+### 11.7 样式与脚本目录
+
+**样式目录**
+
+| 对象         | 规则                                    | 示例                                     |
+| ------------ | --------------------------------------- | ---------------------------------------- |
+| 全局样式目录 | 全小写、复数                            | `styles/`、`assets/styles/`              |
+| 样式入口     | 固定名，全仓只保留一个                   | `global.css`、`main.css`、`index.css`    |
+| 重置 / 规范化 | 固定名                                 | `reset.css`、`normalize.css`             |
+| 主题变量     | kebab-case                              | `variables.css`、`theme-dark.css`        |
+| 组件样式     | 与组件同名（见 5.5 / 9.6）               | `UserProfile.module.css`                 |
+
+**脚本目录**
+
+| 对象             | 规则                              | 示例                                                     |
+| ---------------- | --------------------------------- | -------------------------------------------------------- |
+| 脚本目录         | 全小写、复数                      | `scripts/`                                                |
+| Node 脚本        | kebab-case，动词开头              | `seed-database.ts`、`check-filenames.mjs`                 |
+| Shell 脚本       | kebab-case + `.sh`                | `setup-env.sh`、`build-docs.sh`                           |
+| 数据库迁移脚本   | 日期前缀 + kebab                  | `2026-10-27-add-user-avatar.sql`                          |
+| 校验类脚本       | `check-` 前缀                     | `check-temp-artifacts.mjs`                                |
+
+脚本用动词开头不是风格问题：它出现在 `package.json` 的 `scripts` 里时就是一个动作（`pnpm run check:temp`），名字与命令自然对齐；迁移脚本带日期前缀，保证执行顺序肉眼可读、脚本化排序也不会乱。
+
+### 11.8 静态资源与图片命名
+
+先分清两类资源目录，这决定了「改名会不会破坏线上」：
+
+| 目录       | 规则                        | 特点                                                        |
+| ---------- | --------------------------- | ----------------------------------------------------------- |
+| `assets/`  | 全小写、复数                | 参与构建：会被哈希、压缩、tree-shake，适合组件内引用的图片  |
+| `public/`  | 全小写、单数                | 原样拷贝到站点根：路径稳定，适合 favicon、PDF、需直链的资源 |
+
+子目录与常见文件：
+
+| 对象       | 命名                       | 示例                                     |
+| ---------- | -------------------------- | ---------------------------------------- |
+| 图片子目录 | 复数、按类型               | `images/`、`icons/`、`svg/`、`illustrations/` |
+| 图标       | 类别 + 名称                | `icon-search.svg`、`icon-close.svg`      |
+| 插图 / 背景 | 用途 + 名称               | `hero-banner.png`、`empty-state.svg`     |
+| 字体       | kebab，字重作后缀          | `open-sans.woff2`、`inter-bold.woff2`    |
+
+**图片命名格式（业务前缀可选）**
+
+```text
+[业务前缀_]功能类别_模块名称[@倍数].扩展名
+```
+
+| 片段       | 是否必选 | 说明                                                       |
+| ---------- | -------- | ---------------------------------------------------------- |
+| 业务前缀   | 可选     | 多业务线共用资源时才加（`jd`、`mall`）；单业务项目省略     |
+| 功能类别   | **必选** | 图片在界面里的用途：`icon`、`banner`、`bg`、`avatar`、`empty` |
+| 模块名称   | 可选     | 所属页面 / 功能：`goods-cart`、`order-detail`              |
+| 倍数       | 可选     | `@2x` / `@3x`；1 倍图省略后缀                              |
+| 扩展名     | 必选     | 全小写：`.png`、`.svg`、`.webp`、`.jpg`                    |
+
+| 规则     | 格式                                        | 示例                          |
+| -------- | ------------------------------------------- | ----------------------------- |
+| 全小写   | 不允许出现大写                              | `icon` ✅ / `Icon` ❌         |
+| 分隔符   | 类别与模块之间用 `_` 分段，段内多词用 `-`    | `icon_goods-cart` ✅          |
+| 倍数     | `@2x`、`@3x`                                | `logo@2x.png`                 |
+| 顺序     | 业务 → 类别 → 模块 → 倍数                   | `jd_icon_goods-cart@2x.png`   |
+| 语义化   | 用「是什么」而不是「第几张」                | `hero-banner.png` ✅ / `1.png` ❌ |
+
+为什么坚持「`_` 分段、`-` 连词」：`_` 表示**层级边界**、`-` 表示**同一个名字内部的连接**。两者混用后，任何批量脚本（生成 `@2x/@3x`、CDN 重命名、按模块清理无用图）都无法可靠解析出「这是哪个模块的图」。
+
+```html
+<!-- 单倍图：直接引用 -->
+<img src="/images/icon_goods-cart.svg" alt="购物车" width="24" height="24" />
+
+<!-- 多倍图：srcset 按像素密度选择，1 倍图不带后缀 -->
+<img
+  src="/images/hero-banner.png"
+  srcset="/images/hero-banner@2x.png 2x, /images/hero-banner@3x.png 3x"
+  alt="首屏插画"
+/>
+```
+
+**禁止**：中文文件名、空格、大写字母、以及 `微信图片_20260101120000.png`、`banner 副本(2).png`、`未标题-1.png` 这类导出残留名——它们既不可检索，也会在构建 / 上传环节引发编码问题。
+
+### 11.9 工具函数目录的语义边界
+
+`utils` / `helpers` / `lib` / `api` / `composables` / `hooks` 六个目录经常同时出现在一个项目里，边界不清就会变成三个垃圾场：
+
+| 目录           | 放什么                                     | 不要放什么                             |
+| -------------- | ------------------------------------------ | -------------------------------------- |
+| `utils/`       | 无状态纯函数：日期格式化、字符串处理、类型判定 | 请求、单例、任何业务专有名词（`formatUserOrder`） |
+| `helpers/`     | 为某个业务或框架服务的辅助逻辑             | 与 `utils` 职责重叠的通用函数          |
+| `lib/`         | 有状态或需要初始化的封装：SDK 适配、客户端 | 纯函数（那属于 `utils`）               |
+| `api/`         | 与外部通信：请求封装、接口定义、错误映射     | 业务分支判断                           |
+| `composables/` | Vue 组合式函数，返回响应式状态             | 与框架无关的纯函数                     |
+| `hooks/`       | React 自定义 Hook，返回状态与操作           | 同上                                   |
+
+判定顺序（从前往后问）：
+
+1. 是**纯函数、与框架无关**？→ `utils/`。
+2. 需要**初始化或持有状态**？→ `lib/`。
+3. 会**发请求**？→ `api/`。
+4. 返回**响应式状态**？→ Vue 用 `composables/`，React 用 `hooks/`。
+5. 只服务**某一个业务**？→ 放进该业务的领域目录，不要放共享目录。
+
+两条硬规则：
+
+- **`utils` 与 `helpers` 只保留一个**。同义目录并存是最典型的「命名浪费」——每写一个函数都要犹豫两秒，最终两个目录都变成杂物间。
+- **`utils` 里不允许出现业务名词**。一旦出现 `formatUserOrder`、`calcOrderRefund`，说明它属于 `features/order/`。
+
+### 11.10 工具函数文件的组织方式
+
+同一个 `utils/` 目录，文件粒度有三种常见做法，按规模选一种：
+
+| 方式                     | 何时用                                   | 示例                                              |
+| ------------------------ | ---------------------------------------- | ------------------------------------------------- |
+| 单函数一文件（kebab）    | 函数体量较大，或需要被多处精确引用        | `format-date.ts`、`validate-form.ts`              |
+| 按类别聚合               | 同族函数多且都很短（单个 20 行以内）      | `string.ts`、`array.ts`、`object.ts`、`date.ts`   |
+| camelCase 与函数同名     | 文件只导出一个函数，文件即入口（Airbnb 风格） | `formatDate.ts`、`validators.ts`                |
+
+取舍规则：
+
+- 聚合文件超过约 200 行、或内部函数开始互相调用并出现顺序依赖，就拆回单文件。
+- 单文件碎片化（几十个 5 行的文件）同样损害可读性，`import` 列表会先崩。
+- 文件名与默认导出名必须一致（`formatDate.ts` 导出 `formatDate`），否则 IDE 的「按文件名跳转」会落空。
+- 导出方式统一：全用 `export function` 或全用 `export default`，不要两种并存。
 
 ---
 
@@ -2233,7 +2553,7 @@ CI 里按「先报错再多改」的顺序推进
 
 ## 附录 A 命名风格转换对照表
 
-同一业务概念（用户档案的最后更新时间）在 16 个位置的写法：
+同一业务概念（用户档案的最后更新时间）在 16 个位置的写法
 
 | 位置                    | 写法                                                                |
 | ----------------------- | ------------------------------------------------------------------- |
@@ -2282,14 +2602,65 @@ CI 里按「先报错再多改」的顺序推进
 - [ ] 文件名全小写 kebab（组件 Pascal），跨平台大小写一致；只改大小写用了两段式 `git mv`。
 - [ ] 目录名全小写 kebab，无 `common` / `misc` / `temp`。
 - [ ] npm 包名全小写 kebab，仓库名 / 分支名语义化，分支带 `feat/` `fix/` `chore/` 前缀。
-- [ ] 环境变量 SCREAMING*SNAKE + 框架前缀（`VITE*`/`NEXT*PUBLIC*`/`PUBLIC\_`）。
+- [ ] 环境变量用 `SCREAMING_SNAKE_CASE`，前端可见变量带框架前缀（`VITE_` / `NEXT_PUBLIC_` / `PUBLIC_`）。
 - [ ] Java：包全小写、类 Pascal、方法 / 变量 camel、常量全大写、接口不加 `I` 前缀。
 - [ ] Python：模块 / 函数 / 变量 snake、类 Pascal、常量全大写、私有用单下划线、`__` 不自造。
 - [ ] MySQL：库表列全小写 snake、表名风格统一、主键 `id` / 外键 `xxx_id`、索引 `idx_` / `uk_` / `fk_`。
 - [ ] 金额用 DECIMAL + 最小单位命名；时间字段 `_at` 与 `_time` 未混用；未用保留字。
 - [ ] REST：资源复数、路径 kebab、无动词、版本在最前、查询参数风格全站统一。
 - [ ] 跨层字段同名（DB → 后端 → JSON → 前端），布尔字段三端对齐。
+- [ ] Vue：组件目录与文件用同一套方案（全 kebab 或全 Pascal），未混用；组件名以高级别词开头（`SearchButtonClear`）。
+- [ ] React / Svelte：样式 / 类型 / 测试文件用点号后缀与组件同名；Next.js / SvelteKit 的保留文件名未被改动。
+- [ ] 目录职责未混淆：`assets/`（参与构建）与 `public/`（原样拷贝）分开；`utils` 与 `helpers` 只留一个。
+- [ ] 图片按 `[业务前缀_]功能类别_模块名称[@倍数].扩展名` 命名，全小写、无中文、无导出残留名（`微信图片_*.png`）。
 - [ ] 新增文件已通过 ESLint / Stylelint / 文件名脚本检查，`tsc --noEmit` 与构建通过。
+
+---
+
+## 附录 C 文件命名速查矩阵
+
+按「新建文件时先看这一张表」的顺序排列，规则出处见正文章节。
+
+| 文件类型                  | 规则                                     | 示例                                       |
+| ------------------------- | ---------------------------------------- | ------------------------------------------ |
+| HTML 页面                 | kebab-case 全小写                        | `user-profile.html`、`about/index.html`    |
+| 全局样式                  | kebab-case                               | `global.css`、`reset.css`                  |
+| 组件样式（普通）          | 与组件同名                               | `UserProfile.css`                          |
+| 组件样式（CSS Modules）   | 与组件同名 + `.module.css`               | `UserProfile.module.css`                   |
+| JS / TS 工具模块          | kebab-case                               | `format-date.ts`                           |
+| JS / TS 类                | PascalCase                               | `OrderRepository.ts`                       |
+| 按类别聚合的工具文件      | kebab-case 单数名词                      | `string.ts`、`array.ts`、`date.ts`         |
+| Vue 组件                  | PascalCase 或 kebab（项目二选一）        | `UserProfile.vue`、`user-profile.vue`      |
+| Vue 组合式函数            | `use` + PascalCase                       | `useUserProfile.ts`                        |
+| Vue 组件目录（有子文件）  | 与组件同名                               | `UserProfile/UserProfile.vue`              |
+| React 组件                | PascalCase + `.tsx` / `.jsx`             | `UserProfile.tsx`                          |
+| React Hook                | `use` + PascalCase                       | `useAuth.ts`                               |
+| React 组件专属类型        | 组件名 + `.types.ts`                     | `UserProfile.types.ts`                     |
+| React 测试 / Story        | 组件名 + `.test.tsx` / `.stories.tsx`    | `UserProfile.test.tsx`                     |
+| E2E 测试                  | kebab（与路由一致）+ `.cy.ts` / `.spec.ts` | `user-profile.cy.ts`                     |
+| Svelte 组件               | PascalCase + `.svelte`                   | `OrderTable.svelte`                        |
+| SvelteKit 路由文件        | 框架保留名                               | `+page.svelte`、`+layout.svelte`           |
+| Next.js 路由文件          | 框架保留名                               | `page.tsx`、`layout.tsx`、`route.ts`       |
+| 类型声明                  | 固定名或 kebab                           | `env.d.ts`、`global.d.ts`、`api-response.ts` |
+| 配置文件                  | 工具约定名（不可改）                     | `vite.config.ts`、`eslint.config.js`       |
+| 脚本                      | kebab-case，动词开头                     | `seed-database.ts`、`setup-env.sh`         |
+| 数据库迁移                | 日期前缀 + kebab                         | `2026-10-27-add-user-avatar.sql`           |
+| 文档                      | kebab-case                               | `getting-started.md`                       |
+| 图片                      | `[前缀_]类别_模块[@倍数].扩展名`          | `icon_goods-cart@2x.png`                   |
+| 字体                      | kebab-case，字重作后缀                   | `open-sans.woff2`、`inter-bold.woff2`      |
+
+**扩展名的选择**（同一含义不要混用）：
+
+| 扩展名            | 用途                                                       |
+| ----------------- | ---------------------------------------------------------- |
+| `.js`             | 普通 ES 模块；`"type": "module"` 时默认按 ESM 解析          |
+| `.mjs` / `.cjs`   | 显式声明 ESM / CommonJS，用于包内两种规范并存的场景         |
+| `.ts`             | TypeScript 逻辑代码                                        |
+| `.tsx` / `.jsx`   | **含 JSX 的代码**（Vue / Svelte 项目不用，React 必用）      |
+| `.d.ts`           | 纯类型声明（不产出运行时代码）                             |
+| `.vue` / `.svelte` | 框架单文件组件（含模板时用，不要拆成 `.ts` + `.html`）     |
+
+> 收尾自查：`ls` 一遍新增目录，确认没有 `index.ts` 桶文件混入业务目录、没有 `xxx copy.ts`、`新建文件夹/`、`未命名.vue` 这类残留。
 
 ---
 
